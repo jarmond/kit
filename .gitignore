@@ -4,5 +4,4 @@
 .DS_Store
 loci_tools.jar
 
-/kit/bfmatlab/
-/kit/private/bfmatlab/
+/bfmatlab/
