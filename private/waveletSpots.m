@@ -146,6 +146,9 @@ spots(vertcat(spots.FilledArea) == 1) = [];
 spotsAmp = vertcat(spots.MeanIntensity);
 spots = vertcat(spots.Centroid);
 
+% Convert to image coordinates, for compatibility with later processing.
+spots = spots(:,[2 1 3]);
+
 if verbose
   h = figure(4);
   imshow(max(img,[],3),[]);
@@ -155,7 +158,7 @@ if verbose
 
   if ~isempty(spots)
     hold on;
-    plot(spots(:,1),spots(:,2),'rx');
+    plot(spots(:,2),spots(:,1),'rx');
     hold off;
   end
   title('spots');
