@@ -63,7 +63,10 @@ for iImage = 1 : nFrames
       spots = waveletSpots(img); % TODO allow configuration by options
   end
 
-  %store the cands of the current image
+  % Round spots to nearest pixel and limit to image bounds.
+  spots = bsxfun(@min,bsxfun(@max,round(spots),1),[imageSizeX,imageSizeY,imageSizeZ]);
+
+  % Store the cands of the current image
   localMaxima(iImage).cands = spots;
   spots1D = sub2ind(size(img),round(spots(:,1)),round(spots(:,2)),round(spots(:,3)));
   localMaxima(iImage).candsAmp = img(spots1D);
@@ -78,18 +81,9 @@ for iImage = 1 : nFrames
     img = img/max(img(:));
     img = repmat(img,[1 1 3]);
 
-    % Set candidate pixels below p-value threshold red, and others blue.
-    % Two passes to ensure accepted on top.
-    spotsPix = round(spots);
-    for i=1:length(locMax)
-      if passIdx(i)==0
-        img(spotsPix(i,1),spotsPix(i,2),:) = [0 0 1];
-      end
-    end
-    for i=1:length(spotsPix)
-      if passIdx(i)==1
-        img(spotsPix(i,1),spotsPix(i,2),:) = [1 0 0];
-      end
+    % Show candidate pixels in red.
+    for i=1:size(spots,1)
+      img(spots(i,1),spots(i,2),:) = [0 0 1];
     end
 
     % Plot image.
