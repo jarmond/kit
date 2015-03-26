@@ -7,6 +7,10 @@ function [spots,spotsAmp]=waveletSpots(img,verbose)
 %
 % Copyright (c) 2015 Jonathan W. Armond
 
+if nargin < 2
+  verbose = 0;
+end
+
 tk=4; % hard threshold scale
 ld=1.0; % detection threshold
 
