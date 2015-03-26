@@ -1,0 +1,43 @@
+changes in KiT 1.0.x relative to 1.0.0
+
+  * Fixed bug in default timesteps when no metadata available (CAS)
+
+  * Image coordinate system now works on untracked channels
+
+  * Image coordinate system more robust due to filtering spots and background
+
+changes in KiT 1.0.0 relative to original code
+
+  * GUI frontend improved for easy jobset creation
+
+  * Support OME-TIFF and DV (and anything else) through Loci Tools - including
+    autodownloader for the library
+
+  * Only frame currently being analyzed is loaded, reducing memory requirement
+
+  * Support for 2D tracking via image moment coordinate system
+
+  * Support for measuring intensity local to tracked spots
+
+  * Support for quick movie rendering with tracked spots and frame registration
+
+  * Remove track analysis capability - see CupL - replaced with simple
+    diagnostic tools (kitPlateCheck, kitPlotSisters)
+
+  * Lots of unused/obsolete old code excised
+
+  * Myriad performance improvements in grouping sisters, mixture-model fitting,
+    etc...  without using MEX-files
+
+  * Use 3D Gaussian PSF approx for clustering spots in mixture-model fitting
+    instead of cubes
+
+  * Simplified code by removing time integration of image and background - had
+    very small effect in testing
+
+  * Use Gaussian background for MMF spot detection - much smoother.
+
+  * Bugfix: 3D PSF sigma not accounted for when removing superfluous maxima in
+    detectSubResFeatures3D.m
+
+  * Bugfix: F-test of fit against background p-value test had wrong direction
