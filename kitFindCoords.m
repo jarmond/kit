@@ -65,7 +65,7 @@ for iImage = 1 : nFrames
 
   %store the cands of the current image
   localMaxima(iImage).cands = spots;
-  spots1D = sub2ind(size(img),spots(:,1),spots(:,2),spots(:,3));
+  spots1D = sub2ind(size(img),round(spots(:,1)),round(spots(:,2)),round(spots(:,3)));
   localMaxima(iImage).candsAmp = img(spots1D);
   localMaxima(iImage).candsBg = background(spots1D);
 
