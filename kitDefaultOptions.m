@@ -21,6 +21,7 @@ opts.coordMode{2} = 'none';
 opts.coordMode{3} = 'none';
 opts.coordSystem = 'plate';
 opts.coordSystemChannel = 1;
+opts.spotMode = 'histcut';
 opts.cropAsked = 0;
 opts.disableSave = 0;
 
