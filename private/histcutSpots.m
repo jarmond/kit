@@ -29,13 +29,8 @@ imageNoise = fastGauss3D(imageNoise,[],filters.signalP,filters.border,filters.no
 % get local maxima from the image
 bw = imregionalmax(img);
 localMax1DIndx = find(bw);
-if ndims == 3
-  [x,y,z]=ind2sub([sx sy sz],localMax1DIndx);
-  locMax=[x,y,z];
-else
-  [x,y]=ind2sub([sx sy],localMax1DIndx);
-  locMax=[x,y];
-end
+[x,y,z]=ind2sub([sx sy sz],localMax1DIndx);
+locMax=[x,y,z];
 if any(x>sx) || any(y>sy) || (ndims==3 && any(z>sz))
   error('invalid index');
 end
