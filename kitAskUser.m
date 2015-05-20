@@ -22,7 +22,7 @@ function varargout = kitAskUser(varargin)
 
 % Edit the above text to modify the response to help kitAskUser
 
-% Last Modified by GUIDE v2.5 03-Mar-2014 16:43:54
+% Last Modified by GUIDE v2.5 20-May-2015 14:11:56
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,6 +77,9 @@ set(handles.minSpotsPerFrame','string',num2str(opts.minSpotsPerFrame));
 set(handles.trackMethod1,'value',coordModeToIndex(opts.coordMode{1}));
 set(handles.trackMethod2,'value',coordModeToIndex(opts.coordMode{2}));
 set(handles.trackMethod3,'value',coordModeToIndex(opts.coordMode{3}));
+set(handles.spotMethod1,'value',spotModeToIndex(opts.spotMode{1}));
+set(handles.spotMethod2,'value',spotModeToIndex(opts.spotMode{2}));
+set(handles.spotMethod3,'value',spotModeToIndex(opts.spotMode{3}));
 
 % Update handles structure
 guidata(hObject, handles);
@@ -103,6 +106,17 @@ switch coordSys
     case 'image'
         idx = 3;
 end
+
+function idx = spotModeToIndex(spotMode)
+switch spotMode
+    case 'histcut'
+        idx = 1;
+    case 'wavelet'
+        idx = 2;
+    case 'none'
+        idx = 3;
+end
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = kitAskUser_OutputFcn(hObject, eventdata, handles) 
@@ -135,6 +149,10 @@ trackingModes = get(handles.trackMethod1,'string');
 opts.coordMode{1} = lower(trackingModes{get(handles.trackMethod1,'value')});
 opts.coordMode{2} = lower(trackingModes{get(handles.trackMethod2,'value')});
 opts.coordMode{3} = lower(trackingModes{get(handles.trackMethod3,'value')});
+spotModes = get(handles.spotMethod1,'string');
+opts.spotMode{1} = lower(spotModes{get(handles.spotMethod1,'value')});
+opts.spotMode{2} = lower(spotModes{get(handles.spotMethod2,'value')});
+opts.spotMode{3} = lower(spotModes{get(handles.spotMethod3,'value')});
 
 handles.output.options = opts;
 handles.output.filename = get(handles.jobsetName,'string');
@@ -719,6 +737,75 @@ function jobsetName_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 
 % Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in spotMethod3.
+function spotMethod3_Callback(hObject, eventdata, handles)
+% hObject    handle to spotMethod3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns spotMethod3 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from spotMethod3
+
+
+% --- Executes during object creation, after setting all properties.
+function spotMethod3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to spotMethod3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in spotMethod2.
+function spotMethod2_Callback(hObject, eventdata, handles)
+% hObject    handle to spotMethod2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns spotMethod2 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from spotMethod2
+
+
+% --- Executes during object creation, after setting all properties.
+function spotMethod2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to spotMethod2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in spotMethod1.
+function spotMethod1_Callback(hObject, eventdata, handles)
+% hObject    handle to spotMethod1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns spotMethod1 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from spotMethod1
+
+
+% --- Executes during object creation, after setting all properties.
+function spotMethod1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to spotMethod1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
