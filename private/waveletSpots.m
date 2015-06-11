@@ -1,4 +1,4 @@
-function [spots,spotsAmp]=waveletSpots(img,...)
+function [spots,spotsAmp]=waveletSpots(img,varargin)
 % Find spots using multiscale product wavelet transform.
 %
 % See: J. C. Olivo-Marin, Pattern Recognition 35 (2002) 1989-1996 and
@@ -112,7 +112,7 @@ for L=1:levels
   WL = W(:,:,:,L);
   bkgd = imgaussfilt3(WL,20);
   madest = imgaussfilt3(abs(WL-bkgd),20);
-  t = bkgd + tk * 1.4826 * madest;
+  t = bkgd + options.tk * 1.4826 * madest;
   pass = WL >= t;
 end
 
@@ -145,7 +145,9 @@ spotsAmp = vertcat(spots.MeanIntensity);
 spots = vertcat(spots.Centroid);
 
 % Convert to image coordinates, for compatibility with later processing.
-spots = spots(:,[2 1 3]);
+if ~isempty(spots)
+  spots = spots(:,[2 1 3]);
+end
 
 if options.verbose
   h = figure(4);
