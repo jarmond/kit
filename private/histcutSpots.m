@@ -27,7 +27,7 @@ imageNoise = (img-imageF).^2;
 imageNoise = fastGauss3D(imageNoise,[],filters.signalP,filters.border,filters.noise);
 
 % get local maxima from the image
-bw = imregionalmax(img);
+bw = imregionalmax(imageF);
 localMax1DIndx = find(bw);
 [x,y,z]=ind2sub([sx sy sz],localMax1DIndx);
 locMax=[x,y,z];
