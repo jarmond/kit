@@ -41,6 +41,7 @@ debug.groupSisters = 0; % 1 - plot 4 frames with sisters assigment
 debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
 debug.showCentroidFinal = 0; % visualize centroid final spots.
+debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
 debug.asserts = 0; % check things that shouldn't go wrong
 opts.debug = debug;
 
@@ -86,5 +87,11 @@ opts.maskConeAngle = 10; % degrees, only used with maskShape=='cone'.
 opts.poleShift = 0; % um
 opts.otherSpotSearchRadius = 0;
 opts.gaussFilterSpots = 1;
+
+% Wavelet multiscale product spot detector options.
+opts.waveletLevelThresh = 2; % threshold scale for local MAD thresholding
+opts.waveletProdThresh = 0.5; % threshold multiscale product
+opts.waveletNumLevels = 3;  % number of wavelet levels
+opts.waveletOpen = 2; % window size for morphological open
 
 job.options = opts;

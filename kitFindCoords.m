@@ -60,7 +60,7 @@ for iImage = 1 : nFrames
     case 'histcut'
       spots = histcutSpots(img,options,dataStruct.dataProperties);
     case 'wavelet'
-      spots = waveletSpots(img); % TODO allow configuration by options
+      spots = waveletSpots(img,options);
   end
 
   % Round spots to nearest pixel and limit to image bounds.
@@ -89,7 +89,7 @@ for iImage = 1 : nFrames
     % Plot image.
     figure(1);
     imshow(img);
-    title('Local maxima cands');
+    title(['Local maxima cands n=' num2str(size(spots,1))]);
     drawnow;
     if options.debug.showMmfCands < 0
       pause;

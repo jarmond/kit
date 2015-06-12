@@ -1,4 +1,4 @@
-function [spots,spotsAmp]=waveletSpots(img,varargin)
+function [spots,spotsAmp]=waveletSpots(img,opts)
 % Find spots using multiscale product wavelet transform.
 %
 % See: J. C. Olivo-Marin, Pattern Recognition 35 (2002) 1989-1996 and
@@ -7,17 +7,16 @@ function [spots,spotsAmp]=waveletSpots(img,varargin)
 %
 % Copyright (c) 2015 Jonathan W. Armond
 
-options.verbose = 0;
-options.tk=2; % hard threshold scale
-options.ld=0.01; % detection threshold
-options.opsz=2; % should be about PSF sigma.
-options=processOptions(options,varargin{:});
+verbose = opts.debug.showWavelet;
+tk = opts.waveletLevelThresh; % threshold scale for local MAD thresholding
+ld = opts.waveletProdThresh; % threshold multiscale product
+levels = opts.waveletNumLevels;  % number of wavelet levels
+opsz = opts.waveletOpen; % window size for morphological open
 
 % 3D image.
-levels = 3;
 [sx,sy,sz] = size(img);
 W = zeros(sx,sy,sz,levels);
-A = img / max(img(:));
+A = (img - mean2(img))/std2(img);
 
 % Scaling function: B3-spline.
 scalingFn = [1,4,6,4,1]/16;
@@ -83,7 +82,7 @@ for L=1:levels
   A = A2;
 end
 
-if options.verbose
+if verbose
   figure(1);
   n=levels+1;
   fig_n=ceil(sqrt(n));
@@ -112,35 +111,39 @@ for L=1:levels
   WL = W(:,:,:,L);
   bkgd = imgaussfilt3(WL,20);
   madest = imgaussfilt3(abs(WL-bkgd),20);
-  t = bkgd + options.tk * 1.4826 * madest;
+  t = bkgd + tk * 1.4826 * madest;
   pass = WL >= t;
 end
 
 % Compute multiscale product on level 2..L.
-P = prod(W(:,:,:,2:levels),4);
-if options.verbose
+P = prod(W,4);
+%P = prod(W(:,:,:,2:levels),4);
+if verbose
   figure(3);
   subplot(1,2,1);
-  imshow(log(max(P,[],3)),[]);
+  F = max(abs(P),[],3);
+  box = round([sx sy]*0.05);
+  F(1:box(1),1:box(2)) = ld; % Add threshold box in corner.
+  imshow(log(F),[]);
   title('log multiscale product');
 end
 
 % Threshold spots.
-P(abs(P)<options.ld) = 0;
-se = strel('disk',options.opsz);
+P(abs(P)<ld) = 0;
+se = strel('disk',opsz);
 P = imclose(P,se);
 
-if options.verbose
+if verbose
   subplot(1,2,2);
-  imshow(log(max(P,[],3)),[]);
+  imshow(log(max(abs(P),[],3)),[]);
   title('log thresholded multiscale product');
 end
 
 % Locate spots.
-CC = bwconncomp(P);
+CC = imregionalmax(P);
 spots = regionprops(CC,P,'Centroid','MeanIntensity','FilledArea');
 % Remove isolated single pixels.
-spots(vertcat(spots.FilledArea) == 1) = [];
+%spots(vertcat(spots.FilledArea) == 1) = [];
 spotsAmp = vertcat(spots.MeanIntensity);
 spots = vertcat(spots.Centroid);
 
@@ -149,12 +152,12 @@ if ~isempty(spots)
   spots = spots(:,[2 1 3]);
 end
 
-if options.verbose
+if verbose
   h = figure(4);
   imshow(max(img,[],3),[]);
-  scale = 3;
-  figpos = get(h,'Position');
-  set(h,'Position',[figpos(1:2) figpos(3:4)*scale]);
+  % scale = 3;
+  % figpos = get(h,'Position');
+  % set(h,'Position',[figpos(1:2) figpos(3:4)*scale]);
 
   if ~isempty(spots)
     hold on;
