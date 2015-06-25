@@ -23,7 +23,7 @@ if nargin>=2 && etime(currentClock, lastUpdate) > updateInterval
     % Simulate carriage-return.
     fprintf(carriageReturn);
     % Print message.
-    fprintf('%s',msg);
+    fprintf('%s',deblank(msg));
     lastUpdate = currentClock;
 end
 
