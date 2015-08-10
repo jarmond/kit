@@ -86,10 +86,10 @@ opts.maskShape = 'semicircle';
 opts.maskConeAngle = 10; % degrees, only used with maskShape=='cone'.
 opts.poleShift = 0; % um
 opts.otherSpotSearchRadius = 0;
-opts.gaussFilterSpots = 1;
+opts.gaussFilterSpots = 0;
 
 % Wavelet multiscale product spot detector options.
-opts.waveletLevelThresh = 2; % threshold scale for local MAD thresholding
+opts.waveletLevelThresh = 3; % threshold scale for local MAD thresholding
 opts.waveletNumLevels = 3;  % number of wavelet levels
 opts.waveletLocalMAD = 0; % locally estimated MAD
 opts.waveletBackSub = 0;  % background subtraction
