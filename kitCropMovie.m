@@ -42,7 +42,7 @@ for c=1:min([maxMergeChannels, metadata.nChannels])
   maxProj = maxProj/length(frameList);
 
   % Merge into RGB image.
-  lb = splitModes(maxProj);
+  lb = splitModes(maxProj(maxProj>0));
   if isempty(lb)
     % Can't identify background. Use sensible default.
     lb = 0.75;
