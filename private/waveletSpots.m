@@ -9,18 +9,24 @@ function [spots,spotsAmp]=waveletSpots(img,opts)
 
 verbose = opts.debug.showWavelet;
 tk = opts.waveletLevelThresh; % threshold scale for local MAD thresholding
-ld = opts.waveletProdThresh; % threshold multiscale product
 levels = opts.waveletNumLevels;  % number of wavelet levels
-opsz = opts.waveletOpen; % window size for morphological open
+localmad = opts.waveletLocalMAD; % locally estimated MAD
+backsub = opts.waveletBackSub;  % background subtraction
 
 % 3D image.
 [sx,sy,sz] = size(img);
 W = zeros(sx,sy,sz,levels);
-A = (img - mean2(img))/std2(img);
+
+% Normalization and background subtraction.
+if backsub
+  A = img - imfilter(img,fspecial('gaussian',round(min([sx,sy])/2)),'symmetric');
+else
+  A = img;
+end
+A = A/max(A(:));
 
 % Scaling function: B3-spline.
 scalingFn = [1,4,6,4,1]/16;
-%scalingFn2 = scalingFn' * scalingFn; % 2D filter.
 h = cell(levels,1);
 
 % Precompute filters.
@@ -36,46 +42,8 @@ for j=1:levels
 end
 
 for L=1:levels
-  % Mirror symmetric cols.
-  A = padarray(A,[0,sy],'symmetric');
-  A2 = zeros(size(A));
-
-  % Compute separable wavelet, row-by-row, col-by-col, z-col-by-z-col.
-  % Rows.
-  for k=1:sz
-    for i=1:sx
-      A2(i,:,k) = conv(A(i,:,k),h{L},'same');
-    end
-  end
-  % Trim edges.
-  A = A(:,sy+1:2*sy,:);
-
-  % Mirror symmetric rows.
-  A2 = padarray(A2(:,sy+1:2*sy,:),[sx,0],'symmetric');
-  % Cols.
-  for k=1:sz
-    for j=1:sy
-      A2(:,j,k) = conv(A2(:,j,k),h{L}','same');
-    end
-  end
-  % Trim edges.
-  A2 = A2(sx+1:2*sx,:,:);
-
-  % Mirror in Z.
-  A2 = padarray(A2,[0,0,sz],'symmetric');
-  % Z-cols.
-  A3 = A2;
-  A2 = shiftdim(A2,2);
-  for j=1:sy
-    for i=1:sx
-      % A2(i,j,:) = conv(squeeze(A2(i,j,:)),h{L}','same');
-      A2(:,i,j) = conv(A2(:,i,j),h{L}','same');
-    end
-  end
-  A2 = shiftdim(A2,1);
-
-  % Trim edges.
-  A2 = A2(:,:,sz+1:2*sz);
+  % Convolve filter.
+  A2 = imfilter(A,h{L}'*h{L},'symmetric','conv');
 
   % Compute wavelet plane.
   W(:,:,:,L) = A - A2;
@@ -106,32 +74,39 @@ end
 
 % Hard threshold wavelet coefficients.
 for L=1:levels
-  % Threshold is background + k * local median absolute deviation of wavelet
-  % coefficients, over 0.67.
+  % Threshold is median + k * median absolute deviation of wavelet coefficients, over 0.67.
   WL = W(:,:,:,L);
-  bkgd = imgaussfilt3(WL,20);
-  madest = imgaussfilt3(abs(WL-bkgd),20);
-  t = bkgd + tk * 1.4826 * madest;
-  pass = WL >= t;
+  if localmad
+    h = fspecial('average',64);
+    madest = imfilter(abs(WL-imfilter(WL,h,'symmetric')),h,'symmetric');
+    h = fspecial('average',16);
+    bkgd=imfilter(WL,h,'symmetric');
+    t = bkgd + tk * 1.4826 * madest;
+  else
+    t = median(WL(:)) + tk * mad(WL(:),1) * 1.4826;
+  end
+  WL(WL<t) = 0;
+  W(:,:,:,L) = WL;
 end
 
 % Compute multiscale product on level 2..L.
 P = prod(W,4);
-%P = prod(W(:,:,:,2:levels),4);
 if verbose
   figure(3);
   subplot(1,2,1);
   F = max(abs(P),[],3);
-  box = round([sx sy]*0.05);
-  F(1:box(1),1:box(2)) = ld; % Add threshold box in corner.
   imshow(log(F),[]);
   title('log multiscale product');
 end
 
 % Threshold spots.
-P(abs(P)<ld) = 0;
-se = strel('disk',opsz);
-P = imclose(P,se);
+if nnz(P)>0
+  % Estimate histogram mode.
+  [f,xi]=ksdensity(P(P>0 & P<max(P(:))/4));
+  [~,i]=max(f);
+  ld=xi(i);
+  P(P<ld) = 0;
+end
 
 if verbose
   subplot(1,2,2);
@@ -141,15 +116,13 @@ end
 
 % Locate spots.
 CC = imregionalmax(P);
-spots = regionprops(CC,P,'Centroid','MeanIntensity','FilledArea');
-% Remove isolated single pixels.
-%spots(vertcat(spots.FilledArea) == 1) = [];
+spots = regionprops(CC,P,'Centroid','MeanIntensity');
 spotsAmp = vertcat(spots.MeanIntensity);
 spots = vertcat(spots.Centroid);
 
 % Convert to image coordinates, for compatibility with later processing.
 if ~isempty(spots)
-  spots = spots(:,[2 1 3]);
+  spots(:,1:2) = fliplr(spots(:,1:2));
 end
 
 if verbose
