@@ -40,6 +40,10 @@ bgAmps = [];
 rejects.amp = []; % Candidates rejected on amplitude test.
 rejects.dist = []; % Candidate rejected on distance test.
 
+% Disable singular matrix warning. Some clusters are ill-conditioned and cause
+% the warning in the variance, but is harmless
+warning('off','MATLAB:singularMatrix');
+
 % For each cluster, perform iterative mixture-model fitting, increasing
 % number of Gaussians and F-testing.
 for i=1:nClusters
@@ -341,6 +345,9 @@ end
 if ~isempty(rejects.dist)
   rejects.dist(:,1:2) = rejects.dist(:,[2 1]);
 end
+
+% Re-enable warnings.
+warning('on','MATLAB:singularMatrix');
 
 if verbose
   kitLog('MMF complete, %d spots',size(spots,1));
