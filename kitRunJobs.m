@@ -54,6 +54,10 @@ if ~isfield(jobset.options,'jobsetVersion') || ...
   jobset = structCopyMissingFields(jobset,defJob);
 end
 
+if isfield(jobset,'variantName')
+  fprintf('Jobset variant: %s\n',jobset.variantName);
+end
+
 % Copy out job info for each movie.
 jobs = cell(nMovies,1);
 for i=1:nMovies
