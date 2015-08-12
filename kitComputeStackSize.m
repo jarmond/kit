@@ -4,7 +4,8 @@ function stackSize=kitComputeStackSize(cropRect,frameSize)
 if isempty(cropRect)
     stackSize = frameSize(1:3);
 else
-    sy=round(cropRect(3)+cropRect(1))-round(cropRect(1))+1;
-    sx=round(cropRect(4)+cropRect(2))-round(cropRect(2))+1;
-    stackSize = [sx,sy,frameSize(3)];
+  cropRect = cropRect + 0.5; % move to pixel coordinates.
+  sy=min(frameSize(2),ceil(cropRect(3)+cropRect(1)))-floor(cropRect(1));
+  sx=min(frameSize(1),ceil(cropRect(4)+cropRect(2)))-floor(cropRect(2));
+  stackSize = [sx,sy,frameSize(3)];
 end
