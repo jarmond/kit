@@ -73,6 +73,8 @@ while ishghandle(f)
   end
 end
 
+crop = round(crop);
+
 % Process ROIs into crop rectangles.
 sz = size(rgbImg);
 if isempty(crop)
