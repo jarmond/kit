@@ -69,6 +69,13 @@ for i=1:size(stats,1)
   fprintf(fid,'\n');
 end
 
+% Print totals
+fprintf(fid,'sum ');
+for j=2:size(stats,2)
+  fmt = sprintf('%%%d.1f ',l(j));
+  fprintf(fid,fmt,nansum(stats(:,j)));
+end
+
 % Print averages
 fprintf(fid,'avg ');
 for j=2:size(stats,2)
