@@ -75,6 +75,7 @@ for j=2:size(stats,2)
   fmt = sprintf('%%%d.1f ',l(j));
   fprintf(fid,fmt,nansum(stats(:,j)));
 end
+fprintf(fid,'\n');
 
 % Print averages
 fprintf(fid,'avg ');
