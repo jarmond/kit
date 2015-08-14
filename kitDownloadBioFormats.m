@@ -6,11 +6,6 @@ function kitDownloadBioFormats()
 %
 % Copyright (c) 2015 Jonathan W. Armond
 
-% Check we are in KiT directory.
-if exist('kitVersion.m','file') ~= 2
-  error('Must be in KiT directory to download Loci Tools');
-end
-
 filename = 'bfmatlab';
 url = ['http://downloads.openmicroscopy.org/bio-formats/5.0.6/artifacts/' ...
        'bfmatlab.zip'];
@@ -23,6 +18,11 @@ if exist(filename,'dir') == 0
   if exist([filename '.zip'],'file') == 0
     % Zip doesn't exist. Download it.
     kitLog('Downloading BioFormats...');
+    % Check we are in KiT directory.
+    if exist(fullfile(pwd,'kitDownloadBioFormats.m'),'file') ~= 2
+      error('Must be in KiT directory to download Loci Tools');
+    end
+
     unzip(url);
     kitLog('Download complete.');
   else
