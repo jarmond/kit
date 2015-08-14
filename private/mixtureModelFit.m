@@ -509,8 +509,14 @@ end
 
 function [candVar,ampVar,bgAmpVar,covMat]=computeVariances(jac,residVar,numCands)
   jac = full(jac);
+  jac = jac'*jac;
+
   % Estimate covariances from Jacobian.
-  covMat = inv(jac' * jac)*residVar;
+  if rcond(jac) < 1e-12
+    covMat = pinv(jac)*residVar;
+  else
+    covMat = inv(jac)*residVar;
+  end
   sigmaSq = diag(covMat);
 
   % Background amplitude variance.
