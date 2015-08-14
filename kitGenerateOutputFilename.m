@@ -5,12 +5,17 @@ function outputName=kitGenerateOutputFilename(job)
 [moviePath,movieName] = fileparts(job.movie);
 
 
-fileName = ['kittracking-' jobsetName '-' movieName];
+if isfield(job,'jobsetVersion') && job.jobsetVersion >= 5
+  % Add index near front of filename to improve filesystem sorting.
+  fileName = ['kittracking' num2str(job.index,'%03d') '-' jobsetName '-' movieName];
+else
+  fileName = ['kittracking-' jobsetName '-' movieName];
+end
 if isfield(job,'variantName')
   % Add variant to name for testing purposes.
   fileName = [fileName '-' job.variantName];
 end
-if isfield(job,'jobsetVersion') && job.jobsetVersion > 2
+if isfield(job,'jobsetVersion') && job.jobsetVersion > 2 && job.jobsetVersion < 5
   % Add index to filename.
   fileName = [fileName '-' num2str(job.index)];
 end
