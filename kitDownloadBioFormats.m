@@ -6,6 +6,10 @@ function kitDownloadBioFormats()
 %
 % Copyright (c) 2015 Jonathan W. Armond
 
+if exist('bfGetPlane') == 2
+  return % already available
+end
+
 filename = 'bfmatlab';
 url = ['http://downloads.openmicroscopy.org/bio-formats/5.0.6/artifacts/' ...
        'bfmatlab.zip'];
