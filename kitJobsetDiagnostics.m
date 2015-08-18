@@ -13,11 +13,15 @@ if nargin<4
   fid = 1;
 end
 
+id=@(x) x; % identity
+
 fields = {'nSpotsPerFrame','nTracks','nSisters','avgSisterTrackLength', ...
-          'percentWithPlane','sisterVar','nLongSisters'};
+          'percentWithPlane','sisterVar','nLongSisters','elapsedTime'};
+fieldFn = {id,id,id,id,id,id,id,@(x) floor(x/60)};
+
 fieldNames = {'job','# spots','# tracks','# sisters','sister length','plane fits',...
-             'variance','# long sisters'};
-fieldFmt = {'d','.1f','d','d','.1f','d','.4f','d'};
+             'variance','# long sisters','time (min)'};
+fieldFmt = {'d','.1f','d','d','.1f','.1f','.4f','d','d'};
 if short == 0
   fields = [fields {'elapsedTime'}];
   fieldNames = [fieldNames {'cputime'}];
@@ -51,7 +55,7 @@ for i=1:nJobs
   for f=1:nFields
     field = fields{f};
     if isfield(diag,field)
-      stats(i,f+1) = diag.(field);
+      stats(i,f+1) = fieldFn{f}(diag.(field));
     else
       warning('Missing field: %s',field);
     end
