@@ -20,12 +20,6 @@ function gaussList = GaussListND(coordList,sigma,center,intNorm)
 %
 % Copyright (c) 2005 Jonas Dorn
 
-%======================
-% TEST INPUT
-%======================
-
-narginchk(2,4);
-
 % check dimensionality of coordList. 
 if isempty(coordList)
   error('you have to supply a list of coordinates for GaussList23D')
