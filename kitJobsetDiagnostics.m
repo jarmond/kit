@@ -22,11 +22,6 @@ fieldFn = {id,id,id,id,id,id,id,@(x) floor(x/60)};
 fieldNames = {'job','# spots','# tracks','# sisters','sister length','plane fits',...
              'variance','# long sisters','time (min)'};
 fieldFmt = {'d','.1f','d','d','.1f','.1f','.4f','d','d'};
-if short == 0
-  fields = [fields {'elapsedTime'}];
-  fieldNames = [fieldNames {'cputime'}];
-  fieldFmt = [fieldFmt {'.0f'}];
-end
 
 % Read in diagnostics from each job.
 nFields = length(fields);
