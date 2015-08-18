@@ -15,19 +15,11 @@ currentClock = clock;
 % Add timestamp to message.
 fmt = [datestr(now, 'HH:MM:SS') ': % 6.2f%% complete\n'];
 msgLength = 27;
-carriageReturn = repmat('\b', 1, msgLength);
 
-updateInterval = 1.0; % seconds
-if nargin>=2 && etime(currentClock, lastUpdate) > updateInterval
-    msg = sprintf(fmt, 100*progress);
-    % Simulate carriage-return.
-    fprintf(carriageReturn);
+updateInterval = 3.0; % seconds
+msg = sprintf(fmt, 100*progress);
+if nargin < 2 || etime(currentClock, lastUpdate) > updateInterval
     % Print message.
-    fprintf('%s',deblank(msg));
-    lastUpdate = currentClock;
-end
-
-if nargin<2
-    fprintf(fmt, 100*progress);
+    fprintf('%s\n',deblank(msg));
     lastUpdate = currentClock;
 end
