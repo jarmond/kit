@@ -60,6 +60,18 @@ for iImage = 1 : nFrames
     case 'histcut'
       spots = histcutSpots(img,options,dataStruct.dataProperties);
     case 'wavelet'
+      if iImage == 1 && options.waveletLevelAdapt
+        kitLog('Determining adaptive wavelet threshold');
+        tk = 1:0.1:4;
+        for i=1:length(tk)
+          options.waveletLevelThresh=tk(i);
+          nSpots(1,i) = size(waveletSpots(movie(:,:,:,1),options),1);
+          nSpots(2,i) = size(waveletSpots(movie(:,:,:,end),options),1);
+        end
+        tk = fminbnd(@(x) interp1(tk,nSpots(1,:)-nSpots(2,:),x).^2, tk(1),tk(end));
+        kitLog('Using wavelet threshold: %g',tk);
+        options.waveletLevelThresh = tk;
+      end
       spots = waveletSpots(img,options);
   end
 

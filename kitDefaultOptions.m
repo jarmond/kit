@@ -92,6 +92,7 @@ opts.gaussFilterSpots = 0;
 
 % Wavelet multiscale product spot detector options.
 opts.waveletLevelThresh = 2; % threshold scale for local MAD thresholding
+opts.waveletLevelAdapt = 1; % use adaptive setting for above.
 opts.waveletNumLevels = 3;  % number of wavelet levels
 opts.waveletLocalMAD = 0; % locally estimated MAD
 opts.waveletBackSub = 0;  % background subtraction
