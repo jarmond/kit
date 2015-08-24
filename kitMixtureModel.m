@@ -377,6 +377,6 @@ initCoord(1).localMaxima = localMaxima;
 dataStruct.dataProperties.psfSigma = psfSigma;
 dataStruct.initCoord = initCoord;
 
-dataStruct.failed = length(emptyFrames) < nFrames;
+dataStruct.failed = length(emptyFrames) == nFrames;
 
 job.dataStruct{channel} = dataStruct;
