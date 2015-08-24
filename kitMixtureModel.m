@@ -277,11 +277,11 @@ for iImage = goodImages
   cands = localMaxima(iImage).cands;
 
   % Fit with mixture-models.
-  startTime = cputime;
+  startTime = clock;
   [coordList,ampList,bgList,rejects] = mixtureModelFit(cands,imageRaw,psfSigma,options);
-  elapsedTime = cputime - startTime;
+  elapsedTime = etime(clock,startTime);
   if options.maxMmfTime > 0 && elapsedTime > options.maxMmfTime
-    warning('Mixture-model fitting taking excessive time. Aborting.');
+    warning('Mixture-model fitting taking excessive time (%g min per frame). Aborting.',elaspedTime/60);
     dataStruct.excessiveTime = 1;
     break;
   end

@@ -44,7 +44,7 @@ rejects.dist = []; % Candidate rejected on distance test.
 % the warning in the variance, but is harmless
 warning('off','MATLAB:singularMatrix');
 
-startTime = cputime;
+startTime = clock;
 
 % For each cluster, perform iterative mixture-model fitting, increasing
 % number of Gaussians and F-testing.
@@ -133,7 +133,7 @@ for i=1:nClusters
 
   end % while ~failed
 
-  if options.maxMmfTime > 0 && cputime-startTime > options.maxMmfTime
+  if options.maxMmfTime > 0 && etime(clock,startTime) > options.maxMmfTime
     spots = []; amps = []; bgAmps = [];
     return % Abort
   end
@@ -322,7 +322,7 @@ for i=1:nClusters
   testStat = clusterAmp./sqrt(clusterAmpVar+residVar);
   pValue = 1-tcdf(testStat,numDegFree);
 
-  if options.maxMmfTime > 0 && cputime-startTime > options.maxMmfTime
+  if options.maxMmfTime > 0 && etime(clock,startTime) > options.maxMmfTime
     spots = []; amps = []; bgAmps = [];
     return % Abort
   end
