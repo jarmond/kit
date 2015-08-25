@@ -50,6 +50,42 @@ switch spotMode
     modeName = 'multiscale wavelet product';
 end
 kitLog(['Detecting spot candidates using ' modeName]);
+
+if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
+  % Compare successive frames on nSpots and covaraince of distance matrix difference
+  kitLog('Determining adaptive wavelet threshold');
+  tk = 1:0.2:4;
+  f = [1 floor(nFrames/2) nFrames-1];
+  for i=1:length(tk)
+    options.waveletLevelThresh=tk(i);
+    for k=1:length(f)
+      A = waveletSpots(movie(:,:,:,f(k)),options);
+      B = waveletSpots(movie(:,:,:,f(k)+1),options);
+      % Compute minimum difference between each point in A and set B.
+      meanMinDiffA = 0;
+      for j=1:size(A,1)
+        meanMinDiffA = meanMinDiffA + min(createDistanceMatrix(A(j,:),B));
+      end
+      % Compute minimum difference between each point in B and set A.
+      meanMinDiffB = 0;
+      for j=1:size(B,1)
+        meanMinDiffB = meanMinDiffB + min(createDistanceMatrix(B(j,:),A));
+      end
+      % Combine metrics to estimate difference in point clouds.
+      frameDiff(i,k) = (meanMinDiffA + meanMinDiffB)/(size(A,1)+size(B,1));
+    end
+  end
+  % Pick tk which minimises frameDiff metric.
+  frameDiff = sum(frameDiff,2);
+  pp = pchip(tk,frameDiff);
+  tk = fminbnd(@(x) ppval(pp,x),tk(1),tk(end));
+  kitLog('Using wavelet threshold: %g',tk);
+  options.waveletLevelThresh = tk;
+  job.options = options;
+  kitSaveJob(job); % Record used value.
+end
+
+
 prog = kitProgress(0);
 for iImage = 1 : nFrames
   % get frame
@@ -60,18 +96,6 @@ for iImage = 1 : nFrames
     case 'histcut'
       spots = histcutSpots(img,options,dataStruct.dataProperties);
     case 'wavelet'
-      if iImage == 1 && options.waveletLevelAdapt
-        kitLog('Determining adaptive wavelet threshold');
-        tk = 1:0.1:4;
-        for i=1:length(tk)
-          options.waveletLevelThresh=tk(i);
-          nSpots(1,i) = size(waveletSpots(movie(:,:,:,1),options),1);
-          nSpots(2,i) = size(waveletSpots(movie(:,:,:,end),options),1);
-        end
-        tk = fminbnd(@(x) interp1(tk,nSpots(1,:)-nSpots(2,:),x).^2, tk(1),tk(end));
-        kitLog('Using wavelet threshold: %g',tk);
-        options.waveletLevelThresh = tk;
-      end
       spots = waveletSpots(img,options);
   end
 
