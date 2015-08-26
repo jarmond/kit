@@ -1,4 +1,7 @@
-changes in KiT 1.0.x relative to 1.0.0
+changes in KiT 1.4
+  * Wavelet spot finder with adaptive threshold setting
+
+changes in KiT 1.1 relative to 1.0
 
   * Fixed bug in default timesteps when no metadata available (CAS)
 
@@ -6,7 +9,7 @@ changes in KiT 1.0.x relative to 1.0.0
 
   * Image coordinate system more robust due to filtering spots and background
 
-changes in KiT 1.0.0 relative to original code
+changes in KiT 1.0 relative to original code
 
   * GUI frontend improved for easy jobset creation
 
