@@ -21,10 +21,10 @@ end
 filters = createFilters(ndims,dataProperties);
 
 % Filter image.
-imageF = fastGauss3D(img,[],filters.signalP,filters.border,filters.signal);
-background = fastGauss3D(imageF,[],filters.backgroundP,filters.border,filters.background);
+imageF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
+background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
 imageNoise = (img-imageF).^2;
-imageNoise = fastGauss3D(imageNoise,[],filters.signalP,filters.border,filters.noise);
+imageNoise = imshowmax(imfilter(n,fspecial('average',min(cellfun(@numel,filters.noise)))));
 
 % get local maxima from the image
 bw = imregionalmax(imageF);

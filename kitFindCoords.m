@@ -90,7 +90,7 @@ prog = kitProgress(0);
 for iImage = 1 : nFrames
   % get frame
   img = movie(:,:,:,iImage);
-  background = fastGauss3D(img,[],filters.backgroundP,filters.border,filters.background);
+  background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
 
   switch spotMode
     case 'histcut'
