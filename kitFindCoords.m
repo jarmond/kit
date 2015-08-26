@@ -90,19 +90,24 @@ prog = kitProgress(0);
 for iImage = 1 : nFrames
   % get frame
   img = movie(:,:,:,iImage);
-  background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
 
   switch spotMode
     case 'histcut'
       spots = histcutSpots(img,options,dataStruct.dataProperties);
     case 'wavelet'
-      spots = waveletSpots(img,options);
+      if options.waveletPrefilter
+        imgF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
+      else
+        imgF = img;
+      end
+      spots = waveletSpots(imgF,options);
   end
 
   % Round spots to nearest pixel and limit to image bounds.
   spots = bsxfun(@min,bsxfun(@max,round(spots),1),[imageSizeX,imageSizeY,imageSizeZ]);
 
   % Store the cands of the current image
+  background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
   localMaxima(iImage).cands = spots;
   spots1D = sub2ind(size(img),round(spots(:,1)),round(spots(:,2)),round(spots(:,3)));
   localMaxima(iImage).candsAmp = img(spots1D);
