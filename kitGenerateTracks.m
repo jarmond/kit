@@ -119,7 +119,7 @@ costMatrices = dataStruct.dataProperties.tracksParam.costMatrices;
 kalmanFunctions = dataStruct.dataProperties.tracksParam.kalmanFunctions;
 
 %track the kinetochores
-tracks = kitTrackCloseGapsKalman(movieInfo,...
+tracks = trackCloseGapsKalman(movieInfo,...
     costMatrices,gapCloseParam,kalmanFunctions,3,0);
 
 %replace the coordinate used for tracking (whether the rotated

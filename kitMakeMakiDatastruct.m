@@ -68,7 +68,7 @@ gapCloseParam.diagnostics = options.debug.gapClosing;
 
 %assign cost matrix parameters for linking spots between consecutive
 %frames
-costMatrices(1).funcName = 'kitTrackCostMatLink';
+costMatrices(1).funcName = 'trackCostMatLink';
 parameters.linearMotion = 0;
 parameters.minSearchRadius = tracksParam.minRadius;
 parameters.maxSearchRadius = tracksParam.maxRadius;
@@ -80,7 +80,7 @@ clear parameters
 
 %assign cost matrix parameters for closing gaps and (in principle)
 %merging and splitting
-costMatrices(2).funcName = 'kitTrackCostMatCloseGaps';
+costMatrices(2).funcName = 'trackCostMatCloseGaps';
 parameters.linearMotion = 0;
 parameters.minSearchRadius = tracksParam.minRadius;
 parameters.maxSearchRadius = tracksParam.maxRadius;

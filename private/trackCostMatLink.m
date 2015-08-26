@@ -1,10 +1,10 @@
 function [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-     errFlag] = kitTrackCostMatLink(movieInfo,kalmanFilterInfoFrame1,...
+     errFlag] = trackCostMatLink(movieInfo,kalmanFilterInfoFrame1,...
      costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
-% MAKITRACKCOSTMATLINK provides a cost matrix for frame-to-frame linking of HeLa kinetochores
+% TRACKCOSTMATLINK provides a cost matrix for frame-to-frame linking of HeLa kinetochores
 %
 % SYNOPSIS [costMat,propagationScheme,kalmanFilterInfoFrame2,nonlinkMarker,...
-%      errFlag] = kitTrackCostMatLink(movieInfo,kalmanFilterInfoFrame1,...
+%      errFlag] = trackCostMatLink(movieInfo,kalmanFilterInfoFrame1,...
 %      costMatParam,nnDistFeatures,probDim,prevCost,featLifetime)
 %
 % INPUT  movieInfo             : A 2x1 array (corresponding to the 2 frames of 
@@ -87,9 +87,9 @@ errFlag = [];
 %% Input
 
 %check whether correct number of input arguments was used
-if nargin ~= nargin('kitTrackCostMatLink')
-    disp('--kitTrackCostMatLink: Incorrect number of input arguments!');
-    errFlag  = 1;
+if nargin ~= nargin('trackCostMatLink')
+    disp('--trackCostMatLink: Incorrect number of input arguments!');
+    errFlag = 1;
     return
 end
 
