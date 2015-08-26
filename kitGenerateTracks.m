@@ -1,4 +1,4 @@
-function dataStruct = kitGenerateTracks(dataStruct)
+function dataStruct = kitGenerateTracks(dataStruct,verbose)
 % KITGENERATETRACKS Tracks kinetochores throughout a movie
 %
 %    DATASTRUCT = KITGENERATETRACKS(DATASTRUCT) Connect spots to generate
@@ -7,6 +7,10 @@ function dataStruct = kitGenerateTracks(dataStruct)
 %
 % Copyright (c) 2007 K. Jaqaman
 % Copyright (c) 2012 Jonathan W. Armond
+
+if nargin<2
+  verbose=0;
+end
 
 %get number of time points in movie
 nTimepoints = dataStruct.dataProperties.movieSize(4);
@@ -154,3 +158,28 @@ end %(for iTrack = 1 : numTracks)
 
 %store tracks in dataStruct
 dataStruct.tracks = tracks;
+
+if verbose
+  % Plot all tracks.
+  trackStats = catStruct(3,'dataStruct.tracks.seqOfEvents');
+
+  figure;
+  hold on;
+  for jTrack = 1:length(tracks) % loop cols
+    % read track coordinates. coordinates are unrotated/translated
+    colCoords = trackData(jTrack,dataStruct,trackStats,0);
+
+    % plot individual tracks
+    plot3(colCoords(:,1),colCoords(:,2),colCoords(:,3),...
+          'Color',extendedColors(jTrack))
+
+    if verbose >= 2
+      % Label points by sequence
+      startTime = dataStruct.tracks(jTrack).seqOfEvents(1,1);
+      endTime = dataStruct.tracks(jTrack).seqOfEvents(2,1);
+      labels = cellstr(num2str((startTime:endTime)'));
+      text(colCoords(:,1),colCoords(:,2),colCoords(:,3),labels,'verticalalignment','bottom','horizontalalignment','right');
+    end
+  end
+  hold off;
+end
