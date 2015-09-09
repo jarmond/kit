@@ -14,6 +14,10 @@ else
 end
 filename = fullfile(pathname,filename);
 
+if ~exist(filename,'file')
+  error('File not found');
+end
+
 if nargin<2
   outfile=[];
 end
