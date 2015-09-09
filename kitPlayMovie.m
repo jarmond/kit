@@ -4,6 +4,10 @@ function kitPlayMovie(filename,outfile,docrop)
 if nargin<1 || isempty(filename)
   [filename,pathname] = uigetfile(...
     kitSupportedFormats(1),'Locate movie to play');
+  if isempty(filename)
+    disp('No file selected');
+    return
+  end
 else
   [pathname,filename,ext] = fileparts(filename);
   filename = [filename ext];
