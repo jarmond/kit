@@ -23,7 +23,16 @@ frameList = unique(round(1:metadata.nFrames/nImages:metadata.nFrames));
 
 % Loop to create max projections.
 maxMergeChannels = 3;
-rgbImg = zeros([metadata.frameSize(1:2), 3]);
+imgSz = [metadata.frameSize(1:2), 3];
+
+centreSz = 0.5; % Take central percentage for locating threshold.
+border = (1-centreSz)/2;
+cx(1) = round(imgSz(1)*border);
+cx(2) = round(cx(1) + imgSz(1)*centreSz);
+cy(1) = round(imgSz(2)*border);
+cy(2) = round(cy(1) + imgSz(2)*centreSz);
+
+rgbImg = zeros(imgSz);
 mapChan = [2 1 3];
 for c=1:min([maxMergeChannels, metadata.nChannels])
   maxProj = zeros(metadata.frameSize(1:2));
@@ -42,12 +51,13 @@ for c=1:min([maxMergeChannels, metadata.nChannels])
   maxProj = maxProj/length(frameList);
 
   % Merge into RGB image.
-  lb = splitModes(maxProj(maxProj>0));
+  centreImg = maxProj(cx(1):cx(2),cy(1):cy(2),:);
+  lb = splitModes(centreImg(centreImg>0));
   if isempty(lb)
     % Can't identify background. Use sensible default.
     lb = 0.75;
   end
-  slim = stretchlim(maxProj,[lb 1]);
+  slim = stretchlim(centreImg,[lb 1]);
   rgbImg(:,:,mapChan(c)) = imadjust(maxProj,slim,[]);
 end
 
