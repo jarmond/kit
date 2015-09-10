@@ -100,12 +100,15 @@ if verbose
 end
 
 % Threshold spots.
-if nnz(P)>0
+Pt = P(P>0 & P<max(P(:))/4);
+if length(P)>50
   % Estimate histogram mode.
-  [f,xi]=ksdensity(P(P>0 & P<max(P(:))/4));
+  [f,xi]=ksdensity(Pt);
   [~,i]=max(f);
   ld=xi(i);
   P(P<ld) = 0;
+else
+  warning('Unable to hard threshold multiscale product');
 end
 
 if verbose
