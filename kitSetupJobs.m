@@ -42,8 +42,10 @@ if ~isfield(jobset,'crop') || options.forcecrop~=0 || numel(jobset.crop)<nMovies
   end
 
   mvs = jobset.movieFiles;
-  for i=1:nMovies
-    if options.forcecrop == -1 || ismember(i,options.forcecrop) || numel(jobset.crop) < i || isempty(jobset.crop{i})
+  origCrops= jobset.crop;
+  nOrigMovies = nMovies;
+  for i=1:nOrigMovies
+    if options.forcecrop == -1 || ismember(i,options.forcecrop) || numel(origCrops) < i || isempty(origCrops)
       [crop, cropSize] = ...
           kitCropMovie(fullfile(jobset.movieDirectory,mvs{i}));
       jobset.crop{i} = crop(1,:);
@@ -51,9 +53,10 @@ if ~isfield(jobset,'crop') || options.forcecrop~=0 || numel(jobset.crop)<nMovies
 
       % For multiple ROIs, generate duplicate movieFiles.
       for j=2:size(crop,1)
-        jobset.movieFiles{end+1} = jobset.movieFiles{i};
-        jobset.crop{end+1} = crop(j,:);
-        jobset.cropSize{end+1} = cropSize(j,:);
+        nMovies = nMovies+1;
+        jobset.movieFiles{nMovies} = jobset.movieFiles{i};
+        jobset.crop{nMovies} = crop(j,:);
+        jobset.cropSize{nMovies} = cropSize(j,:);
       end
     end
 
