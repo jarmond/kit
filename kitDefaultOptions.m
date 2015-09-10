@@ -51,9 +51,9 @@ opts.minSpotsPerFrame = 20;
 opts.betterBackground = 0; % 1 == mask signal before taking background.
 opts.fitCloud = 0; % 1 == use max evector as normal axis.
 opts.robustStats = 0;
-opts.maxCloseGap = 3;
-opts.minSearchRadius = [0.5 1.0 0.5]; % [inliers, unaligned, lagging] um.
-opts.maxSearchRadius = [1.1 3.0 1.1]; % [inliers, unaligned, lagging] um.
+opts.maxCloseGap = 4;
+opts.minSearchRadius = [0.1 1.0 0.1]; % [inliers, unaligned, lagging] um.
+opts.maxSearchRadius = [0.8 3.0 0.8]; % [inliers, unaligned, lagging] um.
 opts.useSisterAlignment = 1;
 opts.maxSisterAlignmentAngle = 30;
 opts.maxSisterSeparation = 1.5;
