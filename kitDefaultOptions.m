@@ -73,6 +73,7 @@ opts.alphaD = 0.01; % distance t-test cutoff.
 opts.oneBigCluster = 0; % fit all spots together as one big cluster
 opts.maxMmfTime = 300; % Maximum per-frame time (sec) to attempt mixture model fit
                       % before giving up.  Use zero to disable.
+opts.mmfAddSpots = 0; % Try fitting multiple Gaussians to spots to identify overlaps
 
 % Image moment coordinate system.
 opts.momentPrctile = 99; % percentile to threshold image at before computing

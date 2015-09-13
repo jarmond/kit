@@ -46,103 +46,105 @@ warning('off','MATLAB:singularMatrix');
 
 startTime = clock;
 
-% For each cluster, perform iterative mixture-model fitting, increasing
-% number of Gaussians and F-testing.
-for i=1:nClusters
-  % Extract cluster data.
-  clusterCandsT = cands(clusters==i,:); % Candidates in this cluster.
-  if is3D
-    clusterCands1D = sub2ind(size(image),clusterCandsT(:,1),clusterCandsT(:,2),...
-                             clusterCandsT(:,3));
-  else
-    clusterCands1D = sub2ind(size(image),clusterCandsT(:,1),clusterCandsT(:,2));
-  end
-  clusterAmpT = image(clusterCands1D);
-  numCandsT = size(clusterCandsT,1);
-  if verbose
-    kitLog('Fitting cluster %d, %d cands',i,numCandsT);
-  end
-
-  clusterPix = getClusterPixels(clusterCandsT); % Pixels in this cluster.
-  if is3D
-    clusterPix1D = sub2ind(size(image),clusterPix(:,1),clusterPix(:,2),...
-                           clusterPix(:,3));
-  else
-    clusterPix1D = sub2ind(size(image),clusterPix(:,1),clusterPix(:,2));
-  end
-  clusterImg = image(clusterPix1D);
-
-  % Background amplitude estimate, initial guess.
-  bgAmpT = mean(clusterImg(:));
-
-  % Iterative fitting with N+1 Gaussians until F-test fails.
-  first = 1; % Always accept first fit.
-  failed = 0;
-  while ~failed
-    % Estimate bounds.
-    [x0,lb,ub] = guessBounds(clusterCandsT,clusterAmpT,clusterPix,bgAmpT);
-
-    % Fit mixture-model.
-    [solutionT,resnorm,residuals,jacT] = fitNGaussiansFitFun(optoptions,x0,lb,ub,...
-                                             clusterImg,clusterPix,psfSigma);
-
-    numDegFreeT = size(clusterPix,1) - degFreePerSpot*numCandsT - 1;
-    residVarT = resnorm/numDegFreeT;
-
-    if first
-      if verbose
-        kitLog('First fit complete');
-      end
-      first = 0;
+  % For each cluster, perform iterative mixture-model fitting, increasing
+  % number of Gaussians and F-testing.
+  for i=1:nClusters
+    % Extract cluster data.
+    clusterCandsT = cands(clusters==i,:); % Candidates in this cluster.
+    if is3D
+      clusterCands1D = sub2ind(size(image),clusterCandsT(:,1),clusterCandsT(:,2),...
+                               clusterCandsT(:,3));
     else
-      % F distributed test statistic.
-      testStat = residVarT/residVar;
-      pValue = fcdf(testStat,numDegFree,numDegFreeT);
-      if pValue > alphaF
-        failed = 1;
-      end
-      if verbose
-        if failed
-          resultStr = 'rejected';
-        else
-          resultStr = 'accepted';
+      clusterCands1D = sub2ind(size(image),clusterCandsT(:,1),clusterCandsT(:,2));
+    end
+    clusterAmpT = image(clusterCands1D);
+    numCandsT = size(clusterCandsT,1);
+    if verbose
+      kitLog('Fitting cluster %d, %d cands',i,numCandsT);
+    end
+
+    clusterPix = getClusterPixels(clusterCandsT); % Pixels in this cluster.
+    if is3D
+      clusterPix1D = sub2ind(size(image),clusterPix(:,1),clusterPix(:,2),...
+                             clusterPix(:,3));
+    else
+      clusterPix1D = sub2ind(size(image),clusterPix(:,1),clusterPix(:,2));
+    end
+    clusterImg = image(clusterPix1D);
+
+    % Background amplitude estimate, initial guess.
+    bgAmpT = mean(clusterImg(:));
+
+    % Iterative fitting with N+1 Gaussians until F-test fails.
+    first = 1; % Always accept first fit.
+    failed = 0;
+    while (~failed && options.mmfAddSpots) || first
+      % Estimate bounds.
+      [x0,lb,ub] = guessBounds(clusterCandsT,clusterAmpT,clusterPix,bgAmpT);
+
+      % Fit mixture-model.
+      [solutionT,resnorm,residuals,jacT] = fitNGaussiansFitFun(optoptions,x0,lb,ub,...
+                                                        clusterImg,clusterPix,psfSigma);
+
+      numDegFreeT = size(clusterPix,1) - degFreePerSpot*numCandsT - 1;
+      residVarT = resnorm/numDegFreeT;
+
+      if first
+        if verbose
+          kitLog('First fit complete');
         end
-        kitLog('N+1 fit complete, %d cands, p=%f (%s)',numCandsT,pValue,resultStr);
-      end
-    end % if first
+        first = 0;
+      else
+        % F distributed test statistic.
+        testStat = residVarT/residVar;
+        pValue = fcdf(testStat,numDegFree,numDegFreeT);
+        if pValue > alphaF
+          failed = 1;
+        end
+        if verbose
+          if failed
+            resultStr = 'rejected';
+          else
+            resultStr = 'accepted';
+          end
+          kitLog('N+1 fit complete, %d cands, p=%f (%s)',numCandsT,pValue,resultStr);
+        end
+      end % if first
 
-    if ~failed
-      % Update accepted variables.
-      numCands = numCandsT;
-      numDegFree = numDegFreeT;
-      solution = solutionT;
-      residVar = residVarT;
-      jac = jacT;
+      if ~failed
+        % Update accepted variables.
+        numCands = numCandsT;
+        numDegFree = numDegFreeT;
+        solution = solutionT;
+        residVar = residVarT;
+        jac = jacT;
 
-      % Extract values from solution vector.
-      [bgAmp,clusterCands,clusterAmp] = extractSolution(solution,numCands);
+        % Extract values from solution vector.
+        [bgAmp,clusterCands,clusterAmp] = extractSolution(solution,numCands);
 
-      % Add new kernel at pixel with maximum residual.
-      numCandsT = numCandsT + 1;
-      clusterAmpT = [clusterAmp; mean(clusterAmp);];
-      [~,idx] = max(residuals);
-      coord = clusterPix(idx,:);
-      clusterCandsT = [clusterCands; coord];
-      bgAmpT = bgAmp;
-    end % if pValue > alphaF
+        if options.mmfAddSpots
+          % Add new kernel at pixel with maximum residual.
+          numCandsT = numCandsT + 1;
+          clusterAmpT = [clusterAmp; mean(clusterAmp);];
+          [~,idx] = max(residuals);
+          coord = clusterPix(idx,:);
+          clusterCandsT = [clusterCands; coord];
+          bgAmpT = bgAmp;
+        end
+      end % if pValue > alphaF
 
-  end % while ~failed
+    end % while ~failed
 
-  if options.maxMmfTime > 0 && etime(clock,startTime) > options.maxMmfTime
-    spots = []; amps = []; bgAmps = [];
-    return % Abort
+    if options.maxMmfTime > 0 && etime(clock,startTime) > options.maxMmfTime
+      spots = []; amps = []; bgAmps = [];
+      return % Abort
+    end
+
+    % Accumulate spots.
+    spots = [spots; clusterCands];
+    amps = [amps; clusterAmp];
+    bgAmps = [bgAmps; repmat(bgAmp,[numCands,1])];
   end
-
-  % Accumulate spots.
-  spots = [spots; clusterCands];
-  amps = [amps; clusterAmp];
-  bgAmps = [bgAmps; repmat(bgAmp,[numCands,1])];
-end
 
 % Recluster to incorporate new candidates that are nearby into same
 % cluster.
