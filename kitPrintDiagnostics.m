@@ -11,4 +11,5 @@ fprintf('# sister pairs tracked: %d\n',diag.nSisters);
 fprintf('# individual KTs tracked: %d\n',diag.nTracks);
 fprintf('Average sister pair track length: %.1f\n',diag.avgSisterTrackLength);
 fprintf('Average KT track length: %.1f\n',diag.avgTrackLength);
+fprintf('# long sisters (75%% length): %d\n',diag.nLongSisters);
 fprintf('Frames with a plane fit: %.2f%%\n',diag.percentWithPlane);
