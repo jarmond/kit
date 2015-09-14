@@ -43,7 +43,7 @@ if diag.nSisters > 0
   coords2 = horzcat(dataStruct.sisterList.coords2);
   % Displacements.
   coords = diff([coords1(:,1:6:end) coords2(:,1:6:end)]);
-  diag.sisterDisp  = nanmean(nanmean(coords));
+  diag.sisterDisp  = nanmean(nanmean(abs(coords)));
   diag.sisterVar = nanmean(nanvar(coords));
 else
   diag.sisterDisp = 0;
