@@ -15,18 +15,22 @@ end
 
 id=@(x) x; % identity
 
-fields = {'nSpotsPerFrame','nTracks','nSisters','avgSisterTrackLength', ...
-          'percentWithPlane','sisterVar','nLongSisters','elapsedTime'};
-fieldFn = {id,id,id,id,id,id,id,@(x) floor(x/60)};
-
-fieldNames = {'job','# spots','# tracks','# sisters','sister length','plane fits',...
-             'variance','# long sisters','time (min)'};
-fieldFmt = {'d','.1f','d','d','.1f','.1f','.4f','d','d'};
+f = struct('field','job','fn',id,'name','job','fmt','d');
+f(end+1) = struct('field','nSpotsPerFrame','fn',id,'name','# spots','fmt','.1f');
+f(end+1) = struct('field','nTracks','fn',id,'name','# tracks','fmt','d');
+f(end+1) = struct('field','nSisters','fn',id,'name','# sisters','fmt','d');
+f(end+1) = struct('field','avgSisterTrackLength','fn',id,'name','sister length','fmt','.1f');
+f(end+1) = struct('field','percentWithPlane','fn',id,'name','plane fits','fmt','.1f');
+f(end+1) = struct('field','sisterVar','fn',@(x) sqrt(x),'name','std dev','fmt','.3f');
+f(end+1) = struct('field','sisterDisp','fn',id,'name','mean disp','fmt','.3f');
+f(end+1) = struct('field','nLongSisters','fn',id,'name','# long sisters','fmt','d');
+f(end+1) = struct('field','elapsedTime','fn',@(x) floor(x/60),'name','time(min)','fmt','d');
+fields = f;
 
 % Read in diagnostics from each job.
-nFields = length(fields);
+nFields = length(fields)
 nJobs = length(jobset.movieFiles);
-stats = nan(nJobs,nFields+1);
+stats = nan(nJobs,nFields);
 for i=1:nJobs
   try
     job = kitLoadJob(jobset,i);
@@ -47,10 +51,10 @@ for i=1:nJobs
   end
   diag = ds.diagnostics;
   stats(i,1) = i;
-  for f=1:nFields
-    field = fields{f};
+  for f=2:nFields
+    field = fields(f).field;
     if isfield(diag,field)
-      stats(i,f+1) = fieldFn{f}(diag.(field));
+      stats(i,f) = fields(f).fn(diag.(field));
     else
       warning('Missing field: %s',field);
     end
@@ -58,11 +62,11 @@ for i=1:nJobs
 end
 
 % Print out diagnostics table.
-printHeader(strjoin(fieldNames,'|'),fid);
-l = cellfun(@(x) length(x), fieldNames);
+printHeader(strjoin({fields.name},'|'),fid);
+l = cellfun(@(x) length(x), {fields.name});
 for i=1:size(stats,1)
   for j=1:size(stats,2)
-    fmt = sprintf('%%%d%s ',l(j),fieldFmt{j});
+    fmt = sprintf('%%%d%s ',l(j),fields(j).fmt);
     fprintf(fid,fmt,stats(i,j));
   end
   fprintf(fid,'\n');
