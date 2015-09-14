@@ -1,4 +1,4 @@
-function [spots,spotsAmp]=waveletSpots(img,opts)
+function [spots,spotsAmp]=waveletSpots(img,opts,dataProperties)
 % Find spots using multiscale product wavelet transform.
 %
 % See: J. C. Olivo-Marin, Pattern Recognition 35 (2002) 1989-1996 and
@@ -12,10 +12,17 @@ tk = opts.waveletLevelThresh; % threshold scale for local MAD thresholding
 levels = opts.waveletNumLevels;  % number of wavelet levels
 localmad = opts.waveletLocalMAD; % locally estimated MAD
 backsub = opts.waveletBackSub;  % background subtraction
+prefilter = opts.waveletPrefilter; % prefilter with Gaussian.
 
 % 3D image.
 [sx,sy,sz] = size(img);
 W = zeros(sx,sy,sz,levels);
+
+% Prefilter
+if prefilter
+  filters = createFilters(3,dataProperties);
+  img = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
+end
 
 % Normalization and background subtraction.
 if backsub

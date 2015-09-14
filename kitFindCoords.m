@@ -59,8 +59,8 @@ if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
   for i=1:length(tk)
     options.waveletLevelThresh=tk(i);
     for k=1:length(f)
-      A = waveletSpots(movie(:,:,:,f(k)),options);
-      B = waveletSpots(movie(:,:,:,f(k)+1),options);
+      A = waveletSpots(movie(:,:,:,f(k)),options,dataStruct.dataProperties);
+      B = waveletSpots(movie(:,:,:,f(k)+1),options,dataStruct.dataProperties);
       % Compute minimum difference between each point in A and set B.
       meanMinDiffA = 0;
       for j=1:size(A,1)
@@ -95,12 +95,7 @@ for iImage = 1 : nFrames
     case 'histcut'
       spots = histcutSpots(img,options,dataStruct.dataProperties);
     case 'wavelet'
-      if options.waveletPrefilter
-        imgF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
-      else
-        imgF = img;
-      end
-      spots = waveletSpots(imgF,options);
+      spots = waveletSpots(img,options,dataStruct.dataProperties);
   end
 
   % Round spots to nearest pixel and limit to image bounds.
