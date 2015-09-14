@@ -37,14 +37,16 @@ nFrames = length(dataStruct.planeFit);
 nFramesWithPlane = size(vertcat(dataStruct.planeFit.plane),1);
 diag.percentWithPlane = 100*nFramesWithPlane/nFrames;
 
-% Sister track variance.
+% Sister track displacement mean and variance.
 if diag.nSisters > 0
   coords1 = horzcat(dataStruct.sisterList.coords1);
   coords2 = horzcat(dataStruct.sisterList.coords2);
   % Displacements.
   coords = diff([coords1(:,1:6:end) coords2(:,1:6:end)]);
+  diag.sisterDisp  = nanmean(nanmean(coords));
   diag.sisterVar = nanmean(nanvar(coords));
 else
+  diag.sisterDisp = 0;
   diag.sisterVar = 0;
 end
 
