@@ -28,7 +28,7 @@ f(end+1) = struct('field','elapsedTime','fn',@(x) floor(x/60),'name','time(min)'
 fields = f;
 
 % Read in diagnostics from each job.
-nFields = length(fields)
+nFields = length(fields);
 nJobs = length(jobset.movieFiles);
 stats = nan(nJobs,nFields);
 for i=1:nJobs
