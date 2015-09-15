@@ -2,9 +2,8 @@ KiT (Kinetochore Tracking) software
 ===================================
 
 KiT is a MATLAB program for tracking kinetochores in microscopy movies in 2D or
-3D, and in multiple channels. KiT is based heavily on both Maki (Jaqaman, et
-al., JCB 188:665-679 2010) and u-Track (Jaqaman, et al., Nat. Meth. 5:695-702
-2008).
+3D, and in multiple channels. KiT evolved from both Maki (Jaqaman, et al., JCB
+188:665-679 (2010)) and u-Track (Jaqaman, et al., Nat. Meth. 5:695-702 (2008)).
 
 This software is licensed for use under the GNU GPL v3 license. See LICENSE file
 for details.
@@ -109,14 +108,14 @@ Include:
   - Copy of the error text.
   - Jobset mat-file (if available).
 
-Movies will also be useful but should be sent via e.g. Dropbox.
+Movies will also be useful but should be sent via e.g. Dropbox or Files@Warwick.
 
 
 Credits
 -------
 
-- A significant portion of code is lifted directly from Maki and u-Track as
-  mentioned above.
+- Large portions of the core tracking code is lifted directly from Maki and
+  u-Track as mentioned above.
 
 - E. Harry modified the u-Track mixture-model fitting to operate on 3D data,
   plus various other tweaks throughout.
@@ -125,6 +124,6 @@ Credits
   non-congressed kinetochores, plus various other tweaks throughout.
 
 - J. W. Armond organised the code into its current form as KiT. He added the
-  image-moment based coordinate system, spot intensity measurement, multiple
-  channel tracking, and movie rendering. He also made a number of improvements
-  toward code cleanliness and efficiency.
+  wavelet spot finder, image-moment based coordinate system, spot intensity
+  measurement, multiple channel tracking, and movie rendering. He also made a
+  number of improvements toward code cleanliness and efficiency.
