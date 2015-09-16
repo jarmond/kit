@@ -8,10 +8,10 @@ end
 switch mode
   case 1
     % KiT version.
-    version = '1.4.0';
+    version = '1.5.0';
   case 2
     % Jobset structure version.
-    version = 5;
+    version = 6;
   otherwise
     error('Unknown version mode');
 end
