@@ -9,6 +9,7 @@ function job = kitMixtureModel(job,movie,localMaxima,channel)
 
 dataStruct = job.dataStruct{channel};
 options = job.options;
+dataStruct.failed = 0;
 
 % get number of frames
 nFrames = job.metadata.nFrames;
@@ -282,7 +283,7 @@ for iImage = goodImages
   elapsedTime = etime(clock,startTime);
   if options.maxMmfTime > 0 && elapsedTime > options.maxMmfTime
     warning('Mixture-model fitting taking excessive time (%g min per frame). Aborting.',elapsedTime/60);
-    dataStruct.excessiveTime = 1;
+    dataStruct.failed = 1;
     break;
   end
   nSpots = size(coordList,1);
@@ -377,6 +378,6 @@ initCoord(1).localMaxima = localMaxima;
 dataStruct.dataProperties.psfSigma = psfSigma;
 dataStruct.initCoord = initCoord;
 
-dataStruct.failed = length(emptyFrames) == nFrames;
+dataStruct.failed = dataStruct.failed || length(emptyFrames) == nFrames;
 
 job.dataStruct{channel} = dataStruct;

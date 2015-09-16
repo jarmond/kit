@@ -48,7 +48,7 @@ if ismember(1,tasks)
     job = kitFindCoords(job, reader, c);
     job = kitSaveJob(job);
     % Give up if spot finding failed.
-    if job.dataStruct{c}.failed == 1
+    if isfield(job.dataStruct{c},'failed') && job.dataStruct{c}.failed
       warning('Giving up on job.');
       return
     end
