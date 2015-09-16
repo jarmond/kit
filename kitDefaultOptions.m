@@ -97,6 +97,6 @@ opts.waveletLevelAdapt = 1; % use adaptive setting for above.
 opts.waveletNumLevels = 3;  % number of wavelet levels
 opts.waveletLocalMAD = 0; % locally estimated MAD
 opts.waveletBackSub = 0;  % background subtraction
-opts.waveletPrefilter = 0; % prefilter with Gaussian
+opts.waveletPrefilter = 1; % prefilter with Gaussian
 
 job.options = opts;
