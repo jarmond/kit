@@ -46,6 +46,7 @@ options.parallel = 0;
 options.errorfail = 0;
 options.tasks = 1:7;
 options.existing = 0;
+options.callback = [];
 % Get user options.
 options = processOptions(options, varargin{:});
 
@@ -108,6 +109,9 @@ for i = options.subset
     try
       kitLog('Tracking movie %d', i);
       kitTrackMovie(jobs{i},options.tasks);
+      if ~isempty(optionp.callback)
+        options.callback(i);
+      end
     catch me
       kitLog('Error in movie %d: %s',i,me.identifier);
       ex.me = me;

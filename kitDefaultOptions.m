@@ -16,16 +16,16 @@ job.matlabVersion = version;
 job.movieDirectory = [];
 job.movieFiles = [];
 
-opts.coordMode{1} = 'centroid';
+opts.coordMode{1} = 'centroid'; % Possible values: centroid, gaussian, none
 opts.coordMode{2} = 'none';
 opts.coordMode{3} = 'none';
-opts.coordSystem = 'plate';
+opts.coordSystem = 'plate'; % Possible values: plate, image
 opts.coordSystemChannel = 1;
-opts.spotMode{1} = 'histcut';
+opts.spotMode{1} = 'histcut'; % Possible values: histcut, wavelet, none
 opts.spotMode{2} = 'none';
 opts.spotMode{3} = 'none';
 opts.cropAsked = 0;
-opts.disableSave = 0;
+opts.disableSave = 0; % Don't save job at each step. For debugging.
 
 % Debug options.
 debug.showMmfClusters = 0; % visualize clustering from overlapping PSFs, -1
@@ -51,8 +51,9 @@ opts.betterBackground = 0; % 1 == mask signal before taking background.
 opts.fitCloud = 0; % 1 == use max evector as normal axis.
 opts.robustStats = 0;
 opts.maxCloseGap = 4;
-opts.minSearchRadius = [0.1 1.0 0.1]; % [inliers, unaligned, lagging] pixels
-opts.maxSearchRadius = [0.8 3.0 0.8]; % [inliers, unaligned, lagging] pixels
+opts.autoRadiidt = 2;
+opts.minSearchRadius = [0.72 7.24 0.72]; % [inliers, unaligned, lagging] um
+opts.maxSearchRadius = [5.43 21.74 5.44]; % [inliers, unaligned, lagging] um
 opts.useSisterAlignment = 1;
 opts.maxSisterAlignmentAngle = 30;
 opts.maxSisterSeparation = 1.5;

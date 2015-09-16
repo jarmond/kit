@@ -57,8 +57,8 @@ dataProperties.detector_spotfind = 1; %1: standard 2: mammalian
 % tracking settings
 tracksParam.rotate = 1;
 tracksParam.timeWindow = options.maxCloseGap;
-tracksParam.minRadius = options.minSearchRadius;
-tracksParam.maxRadius = options.maxSearchRadius;
+tracksParam.minRadius = options.minSearchRadius * job.metadata.pixelSize(1); % in pixels
+tracksParam.maxRadius = options.maxSearchRadius * job.metadata.pixelSize(1);
 
 % gap closing parameters.
 gapCloseParam.timeWindow = tracksParam.timeWindow + 1;
