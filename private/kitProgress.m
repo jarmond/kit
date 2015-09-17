@@ -16,7 +16,7 @@ currentClock = clock;
 fmt = [datestr(now, 'HH:MM:SS') ': % 6.2f%% complete\n'];
 msgLength = 27;
 
-updateInterval = 3.0; % seconds
+updateInterval = 10.0; % seconds
 msg = sprintf(fmt, 100*progress);
 if nargin < 2 || etime(currentClock, lastUpdate) > updateInterval
     % Print message.
