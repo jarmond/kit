@@ -54,12 +54,18 @@ kitLog(['Detecting spot candidates using ' modeName]);
 if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
   % Compare successive frames on nSpots and covaraince of distance matrix difference
   kitLog('Determining adaptive wavelet threshold');
-  tk = 1:0.2:4;
-  f = [1 floor(nFrames/2) nFrames-1];
-  for i=1:length(tk)
-    options.waveletLevelThresh=tk(i);
+  tk = 1;
+  tkinc = 0.1;
+  tkincfac = 1.1;
+  tkmax = 50;
+  %f = [1 floor(nFrames/2) nFrames-1];
+  f = [1 nFrames-1];
+  first = 1;
+  i = 1;
+  while first || (tk < tkmax && nSpots > 0 && ~isnan(ld))
+    options.waveletLevelThresh=tk;
     for k=1:length(f)
-      A = waveletSpots(movie(:,:,:,f(k)),options,dataStruct.dataProperties);
+      [A,~,ld] = waveletSpots(movie(:,:,:,f(k)),options,dataStruct.dataProperties);
       B = waveletSpots(movie(:,:,:,f(k)+1),options,dataStruct.dataProperties);
       % Compute minimum difference between each point in A and set B.
       meanMinDiffA = 0;
@@ -74,11 +80,20 @@ if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
       % Combine metrics to estimate difference in point clouds.
       frameDiff(i,k) = (meanMinDiffA + meanMinDiffB)/(size(A,1)+size(B,1));
     end
+
+    % Increment tk.
+    first = 0;
+    tkvec(i) = tk;
+    tk = tk + tkinc;
+    tkinc = tkinc*tkincfac;
+    nSpots = size(A,1);
+    i = i+1;
   end
-  % Pick tk which minimises frameDiff metric.
-  frameDiff = sum(frameDiff,2);
-  pp = pchip(tk,frameDiff);
-  tk = fminbnd(@(x) ppval(pp,x),tk(1),tk(end));
+  % Pick tk which minimises frameDiff metric, with small penalty for increasing tk.
+  lambda = 0.01; % penalty factor.
+  frameDiff = sum(frameDiff,2) + lambda*tkvec';
+  pp = pchip(tkvec,frameDiff);
+  tk = fminbnd(@(x) ppval(pp,x),tkvec(1),tkvec(end));
   kitLog('Using wavelet threshold: %g',tk);
   options.waveletLevelThresh = tk;
   job.options = options;
@@ -87,6 +102,7 @@ end
 
 
 prog = kitProgress(0);
+nSpots = 0;
 for iImage = 1 : nFrames
   % get frame
   img = movie(:,:,:,iImage);
@@ -97,6 +113,7 @@ for iImage = 1 : nFrames
     case 'wavelet'
       spots = waveletSpots(img,options,dataStruct.dataProperties);
   end
+  nSpots = nSpots + size(spots,1);
 
   % Round spots to nearest pixel and limit to image bounds.
   spots = bsxfun(@min,bsxfun(@max,round(spots),1),[imageSizeX,imageSizeY,imageSizeZ]);
@@ -135,6 +152,7 @@ for iImage = 1 : nFrames
   %display progress
   prog = kitProgress(iImage/nFrames,prog);
 end
+kitLog('Average spots per frame: %g',nSpots/nFrames);
 
 % Refine spot candidates.
 switch method

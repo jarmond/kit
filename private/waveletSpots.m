@@ -1,4 +1,4 @@
-function [spots,spotsAmp]=waveletSpots(img,opts,dataProperties)
+function [spots,spotsAmp,ld]=waveletSpots(img,opts,dataProperties)
 % Find spots using multiscale product wavelet transform.
 %
 % See: J. C. Olivo-Marin, Pattern Recognition 35 (2002) 1989-1996 and
@@ -108,14 +108,14 @@ end
 
 % Threshold spots.
 Pt = P(P>0 & P<max(P(:))/4);
-if length(P)>50
+if length(Pt)>50 && max(Pt)>min(Pt)
   % Estimate histogram mode.
   [f,xi]=ksdensity(Pt);
   [~,i]=max(f);
   ld=xi(i);
   P(P<ld) = 0;
 else
-  warning('Unable to hard threshold multiscale product');
+  ld = nan;
 end
 
 if verbose
