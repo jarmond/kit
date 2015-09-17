@@ -84,8 +84,8 @@ opts.maskRadius = 0.3; % um
 opts.photobleachCorrect = 1;
 opts.attachmentCorrect = 1;
 opts.dirAssignMode = 'voting'; % directional (AP or P) assignment
-opts.dirAssignExpWeight = 0; % exponentially weight displacements
-opts.maskShape = 'semicircle';
+opts.dirAssignExpWeight = 1; % exponentially weight displacements
+opts.maskShape = 'circle';
 opts.maskConeAngle = 10; % degrees, only used with maskShape=='cone'.
 opts.poleShift = 0; % um
 opts.otherSpotSearchRadius = 0;
