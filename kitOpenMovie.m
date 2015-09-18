@@ -8,6 +8,10 @@ function [metadata,reader]=kitOpenMovie(movieFileName)
 % Copyright (c) 2013 Jonathan W. Armond
 
 kitLog('Opening movie: %s', movieFileName);
+if ~exist(movieFileName,'file')
+  error('Could not find file: %s',movieFileName);
+end
+
 addpath bfmatlab;
 bfCheckJavaPath(1);
 
