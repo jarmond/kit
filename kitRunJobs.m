@@ -124,7 +124,11 @@ kitLog('Tracking complete');
 
 % Dump jobset diagnostics.
 [pathstr,name,ext] = fileparts(jobset.filename);
-diagfile = fullfile(pathstr,['diags_' name '.txt']);
+diagfile = ['diags_' name];
+if isfield(jobset,'variantName')
+  diagfile = [diagfile '_' jobset.variantName];
+end
+diagfile = fullfile(pathstr,[diagfile '.txt']);
 fid = fopen(diagfile,'wt');
 C = onCleanup(@() fclose(fid));
 for c = 1:length(jobset.options.coordMode)
