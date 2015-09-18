@@ -45,7 +45,7 @@ try
 
 % Wavelengths. Needed to estimate PSFs.
 numWvs = metaTable.getChannelCount(0);
-md.wavelength = [509 610 461]/1000; % Default assumes EGFP, mCherry,
+md.wavelength = [507 610 461]/1000; % Default assumes EGFP, mCherry,
                                     % DAPI. FIXME Ask user.
 warnWv = 0;
 for i=1:numWvs
