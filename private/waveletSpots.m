@@ -18,12 +18,6 @@ prefilter = opts.waveletPrefilter; % prefilter with Gaussian.
 [sx,sy,sz] = size(img);
 W = zeros(sx,sy,sz,levels);
 
-% Prefilter
-if prefilter
-  filters = createFilters(3,dataProperties);
-  img = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
-end
-
 % Normalization and background subtraction.
 if backsub
   A = img - imfilter(img,fspecial('gaussian',round(min([sx,sy])/2)),'symmetric');
@@ -80,7 +74,7 @@ end
 
 
 % Hard threshold wavelet coefficients.
-for L=1:levels
+for L=2:levels
   % Threshold is median + k * median absolute deviation of wavelet coefficients, over 0.67.
   WL = W(:,:,:,L);
   if localmad
@@ -97,7 +91,7 @@ for L=1:levels
 end
 
 % Compute multiscale product on level 2..L.
-P = prod(W,4);
+P = prod(W(:,:,:,2:L),4);
 if verbose
   figure(3);
   subplot(1,2,1);
