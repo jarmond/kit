@@ -12,7 +12,6 @@ tk = opts.waveletLevelThresh; % threshold scale for local MAD thresholding
 levels = opts.waveletNumLevels;  % number of wavelet levels
 localmad = opts.waveletLocalMAD; % locally estimated MAD
 backsub = opts.waveletBackSub;  % background subtraction
-prefilter = opts.waveletPrefilter; % prefilter with Gaussian.
 
 % 3D image.
 [sx,sy,sz] = size(img);
