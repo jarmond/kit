@@ -16,7 +16,7 @@ opts = processOptions(opts,varargin{:});
 
 if isfield(job,'dataStruct')
   % Is a job struct.
-  sisterList = job.dataStruct{channel}.sisterList;
+  sisterList = job.dataStruct{opts.channel}.sisterList;
 else
   % Assume a sisterList.
   sisterList = job;
