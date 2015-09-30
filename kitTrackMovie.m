@@ -20,9 +20,11 @@ end
 % 7: aligning
 % 8: intensity
 
-% Open movie and read metadata.
-[job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
-job = kitSaveJob(job);
+if any(ismember(tasks,[1 2 8]))
+  % Open movie and read metadata.
+  [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+  job = kitSaveJob(job);
+end
 
 opts = job.options;
 nChannels = job.metadata.nChannels;
@@ -151,5 +153,8 @@ for c = channels
 end
 job = kitSaveJob(job);
 
-reader.close();
-clear reader;
+if any(ismember(tasks,[1 2 8]))
+  reader.close();
+  clear reader;
+end
+
