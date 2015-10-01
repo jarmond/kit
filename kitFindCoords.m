@@ -54,31 +54,21 @@ kitLog(['Detecting spot candidates using ' modeName]);
 if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
   % Compare successive frames on nSpots and covaraince of distance matrix difference
   kitLog('Determining adaptive wavelet threshold');
-  tk = 1;
+  tk = 0.1;
   tkinc = 0.1;
   tkincfac = 1.1;
   tkmax = 50;
-  %f = [1 floor(nFrames/2) nFrames-1];
-  f = [1 nFrames-1];
+  %f = [1 floor(nFrames/4) floor(nFrames/2) floor(3*nFrames/4) nFrames-1];
+  f = [1  floor(nFrames/2) nFrames-1];
+  %f = [1 nFrames-1];
   first = 1;
   i = 1;
   while first || (tk < tkmax && nSpots > 0 && ~isnan(ld))
     options.waveletLevelThresh=tk;
     for k=1:length(f)
-      [A,~,ld] = waveletSpots(movie(:,:,:,f(k)),options,dataStruct.dataProperties);
-      B = waveletSpots(movie(:,:,:,f(k)+1),options,dataStruct.dataProperties);
-      % Compute minimum difference between each point in A and set B.
-      meanMinDiffA = 0;
-      for j=1:size(A,1)
-        meanMinDiffA = meanMinDiffA + min(createDistanceMatrix(A(j,:),B));
-      end
-      % Compute minimum difference between each point in B and set A.
-      meanMinDiffB = 0;
-      for j=1:size(B,1)
-        meanMinDiffB = meanMinDiffB + min(createDistanceMatrix(B(j,:),A));
-      end
-      % Combine metrics to estimate difference in point clouds.
-      frameDiff(i,k) = (meanMinDiffA + meanMinDiffB)/(size(A,1)+size(B,1));
+      [A,~,ld] = waveletSpots(movie(:,:,:,f(k)),options);
+      B = waveletSpots(movie(:,:,:,f(k)+1),options);
+      frameDiff(i,k) = meanMinDiff(A,B);
     end
 
     % Increment tk.
@@ -90,11 +80,25 @@ if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
     i = i+1;
   end
   % Pick tk which minimises frameDiff metric, with small penalty for increasing tk.
-  lambda = 0.01; % penalty factor.
-  frameDiff = sum(frameDiff,2) + lambda*tkvec';
+  lambda = 0.1; % penalty factor.
+  frameDiff = mean(frameDiff,2) + lambda*tkvec';
+  [~,minIdx] = min(frameDiff);
   pp = pchip(tkvec,frameDiff);
-  tk = fminbnd(@(x) ppval(pp,x),tkvec(1),tkvec(end));
+  tk = fminbnd(@(x) ppval(pp,x),tkvec(max(minIdx-1,1)),tkvec(min(minIdx+1,length(tkvec))));
   kitLog('Using wavelet threshold: %g',tk);
+
+  if options.debug.showWaveletAdapt
+    figure;
+    x = linspace(tkvec(1),tkvec(end));
+    plot(x,ppval(pp,x));
+    hold on
+    plot([tk tk],ylim,'r--');
+    hold off
+    ylabel('Frame-frame point cloud difference');
+    xlabel('Wavelet threshold');
+    drawnow;
+  end
+
   options.waveletLevelThresh = tk;
   job.options = options;
   kitSaveJob(job); % Record used value.
@@ -102,7 +106,7 @@ end
 
 
 prog = kitProgress(0);
-nSpots = 0;
+nSpots = zeros(nFrames,1);
 for iImage = 1 : nFrames
   % get frame
   img = movie(:,:,:,iImage);
@@ -111,9 +115,9 @@ for iImage = 1 : nFrames
     case 'histcut'
       spots = histcutSpots(img,options,dataStruct.dataProperties);
     case 'wavelet'
-      spots = waveletSpots(img,options,dataStruct.dataProperties);
+      spots = waveletSpots(img,options);
   end
-  nSpots = nSpots + size(spots,1);
+  nSpots(iImage) = size(spots,1);
 
   % Round spots to nearest pixel and limit to image bounds.
   spots = bsxfun(@min,bsxfun(@max,round(spots),1),[imageSizeX,imageSizeY,imageSizeZ]);
@@ -127,32 +131,21 @@ for iImage = 1 : nFrames
 
   % Visualize candidates.
   if options.debug.showMmfCands ~= 0
-    % If 3D image, max project.
-    img = max(img,[],3);
-
-    % Make 3 layers out of original image (normalized).
-    img = img/max(img(:));
-    img = repmat(img,[1 1 3]);
-
-    % Show candidate pixels in red.
-    for i=1:size(spots,1)
-      img(spots(i,1),spots(i,2),:) = [0 0 1];
-    end
-
-    % Plot image.
-    figure(1);
-    imshow(img);
+    showSpots(img,spots);
     title(['Local maxima cands n=' num2str(size(spots,1))]);
     drawnow;
-    if options.debug.showMmfCands < 0
-      pause;
+    switch options.debug.showMmfCands
+      case -1
+        pause;
+      case -2
+        keyboard;
     end
   end
 
   %display progress
   prog = kitProgress(iImage/nFrames,prog);
 end
-kitLog('Average spots per frame: %g',nSpots/nFrames);
+kitLog('Average spots per frame: %.1f +/- %.1f',mean(nSpots),std(nSpots));
 
 % Refine spot candidates.
 switch method
