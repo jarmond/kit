@@ -130,8 +130,10 @@ else
 end
 sisterList = job.dataStruct{plotChans}.sisterList;
 trackList = job.dataStruct{plotChans}.trackList;
-trackInt = job.dataStruct{plotChans}.trackInt;
-nTracks = length(trackInt);
+if isfield(job.dataStruct{plotChans},'trackInt')
+  trackInt = job.dataStruct{plotChans}.trackInt;
+end
+nTracks = length(trackList);
 if opts.fliplr
   for i=1:nTracks
     trackList(i).coords(:,1:2) = trackList(i).coords(:,[2 1]);
