@@ -24,7 +24,7 @@ filters = createFilters(ndims,dataProperties);
 imageF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
 background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
 imageNoise = (img-imageF).^2;
-imageNoise = imshowmax(imfilter(n,fspecial('average',min(cellfun(@numel,filters.noise)))));
+imageNoise = imfilter(imageNoise,fspecial('average',min(cellfun(@numel,filters.noise))));
 
 % get local maxima from the image
 bw = imregionalmax(imageF);
