@@ -2,10 +2,11 @@ function showSpots(img,spots,pixels)
 % Display spots on top of image.
 
 if nargin<3
-  pixels=0;
+  pixels=0; % Set to rgb triple for colour.
 end
 
-if pixels
+h=figure(1);
+if (isscalar(pixels) && pixels) || ~isscalar(pixels)
   % If 3D image, max project.
   img = max(img,[],3);
 
@@ -13,7 +14,7 @@ if pixels
   img = img/max(img(:));
   img = repmat(img,[1 1 3]);
 
-  % Show candidate pixels in red.
+  % Show pixels.
   for i=1:size(spots,1)
     img(spots(i,1),spots(i,2),:) = [0 0 1];
   end
@@ -25,4 +26,10 @@ else
   imshow(max(img,[],3));
   hold on;
   plot(spots(:,2),spots(:,1),'rx');
+end
+
+% Scale up to at least 512 pixels
+figpos = getpixelposition(h);
+if any(figpos(3:4)<256)
+  set(h,'Units','Pixels','Position',[figpos(1:2) (512/min(figpos(3:4)))*figpos(3:4)]);
 end
