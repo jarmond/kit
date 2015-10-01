@@ -63,7 +63,7 @@ tracksParam.maxRadius = options.maxSearchRadius;
 % gap closing parameters.
 gapCloseParam.timeWindow = tracksParam.timeWindow + 1;
 gapCloseParam.mergeSplit = 0;
-gapCloseParam.minTrackLen = 1;
+gapCloseParam.minTrackLen = 2;
 gapCloseParam.diagnostics = options.debug.gapClosing;
 
 %assign cost matrix parameters for linking spots between consecutive
