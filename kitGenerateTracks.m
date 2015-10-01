@@ -165,21 +165,24 @@ if verbose
 
   figure;
   hold on;
-  for jTrack = 1:length(tracks) % loop cols
+  trackLengths = zeros(length(tracks),1);
+  for j = 1:length(tracks) % loop cols
     % read track coordinates. coordinates are unrotated/translated
-    colCoords = trackData(jTrack,dataStruct,trackStats,0);
+    colCoords = trackData(j,dataStruct,trackStats,1);
 
     % plot individual tracks
     plot3(colCoords(:,1),colCoords(:,2),colCoords(:,3),...
-          'Color',extendedColors(jTrack))
+          'Color',extendedColors(j))
 
+    startTime = dataStruct.tracks(j).seqOfEvents(1,1);
+    endTime = dataStruct.tracks(j).seqOfEvents(2,1);
+    trackLengths(j) = endTime-startTime;
     if verbose >= 2
       % Label points by sequence
-      startTime = dataStruct.tracks(jTrack).seqOfEvents(1,1);
-      endTime = dataStruct.tracks(jTrack).seqOfEvents(2,1);
       labels = cellstr(num2str((startTime:endTime)'));
       text(colCoords(:,1),colCoords(:,2),colCoords(:,3),labels,'verticalalignment','bottom','horizontalalignment','right');
     end
   end
   hold off;
+  fprintf('Mean track length: %g\n',mean(trackLengths));
 end
