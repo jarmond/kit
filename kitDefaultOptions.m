@@ -42,6 +42,7 @@ debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
 debug.showCentroidFinal = 0; % visualize centroid final spots.
 debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
+debug.showWaveletAdapt = 0; % 1 to show adaptation of wavelet threshold.
 debug.asserts = 0; % check things that shouldn't go wrong
 opts.debug = debug;
 
@@ -63,7 +64,6 @@ opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in
 
 % Gaussian mixture-model spot finding options.
 opts.alphaLocMax = 0.05;
-opts.maxPsfSigmaIters = 5;
 opts.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole
                             % plate, if too small we not account for
                             % overlapping PSFs.
@@ -97,5 +97,7 @@ opts.waveletLevelAdapt = 1; % use adaptive setting for above.
 opts.waveletNumLevels = 3;  % number of wavelet levels
 opts.waveletLocalMAD = 0; % locally estimated MAD
 opts.waveletBackSub = 0;  % background subtraction
+opts.waveletPrefilter = 0; % denoising prefilter
+opts.waveletMinLevel = 2; % discard wavelet levels below this
 
 job.options = opts;

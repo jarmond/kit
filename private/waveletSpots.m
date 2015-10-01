@@ -1,4 +1,4 @@
-function [spots,spotsAmp,ld]=waveletSpots(img,opts,dataProperties)
+function [spots,spotsAmp,ld]=waveletSpots(img,opts)
 % Find spots using multiscale product wavelet transform.
 %
 % See: J. C. Olivo-Marin, Pattern Recognition 35 (2002) 1989-1996 and
@@ -12,6 +12,8 @@ tk = opts.waveletLevelThresh; % threshold scale for local MAD thresholding
 levels = opts.waveletNumLevels;  % number of wavelet levels
 localmad = opts.waveletLocalMAD; % locally estimated MAD
 backsub = opts.waveletBackSub;  % background subtraction
+prefilter = opts.waveletPrefilter; % denoise prefilter
+minProdL = opts.waveletMinLevel; % Discard wavelet levels below this.
 
 % 3D image.
 [sx,sy,sz] = size(img);
@@ -23,6 +25,13 @@ if backsub
 else
   A = img;
 end
+% Denoise.
+if prefilter
+  for i=1:size(A,3)
+    A(:,:,i) = medfilt2(A(:,:,i));
+  end
+end
+
 A = A/max(A(:));
 
 % Scaling function: B3-spline.
@@ -30,15 +39,12 @@ scalingFn = [1,4,6,4,1]/16;
 h = cell(levels,1);
 
 % Precompute filters.
-for j=1:levels
-  if j>1
-    % Augment filter. Insert nz zeros between each pair of taps.
-    nz = 2^(j-1) - 1;
-    h{j} = [scalingFn; zeros(nz,size(scalingFn,2))];
-    h{j} = h{j}(1:end-nz);
-  else
-    h{j} = scalingFn;
-  end
+h{1} = scalingFn;
+for j=2:levels
+  % Augment filter. Insert nz zeros between each pair of taps.
+  nz = 2^(j-1) - 1;
+  h{j} = [scalingFn; zeros(nz,size(scalingFn,2))];
+  h{j} = h{j}(1:end-nz);
 end
 
 for L=1:levels
@@ -53,8 +59,8 @@ end
 if verbose
   figure(1);
   n=levels+1;
-  fig_n=ceil(sqrt(n));
-  fig_m=ceil(levels/fig_n);
+  fig_n=3;
+  fig_m=ceil(n/fig_n);
   for i=1:levels
     subplot(fig_m,fig_n,i);
     imshow(max(W(:,:,:,i),[],3),[])
@@ -65,15 +71,11 @@ if verbose
   title('final smooth');
   suptitle('wavelet planes');
 
-  figure(2);
-  R = A2 + sum(W,4);
-  imshow(max(R,[],3),[]);
-  title('reconstruction');
 end
 
 
 % Hard threshold wavelet coefficients.
-for L=2:levels
+for L=minProdL:levels
   % Threshold is median + k * median absolute deviation of wavelet coefficients, over 0.67.
   WL = W(:,:,:,L);
   if localmad
@@ -90,8 +92,13 @@ for L=2:levels
 end
 
 % Compute multiscale product on level 2..L.
-P = prod(W(:,:,:,2:L),4);
+P = prod(W(:,:,:,minProdL:end),4);
 if verbose
+  figure(2);
+  R = A2 + sum(W(:,:,:,minProdL:end),4);
+  imshow(max(R,[],3),[]);
+  title('filtered reconstruction');
+
   figure(3);
   subplot(1,2,1);
   F = max(abs(P),[],3);
@@ -99,27 +106,37 @@ if verbose
   title('log multiscale product');
 end
 
+R=sum(W(:,:,:,minProdL:end),4);
+
 % Threshold spots.
-Pt = P(P>0 & P<max(P(:))/4);
-if length(Pt)>50 && max(Pt)>min(Pt)
-  % Estimate histogram mode.
-  [f,xi]=ksdensity(Pt);
-  [~,i]=max(f);
-  ld=xi(i);
-  P(P<ld) = 0;
+Pt = P(P>0);
+if length(Pt)>50
+  % Estimate unimodal histogram threshold.
+  [f,xi] = ksdensity(log(Pt));
+  [~, ld] = cutFirstHistMode(fliplr(f),fliplr(xi),0);
+  ld = exp(ld);
+  if isempty(ld)
+    ld = nan;
+  else
+    P(P<ld) = 0;
+  end
 else
   ld = nan;
 end
 
 if verbose
+  figure(3);
   subplot(1,2,2);
   imshow(log(max(abs(P),[],3)),[]);
   title('log thresholded multiscale product');
+
+  figure(4);
+  plot(xi,f,'b-',log([ld ld]),[0 max(f)],'r--')
+  title('mutliscale product threshold');
 end
 
 % Locate spots.
-CC = imregionalmax(P);
-spots = regionprops(CC,P,'Centroid','MeanIntensity');
+spots = regionprops(P>0,P,'Centroid','MeanIntensity');
 spotsAmp = vertcat(spots.MeanIntensity);
 spots = vertcat(spots.Centroid);
 
@@ -129,11 +146,8 @@ if ~isempty(spots)
 end
 
 if verbose
-  h = figure(4);
+  h = figure(5);
   imshow(max(img,[],3),[]);
-  % scale = 3;
-  % figpos = get(h,'Position');
-  % set(h,'Position',[figpos(1:2) figpos(3:4)*scale]);
 
   if ~isempty(spots)
     hold on;
