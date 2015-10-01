@@ -9,7 +9,7 @@ function job=kitTrackMovie(job,tasks)
 tstart = tic;
 
 if nargin<2
-  tasks = 1:8;
+  tasks = 1:7;
 end
 % 1: finding spots
 % 2: fitting plane
