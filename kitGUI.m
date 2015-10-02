@@ -13,8 +13,8 @@ end
 
 coordSystemValues = {'Plate','Image'}; % in GUI
 coordSystemValuesJS = lower(coordSystemValues); % in jobset
-spotDetectValues = {'Histogram','Wavelet','None'};
-spotDetectValuesJS = {'histcut','wavelet','none'};
+spotDetectValues = {'Histogram','Adaptive','None'};
+spotDetectValuesJS = {'histcut','adaptive','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 
@@ -140,10 +140,10 @@ function hs = createControls(jobset)
   t = label(hs.fig,'Frame dt',[x y labelw h],10);
   hs.autoRadiidt = editbox(hs.fig,num2str(opts.autoRadiidt),[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Min search radius (μm)',[x y labelw h],10);
+  t = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
   hs.minSearchRadius = editbox(hs.fig,num2str(opts.minSearchRadius(1)),[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Max search radius (μm)',[x y labelw h],10);
+  t = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
   hs.maxSearchRadius = editbox(hs.fig,num2str(opts.maxSearchRadius(1)),[editx y editw h],10);
   if isempty(opts.autoRadiidt)
     hs.autoRadii.Value = hs.autoRadii.Min; % Off
@@ -168,7 +168,7 @@ function hs = createControls(jobset)
     hs.maxSisterAlignmentAngle.Enable = 'off';
   end
   y = y-lh;
-  t = label(hs.fig,'Max average distance between sisters (μm)',[x y-h/2 labelw lh],10);
+  t = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
   hs.maxSisterDist = editbox(hs.fig,num2str(opts.maxSisterSeparation),[editx y editw h],10);
   y = y-lh;
   t = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
@@ -177,15 +177,25 @@ function hs = createControls(jobset)
   t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,num2str(opts.minSpotsPerFrame),[editx y editw h],10);
   y = y-h;
-  hs.waveletPrefilter = checkbox(hs.fig,'Prefilter before detecting spots',[x y w h],'',10);
-  hs.waveletPrefilter.Value = opts.waveletPrefilter;
+  hs.adaptiveLambda = checkbox(hs.fig,'Weight for spot count',[x y w h],'',10);
+  hs.adaptiveLambda.Value = opts.adaptiveLambda;
   y = y-h;
   hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
   hs.mmfAddSpots.Value = opts.mmfAddSpots;
   y = y-h;
   t = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
   hs.maxMmfTime = editbox(hs.fig,num2str(opts.maxMmfTime),[editx y editw h],10);
-
+  y = y-h;
+  hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
+  y = y-h;
+  hs.psfBtn = button(hs.fig,'Select PSF file',[x y labelw/2 h],@psfBtnCB,10);
+  if opts.deconvolve
+    hs.deconvolve.Value = hs.deconvolve.Max; % On
+    hs.psfBtn.Enable = 'on';
+  else
+    hs.deconvolve.Value = hs.deconvolve.Min; % Off.
+    hs.psfBtn.Enable = 'off';
+  end
 
 end
 
@@ -249,10 +259,10 @@ function viewROICB(hObj,event)
 end
 
 function spotModeCB(hObj,event)
-  if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Wavelet'),handles.spotMode))
-    handles.waveletPrefilter.Enable = 'on';
+  if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Adaptive'),handles.spotMode))
+    handles.adaptiveLambda.Enable = 'on';
   else
-    handles.waveletPrefilter.Enable = 'off';
+    handles.adaptiveLambda.Enable = 'off';
   end
 end
 
@@ -304,6 +314,34 @@ function saveCB(hObj,event)
   updateJobset();
   kitSaveJobset(jobset);
   uiresume(gcf);
+end
+
+function deconvolveCB(hObj,event)
+  if handles.deconvole.Value
+    handles.psfBtn.Enable = 'on';
+  else
+    handles.psfBtn.Enable = 'off';
+  end
+end
+
+function psfBtn(hObj,event)
+  file = hObj.Value;
+  if exist(file,'file')
+    [~,~,ext] = fileparts(file);
+    if strcmp(ext,'mat')
+      data = load(file);
+      % Assume PSF is only variable.
+      f = fieldnames(data);
+      if length(f) > 1
+        msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning');
+      end
+      jobset.psf = data.(f{1});
+    else
+      msgbox(sprintf('Not MAT-file: %s',file),'Error','Error');
+    end
+  else
+    msgbox(sprintf('File not found: %s',file),'Error','Error');
+  end
 end
 
 function populateROIBox()
