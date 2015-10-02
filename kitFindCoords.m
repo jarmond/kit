@@ -46,93 +46,45 @@ localMaxima = repmat(struct('cands',[]),nFrames,1);
 switch spotMode
   case 'histcut'
     modeName = 'histogram mode cut';
-  case 'wavelet'
-    modeName = 'multiscale wavelet product';
+  case 'adaptive'
+    modeName = 'adaptive thresholding';
+  otherwise
+    error('Unknown spot detector: %s',spotMode);
 end
 kitLog(['Detecting spot candidates using ' modeName]);
 
-if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
-  % Compare successive frames on nSpots and covaraince of distance matrix difference
-  kitLog('Determining adaptive wavelet threshold');
-  tk = 0.1;
-  tkinc = 0.1;
-  tkincfac = 1.1;
-  tkmax = 50;
-  %f = [1 floor(nFrames/4) floor(nFrames/2) floor(3*nFrames/4) nFrames-1];
-  f = [1  floor(nFrames/2) nFrames-1];
-  %f = [1 nFrames-1];
-  first = 1;
-  i = 1;
-  while first || (tk < tkmax && nSpots > 0 && ~isnan(ld))
-    options.waveletLevelThresh=tk;
-    for k=1:length(f)
-      [A,~,ld] = waveletSpots(movie(:,:,:,f(k)),options);
-      B = waveletSpots(movie(:,:,:,f(k)+1),options);
-      frameDiff(i,k) = meanMinDiff(A,B);
+switch spotMode
+  case 'histcut'
+    spots = cell(nFrames,1);
+    for i=1:nFrames
+      img = movie(:,:,:,i);
+      spots{i} = histcutSpots(img,options,dataStruct.dataProperties);
     end
 
-    % Increment tk.
-    first = 0;
-    tkvec(i) = tk;
-    tk = tk + tkinc;
-    tkinc = tkinc*tkincfac;
-    nSpots = size(A,1);
-    i = i+1;
-  end
-  % Pick tk which minimises frameDiff metric, with small penalty for increasing tk.
-  lambda = 0.1; % penalty factor.
-  frameDiff = mean(frameDiff,2) + lambda*tkvec';
-  [~,minIdx] = min(frameDiff);
-  pp = pchip(tkvec,frameDiff);
-  tk = fminbnd(@(x) ppval(pp,x),tkvec(max(minIdx-1,1)),tkvec(min(minIdx+1,length(tkvec))));
-  kitLog('Using wavelet threshold: %g',tk);
-
-  if options.debug.showWaveletAdapt
-    figure;
-    x = linspace(tkvec(1),tkvec(end));
-    plot(x,ppval(pp,x));
-    hold on
-    plot([tk tk],ylim,'r--');
-    hold off
-    ylabel('Frame-frame point cloud difference');
-    xlabel('Wavelet threshold');
-    drawnow;
-  end
-
-  options.waveletLevelThresh = tk;
-  job.options = options;
-  kitSaveJob(job); % Record used value.
+  case 'adaptive'
+    spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
 end
 
-
-prog = kitProgress(0);
 nSpots = zeros(nFrames,1);
-for iImage = 1 : nFrames
-  % get frame
-  img = movie(:,:,:,iImage);
-
-  switch spotMode
-    case 'histcut'
-      spots = histcutSpots(img,options,dataStruct.dataProperties);
-    case 'wavelet'
-      spots = waveletSpots(img,options);
-  end
-  nSpots(iImage) = size(spots,1);
+for i=1:nFrames
+  nSpots(i) = size(spots{i},1);
 
   % Round spots to nearest pixel and limit to image bounds.
-  spots = bsxfun(@min,bsxfun(@max,round(spots),1),[imageSizeX,imageSizeY,imageSizeZ]);
+  spots{i} = bsxfun(@min,bsxfun(@max,round(spots{i}),1),[imageSizeX,imageSizeY,imageSizeZ]);
 
   % Store the cands of the current image
+  % TODO this is computed in both spot detectors, just return it.
+  img = movie(:,:,:,i);
   background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
-  localMaxima(iImage).cands = spots;
-  spots1D = sub2ind(size(img),round(spots(:,1)),round(spots(:,2)),round(spots(:,3)));
-  localMaxima(iImage).candsAmp = img(spots1D);
-  localMaxima(iImage).candsBg = background(spots1D);
+  localMaxima(i).cands = spots{i};
+  spots1D = sub2ind(size(img),spots{i}(:,1),spots{i}(:,2),spots{i}(:,3));
+  localMaxima(i).candsAmp = img(spots1D);
+  localMaxima(i).candsBg = background(spots1D);
 
   % Visualize candidates.
   if options.debug.showMmfCands ~= 0
-    showSpots(img,spots);
-    title(['Local maxima cands n=' num2str(size(spots,1))]);
+    showSpots(img,spots{i});
+    title(['Local maxima cands n=' num2str(size(spots{i},1))]);
     drawnow;
     switch options.debug.showMmfCands
       case -1
@@ -141,9 +93,6 @@ for iImage = 1 : nFrames
         keyboard;
     end
   end
-
-  %display progress
-  prog = kitProgress(iImage/nFrames,prog);
 end
 kitLog('Average spots per frame: %.1f +/- %.1f',mean(nSpots),std(nSpots));
 

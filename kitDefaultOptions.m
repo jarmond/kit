@@ -30,7 +30,6 @@ opts.disableSave = 0;
 % Debug options.
 debug.showMmfClusters = 0; % visualize clustering from overlapping PSFs, -1
                            % to pause, -2 to debug.
-debug.showMmfMaxima = 0; % visualize assignment of maxima, -1 to pause
 debug.showMmfCands = 0; % visualize centroid candidates, -1 to pause
 debug.showMmfFinal = 0; % visualize final MMF spots, -1 to pause
 debug.showMmfPvals = 0; % histogram of mixture-model p-values
@@ -41,8 +40,7 @@ debug.groupSisters = 0; % 1 - plot 4 frames with sisters assigment
 debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
 debug.showCentroidFinal = 0; % visualize centroid final spots.
-debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
-debug.showWaveletAdapt = 0; % 1 to show adaptation of wavelet threshold.
+debug.showAdaptive = 0; % 1 to show adaptive thresholding algorithm verbosely.
 debug.asserts = 0; % check things that shouldn't go wrong
 opts.debug = debug;
 
@@ -63,7 +61,6 @@ opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in
                                  % anaphase.
 
 % Gaussian mixture-model spot finding options.
-opts.alphaLocMax = 0.05;
 opts.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole
                             % plate, if too small we not account for
                             % overlapping PSFs.
@@ -91,13 +88,7 @@ opts.poleShift = 0; % um
 opts.otherSpotSearchRadius = 0;
 opts.gaussFilterSpots = 0;
 
-% Wavelet multiscale product spot detector options.
-opts.waveletLevelThresh = 2; % threshold scale for local MAD thresholding
-opts.waveletLevelAdapt = 1; % use adaptive setting for above.
-opts.waveletNumLevels = 3;  % number of wavelet levels
-opts.waveletLocalMAD = 0; % locally estimated MAD
-opts.waveletBackSub = 0;  % background subtraction
-opts.waveletPrefilter = 0; % denoising prefilter
-opts.waveletMinLevel = 2; % discard wavelet levels below this
+% Adaptive threshold spot detection.
+opts.adaptiveLambda = 10; % Regularization for increasing number of spots.
 
 job.options = opts;
