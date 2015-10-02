@@ -25,7 +25,10 @@ if (isscalar(pixels) && pixels) || ~isscalar(pixels)
 else
   imshow(max(img,[],3));
   hold on;
-  plot(spots(:,2),spots(:,1),'rx');
+  if ~isempty(spots)
+    plot(spots(:,2),spots(:,1),'rx');
+  end
+  hold off;
 end
 
 % Scale up to at least 512 pixels
