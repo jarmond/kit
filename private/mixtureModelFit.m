@@ -470,7 +470,7 @@ end % function guessBounds
 
 
 function pixelCoords=getClusterPixels(clusterPos,visual)
-% clusterPos: coordinates of spots in cluster (nx3)
+% clusterPos: coordinates of pixels in cluster (nx3)
   if nargin<2
     visual = 0;
   end
