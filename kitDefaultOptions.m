@@ -92,4 +92,7 @@ opts.gaussFilterSpots = 0;
 % Adaptive threshold spot detection.
 opts.adaptiveLambda = 10; % Regularization for increasing number of spots.
 
+% Deconvolution.
+opts.deconvolve = 0;
+
 job.options = opts;
