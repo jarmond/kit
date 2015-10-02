@@ -7,6 +7,18 @@ function kitRunJobs(jobset,varargin)
 %
 %    Options (default in {}):-
 %
+%    tasks: {1:7} or a vector. Specify tasks to perform on jobs:
+%                              1: finding spots
+%                              2: fitting plane
+%                              3: tracking spots
+%                              4: grouping sisters
+%                              5: extracting tracks
+%                              6: updating classes
+%                              7: aligning
+%                              8: intensity
+%
+%    existing: {0} or 1. Load existing jobs first.
+%
 %    parallel: {0} or 1. Set 1 to use multiple processors to parallel
 %    process.
 %
@@ -32,6 +44,8 @@ nMovies = length(jobset.movieFiles);
 options.subset = 1:nMovies;
 options.parallel = 0;
 options.errorfail = 0;
+options.tasks = 1:7;
+options.existing = 0;
 % Get user options.
 options = processOptions(options, varargin{:});
 
@@ -60,33 +74,40 @@ end
 
 % Copy out job info for each movie.
 jobs = cell(nMovies,1);
-for i=1:nMovies
-  jobs{i} = jobset;
-  jobs{i}.movie = jobset.movieFiles{i};
-  jobs{i}.index = i;
-  jobs{i}.crop = jobset.crop{i};
-  jobs{i}.cropSize = jobset.cropSize{i};
-  % Update versions, may be different to jobset creator.
-  jobs{i}.version = kitVersion();
-  jobs{i}.matlabVersion = version;
-  %jobs{i}.lociVersion = char(loci.formats.FormatTools.VERSION);
-  % Record host.
-  if ispc
-    [~,jobs{i}.host] = system('echo %COMPUTERNAME%');
-  else
-    [~,jobs{i}.host] = system('hostname');
+if options.existing
+  for i=1:nMovies
+    jobs{i} = kitLoadJob(jobset,i);
+  end
+else
+  for i=1:nMovies
+    jobs{i} = jobset;
+    jobs{i}.movie = jobset.movieFiles{i};
+    jobs{i}.index = i;
+    jobs{i}.crop = jobset.crop{i};
+    jobs{i}.cropSize = jobset.cropSize{i};
+    % Update versions, may be different to jobset creator.
+    jobs{i}.version = kitVersion();
+    jobs{i}.matlabVersion = version;
+    %jobs{i}.lociVersion = char(loci.formats.FormatTools.VERSION);
+    % Record host.
+    if ispc
+      [~,jobs{i}.host] = system('echo %COMPUTERNAME%');
+    else
+      [~,jobs{i}.host] = system('hostname');
+    end
   end
 end
+
 
 exceptions = [];
 for i = options.subset
   if options.parallel
     kitLog('Submitting tracking job %d', i);
-    batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i}});
+    batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
   else
     try
       kitLog('Tracking movie %d', i);
-      kitTrackMovie(jobs{i});
+      kitTrackMovie(jobs{i},options.tasks);
     catch me
       kitLog('Error in movie %d: %s',i,me.identifier);
       ex.me = me;
