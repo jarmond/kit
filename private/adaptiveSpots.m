@@ -97,7 +97,7 @@ function y = objective(t)
     % Mean number of spots for optional penalty.
     m(i,2) = 0.5*size(s1,1)*size(s2,1);
   end
-  y = mean(m(:,1)) + lambda/(max(1,mean(m(:,2))));
+  y = mean(m(:,1)) + lambda/(max(1,mean(m(:,2))^.25));
 end
 
 function s=findSpots(locMax,amp,th)
