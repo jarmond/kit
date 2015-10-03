@@ -45,55 +45,19 @@ localMaxima = repmat(struct('cands',[]),nFrames,1);
 % Find candidate spots.
 switch spotMode
   case 'histcut'
-<<<<<<< HEAD
-    modeName = 'histogram mode cut';
-  case 'adaptive'
-    modeName = 'adaptive thresholding';
-  otherwise
-    error('Unknown spot detector: %s',spotMode);
-end
-kitLog(['Detecting spot candidates using ' modeName]);
-
-switch spotMode
-  case 'histcut'
+    kitLog('Detecting spot candidates using unimodal histogram threshold');
     spots = cell(nFrames,1);
     for i=1:nFrames
       img = movie(:,:,:,i);
       spots{i} = histcutSpots(img,options,dataStruct.dataProperties);
-=======
-    modeName = 'unimodal histogram thresholding';
-  case 'wavelet'
-    modeName = 'multiscale wavelet product';
-end
-kitLog(['Detecting spot candidates using ' modeName]);
-
-if strcmp(spotMode,'wavelet') && options.waveletLevelAdapt
-  % Compare successive frames on nSpots and covaraince of distance matrix difference
-  kitLog('Adapting wavelet threshold');
-  tk = 1:0.2:4;
-  f = [1 floor(nFrames/2) nFrames-1];
-  for i=1:length(tk)
-    options.waveletLevelThresh=tk(i);
-    for k=1:length(f)
-      A = waveletSpots(movie(:,:,:,f(k)),options,dataStruct.dataProperties);
-      B = waveletSpots(movie(:,:,:,f(k)+1),options,dataStruct.dataProperties);
-      % Compute minimum difference between each point in A and set B.
-      meanMinDiffA = 0;
-      for j=1:size(A,1)
-        meanMinDiffA = meanMinDiffA + min(createDistanceMatrix(A(j,:),B));
-      end
-      % Compute minimum difference between each point in B and set A.
-      meanMinDiffB = 0;
-      for j=1:size(B,1)
-        meanMinDiffB = meanMinDiffB + min(createDistanceMatrix(B(j,:),A));
-      end
-      % Combine metrics to estimate difference in point clouds.
-      frameDiff(i,k) = (meanMinDiffA + meanMinDiffB)/(size(A,1)+size(B,1));
->>>>>>> More accurate description
     end
+    kitLog('Detecting spot candidates using adaptive thresholding');
 
   case 'adaptive'
     spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
+
+  otherwise
+    error('Unknown spot detector: %s',spotMode);
 end
 
 nSpots = zeros(nFrames,1);

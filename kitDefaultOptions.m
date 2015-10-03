@@ -52,11 +52,11 @@ opts.fitCloud = 0; % 1 == use max evector as normal axis.
 opts.robustStats = 0;
 opts.maxCloseGap = 4;
 opts.autoRadiidt = 2;
-opts.minSearchRadius = [0.72 7.24 0.72]; % [inliers, unaligned, lagging] um
-opts.maxSearchRadius = [5.43 21.74 5.44]; % [inliers, unaligned, lagging] um
+opts.minSearchRadius = [0.01 0.1 0.01]; % [inliers, unaligned, lagging] um
+opts.maxSearchRadius = [0.75 3 0.75]; % [inliers, unaligned, lagging] um
 opts.useSisterAlignment = 1;
-opts.maxSisterAlignmentAngle = 30;
-opts.maxSisterSeparation = 1.5;
+opts.maxSisterAlignmentAngle = 30; % degrees
+opts.maxSisterSeparation = 1.5; % um
 opts.minSisterTrackOverlap = 10; % percent of movie length to require overlap
 opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in
                                  % anaphase.

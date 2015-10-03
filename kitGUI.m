@@ -3,12 +3,15 @@ function jobset=kitGUI(jobset)
 %
 % Copyright (c) 2015 Jonathan W. Armond
 
+% Download BioFormats, if required.
+kitDownloadBioFormats();
+
 if nargin<1 || isempty(jobset)
   jobset = kitDefaultOptions();
 end
 
-if ~isfield(jobset,'ROIs')
-  jobset.ROIs = struct('movieIdx',[],'crop',[],'cropSize',[]);
+if ~isfield(jobset,'ROI')
+  jobset.ROI = [];
 end
 
 coordSystemValues = {'Plate','Image'}; % in GUI
@@ -23,9 +26,11 @@ handles = createControls(jobset);
 populateROIBox();
 spotModeCB();
 refineModeCB();
+autoRadiiCB();
 handles.fig.Visible = 'on';
 
 uiwait(gcf);
+close(gcf);
 
 %% NESTED FUNCTIONS
 function hs = createControls(jobset)
@@ -44,7 +49,6 @@ function hs = createControls(jobset)
   colwidth = [53 42 35];
 
   w=25; h=8;
-  %hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figpos(3)-w figpos(4)-h w h]);
   hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figpos(3)-w-3 1 w h]);
   pos = getpixelposition(hs.logo);
   set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
@@ -97,15 +101,15 @@ function hs = createControls(jobset)
 
   b = b-2*h;
   % Tasks
-  tasks = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
-  h = 1.75;
-  panelh = h*(1+length(tasks));
-  p = uipanel(hs.fig,'Units','characters','Position',[x b-panelh w panelh],'FontSize',12,'Title','Tasks');
-  for i=1:length(tasks)
-     hs.tasks{i} = checkbox(p,tasks{i},[1 panelh-h*(i+1) 30 h]);
-     hs.tasks{i}.Value = hs.tasks{i}.Max;
-  end
-  b = b-panelh;
+  % tasks = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
+  % h = 1.75;
+  % panelh = h*(1+length(tasks));
+  % p = uipanel(hs.fig,'Units','characters','Position',[x b-panelh w panelh],'FontSize',12,'Title','Tasks');
+  % for i=1:length(tasks)
+  %    hs.tasks{i} = checkbox(p,tasks{i},[1 panelh-h*(i+1) 30 h]);
+  %    hs.tasks{i}.Value = hs.tasks{i}.Max;
+  % end
+  % b = b-panelh;
 
   %% Execution
   y = b-h;
@@ -115,13 +119,13 @@ function hs = createControls(jobset)
   h = 2;
   y = y-h;
   label(hs.fig,'Jobset name',[x y labelw h],12);
-  editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
+  hs.filename = editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
   btnw = 0.5*w;
   bx = x + w - btnw;
   y = y-2*h;
-  hs.save = button(hs.fig,'Save',[bx y btnw h]);
+  hs.save = button(hs.fig,'Save',[bx y btnw h],@saveCB);
   y = y-h;
-  hs.execute = button(hs.fig,'Execute',[bx y btnw h]);
+  hs.execute = button(hs.fig,'Execute',[bx y btnw h],@executeCB);
 
 
   %% Options
@@ -140,6 +144,10 @@ function hs = createControls(jobset)
   t = label(hs.fig,'Frame dt',[x y labelw h],10);
   hs.autoRadiidt = editbox(hs.fig,num2str(opts.autoRadiidt),[editx y editw h],10);
   y = y-h;
+  t = label(hs.fig,'Est. avg. disp. of spots (um)',[x y labelw h],10);
+  % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
+  hs.autoRadiiAvgDisp = editbox(hs.fig,num2str(0.06),[editx y editw h],10);
+  y = y-h;
   t = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
   hs.minSearchRadius = editbox(hs.fig,num2str(opts.minSearchRadius(1)),[editx y editw h],10);
   y = y-h;
@@ -148,11 +156,13 @@ function hs = createControls(jobset)
   if isempty(opts.autoRadiidt)
     hs.autoRadii.Value = hs.autoRadii.Min; % Off
     hs.autoRadiidt.Enable = 'off';
+    hs.autoRadiiAvgDisp.Enable = 'off';
     hs.minSearchRadius.Enable = 'on';
     hs.maxSearchRadius.Enable = 'on';
   else
     hs.autoRadii.Value = hs.autoRadii.Max; % On
     hs.autoRadiidt.Enable = 'on';
+    hs.autoRadiiAvgDisp.Enable = 'on';
     hs.minSearchRadius.Enable = 'off';
     hs.maxSearchRadius.Enable = 'off';
   end
@@ -177,8 +187,8 @@ function hs = createControls(jobset)
   t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,num2str(opts.minSpotsPerFrame),[editx y editw h],10);
   y = y-h;
-  hs.adaptiveLambda = checkbox(hs.fig,'Weight for spot count',[x y w h],'',10);
-  hs.adaptiveLambda.Value = opts.adaptiveLambda;
+  t = label(hs.fig,'Weight for spot count',[x y labelw h],10);
+  hs.adaptiveLambda = editbox(hs.fig,num2str(opts.adaptiveLambda),[editx y editw h],10);
   y = y-h;
   hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
   hs.mmfAddSpots.Value = opts.mmfAddSpots;
@@ -218,7 +228,7 @@ function selectDirectoryCB(hObj,event)
     end
     set(handles.movies,'String',movieFiles,'Value',1:length(movieFiles));
     set(handles.ROIs,'String',[]);
-    ROIs = [];
+    ROI = [];
   end
 end
 
@@ -229,10 +239,10 @@ function addROICB(hObj,event)
   for i=1:length(v)
     [crop,cropSize] = kitCropMovie(fullfile(movieDir,movieFiles{v(i)}));
     for j=1:size(crop,1)
-      r.movieIdx = v(i);
-      r.crop = crop(j,:);
-      r.cropSize = cropSize(j,:);
-      jobset.ROIs = [jobset.ROIs; r];
+      r = length(jobset.ROI) + 1;
+      jobset.ROI(r).movieIdx = v(i);
+      jobset.ROI(r).crop = crop(j,:);
+      jobset.ROI(r).cropSize = cropSize(j,:);
     end
   end
   populateROIBox();
@@ -243,7 +253,7 @@ function deleteROICB(hObj,event)
   if ~isempty(v)
     r = questdlg('Delete selected ROI?','Warning','Yes','No','No');
     if strcmp(r,'Yes')
-      jobset.ROIs(v) = [];
+      jobset.ROI(v) = [];
     end
   end
   populateROIBox();
@@ -254,7 +264,7 @@ function viewROICB(hObj,event)
   if ~isempty(v)
     movieFiles = handles.movies.String;
     movieDir = handles.movieDirectory.String;
-    kitMovieProj(fullfile(movieDir,movieFiles{jobset.ROIs(v).movieIdx}),[],jobset.ROIs(v).crop);
+    kitMovieProj(fullfile(movieDir,movieFiles{jobset.ROI(v).movieIdx}),[],jobset.ROI(v).crop);
   end
 end
 
@@ -279,10 +289,15 @@ end
 function autoRadiiCB(hObj,event)
   if handles.autoRadii.Value
     handles.autoRadiidt.Enable = 'on';
+    handles.autoRadiiAvgDisp.Enable = 'on';
     handles.minSearchRadius.Enable = 'off';
     handles.maxSearchRadius.Enable = 'off';
+    r = computeSearchRadii(str2double(handles.autoRadiidt.String),str2double(handles.autoRadiiAvgDisp.String));
+    handles.minSearchRadius.String = num2str(r(1));
+    handles.maxSearchRadius.String = num2str(r(2));
   else
     handles.autoRadiidt.Enable = 'off';
+    handles.autoRadiiAvgDisp.Enable = 'off';
     handles.minSearchRadius.Enable = 'on';
     handles.maxSearchRadius.Enable = 'on';
   end
@@ -300,13 +315,22 @@ end
 function exectuteCB(hObj,event)
   updateJobset();
   kitSaveJobset(jobset);
-  progh = waitbar(0,sprintf('Tracking progress (%d/%d)',0,length(jobset.ROIs)));
-  kitRunJobs(jobset,'callback',@trackProgress);
-  delete(progh);
-  uiresume(gcf);
+  % Ask which tasks to run.
+  taskStrs = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
+  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'Prompt','Select tasks to execute','Name','Select tasks...');
+  if ok
+    % Map to task numbers and add defaults.
+    taskMap = [1 2 3 4 8];
+    tasks = [taskMap(tasks) 5:7];
 
-  function trackProgress(i)
-    waitbar(i/length(jobset.ROIS),progh,sprintf('Tracking progress (%d/%d)',i,length(jobset.ROIs)));
+    progh = waitbar(0,sprintf('Tracking progress (%d/%d)',0,length(jobset.ROI)));
+    kitRunJobs(jobset,'callback',@trackProgress,'tasks',tasks);
+    delete(progh);
+    uiresume(gcf);
+  end
+
+  function trackProgress(idx)
+    waitbar(idx/length(jobset.ROIS),progh,sprintf('Tracking progress (%d/%d)',idx,length(jobset.ROI)));
   end
 end
 
@@ -317,15 +341,15 @@ function saveCB(hObj,event)
 end
 
 function deconvolveCB(hObj,event)
-  if handles.deconvole.Value
+  if handles.deconvolve.Value
     handles.psfBtn.Enable = 'on';
   else
     handles.psfBtn.Enable = 'off';
   end
 end
 
-function psfBtn(hObj,event)
-  file = hObj.Value;
+function psfBtnCB(hObj,event)
+  file = hObj.Value
   if exist(file,'file')
     [~,~,ext] = fileparts(file);
     if strcmp(ext,'mat')
@@ -346,15 +370,15 @@ end
 
 function populateROIBox()
   handles.ROIs.String=[];
-  maxMovLen = 30;
+  maxMovLen = 32;
   movieFiles = handles.movies.String;
   if ~isempty(movieFiles)
-    for i=1:length(jobset.ROIs)
-      handles.ROIs.String{i} = [strshorten(movieFiles{jobset.ROIs(i).movieIdx},maxMovLen) ' [' ...
-                          num2str(round(jobset.ROIs(i).crop),'%d ') ']'];
+    for i=1:length(jobset.ROI)
+      handles.ROIs.String{i} = [strshorten(movieFiles{jobset.ROI(i).movieIdx},maxMovLen) ' [' ...
+                          num2str(round(jobset.ROI(i).crop),'%d ') ']'];
     end
   end
-  if handles.ROIs.Value < length(jobset.ROIs)
+  if handles.ROIs.Value < length(jobset.ROI)
     handles.ROIs.Value = 1;
   end
 end
@@ -374,17 +398,19 @@ end
 function updateJobset()
   jobset.movieDirectory = handles.movieDirectory.String;
   jobset.movieFiles = handles.movies.String;
+  jobset.filename = fullfile(jobset.movieDirectory,[handles.filename.String '.mat']);
 
   opts = jobset.options;
-  opts.coordSystem = mapStrings(handles.coordSystem.Value,coordSysModesJS);
-  opts.coordSystemChannel = str2double(handles.coordSystemCh.String);
+  opts.coordSystem = mapStrings(handles.coordSys.Value,coordSystemValuesJS);
+  opts.coordSystemChannel = str2double(handles.coordSysCh.String);
   for i=1:3
-    opts.spotMode{i} = mapStrings(handles.spotMode{i},spotDetectValuesJS);
-    opts.coordMode{i} = mapStrings(handles.refineMode{i},spotRefineValuesJS);
+    opts.spotMode{i} = spotDetectValuesJS{handles.spotMode{i}.Value};
+    opts.coordMode{i} = spotRefineValuesJS{handles.refineMode{i}.Value};
   end
-  if handles.autoRadii
+  if handles.autoRadii.Value
     opts.autoRadiidt = str2double(handles.autoRadiidt.String);
-    r = computeSearchRadii(opts.autoRadiidt);
+    opts.autoRadiiAvgDisp = str2double(handles.autoRadiiAvgDisp.String);
+    r = computeSearchRadii(opts.autoRadiidt,opts.autoRadiiAvgDisp);
   else
     opts.autoRadiidt = [];
     r = zeros(2,1);
@@ -396,26 +422,23 @@ function updateJobset()
   opts.maxSearchRadius = r(2,:); % in um
   opts.useSisterAlignment = handles.useSisterAlignment.Value;
   opts.maxSisterAlignmentAngle = str2double(handles.maxSisterAlignmentAngle.String);
-  opts.maxSisterSeparation = str2double(handles.maxSisterSeparation.String);
+  opts.maxSisterSeparation = str2double(handles.maxSisterDist.String);
   opts.minSisterTrackOverlap = str2double(handles.minSisterTrackOverlap.String);
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
-  opts.waveletPrefilter = handles.waveletPrefilter.Value;
+  opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
   opts.mmfAddSpots = handles.mmfAddSpots.Value;
-  opts.maxMmfTime = str2double(handle.maxMmfTime.String);
+  opts.maxMmfTime = str2double(handles.maxMmfTime.String);
+  opts.deconvole = handles.deconvolve.Value;
   jobset.options = opts;
 end
 
-function r=computeSearchRadii(dt)
-% Assume mean absolute displacment of sisters is about 0.015 μm/s and standard
-% deviation is about 0.025 μm/s
-  avgDisp = 0.015;
-  sdDisp = 0.025;
+function r=computeSearchRadii(dt,avgDisp)
   r = zeros(2,1);
-  r(2) = (avgDisp + 2*sdDisp)*dt; % factor = 2 std. devs.
-  r(1) = max((avgDisp - 2*sdDisp)*dt, 0);
+  r(2) = 6*avgDisp*dt;
+  r(1) = 0.1*avgDisp*dt;
 end
 
-function computeUnalignedLaggingRadii(r)
+function r=computeUnalignedLaggingRadii(r)
 % Assume unaligned move 3x faster, lagging same speed.
   r = [r 3*r r];
 end

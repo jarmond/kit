@@ -8,7 +8,7 @@ function job=kitLoadJob(jobset, index)
 
 % Generate output name.
 job = jobset;
-job.movie = jobset.movieFiles{index};
+job.movie = jobset.movieFiles{jobset.ROI(index).movieIdx};
 job.index = index;
 outputName = kitGenerateOutputFilename(job);
 

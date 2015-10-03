@@ -38,10 +38,10 @@ end
 % Download BioFormats, if required.
 kitDownloadBioFormats();
 
-nMovies = length(jobset.movieFiles);
+nROIs = length(jobset.ROI);
 
 % Default options.
-options.subset = 1:nMovies;
+options.subset = 1:nROIs;
 options.parallel = 0;
 options.errorfail = 0;
 options.tasks = 1:7;
@@ -51,22 +51,22 @@ options.callback = [];
 options = processOptions(options, varargin{:});
 
 % Check options.
-if ~all(ismember(options.subset,1:nMovies))
-  error('Subset values must be in range 1 to %d',nMovies);
+if ~all(ismember(options.subset,1:nROIs))
+  error('Subset values must be in range 1 to %d',nROIs);
 end
 
 % If using matlabpool for parallel computation, report workers.
+[~,name] = fileparts(jobset.filename);
 if options.parallel
-  kitLog('Running in parallel');
+  kitLog(['Running ' name ' in parallel']);
 else
-  kitLog('Running serially');
+  kitLog(['Running ' name ' serially']);
 end
 
 % Upgrade jobset options, if required.
 if ~isfield(jobset.options,'jobsetVersion') || ...
     jobset.options.jobsetVersion < kitVersion(2)
-  defJob = kitDefaultOptions();
-  jobset = structCopyMissingFields(jobset,defJob);
+  jobset = kitJobset(jobset);
 end
 
 if isfield(jobset,'variantName')
@@ -74,18 +74,18 @@ if isfield(jobset,'variantName')
 end
 
 % Copy out job info for each movie.
-jobs = cell(nMovies,1);
+jobs = cell(nROIs,1);
 if options.existing
-  for i=1:nMovies
+  for i=1:nROIs
     jobs{i} = kitLoadJob(jobset,i);
   end
 else
-  for i=1:nMovies
+  for i=1:nROIs
     jobs{i} = jobset;
-    jobs{i}.movie = jobset.movieFiles{i};
+    jobs{i}.movie = jobset.movieFiles{jobset.ROI(i).movieIdx};
     jobs{i}.index = i;
-    jobs{i}.crop = jobset.crop{i};
-    jobs{i}.cropSize = jobset.cropSize{i};
+    jobs{i}.crop = jobset.ROI(i).crop;
+    jobs{i}.cropSize = jobset.ROI(i).cropSize;
     % Update versions, may be different to jobset creator.
     jobs{i}.version = kitVersion();
     jobs{i}.matlabVersion = version;
@@ -109,7 +109,7 @@ for i = options.subset
     try
       kitLog('Tracking movie %d', i);
       kitTrackMovie(jobs{i},options.tasks);
-      if ~isempty(optionp.callback)
+      if ~isempty(options.callback)
         options.callback(i);
       end
     catch me
