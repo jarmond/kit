@@ -38,6 +38,14 @@ filters = createFilters(ndims,dataStruct.dataProperties);
 % Read image
 movie = kitReadWholeMovie(reader,job.metadata,channel,job.crop,0,1);
 [imageSizeX,imageSizeY,imageSizeZ,~] = size(movie);
+if options.deconvolve
+  kitLog('Deconvolving');
+  p=kitProgress(0);
+  for i=1:nFrames
+    movie(:,:,:,i) = deconvlucy(movie(:,:,:,i),job.psf);
+    p=kitProgress(i/nFrames,p);
+  end
+end
 
 % Initialize output structure
 localMaxima = repmat(struct('cands',[]),nFrames,1);

@@ -120,6 +120,10 @@ function hs = createControls(jobset)
   y = y-h;
   label(hs.fig,'Jobset name',[x y labelw h],12);
   hs.filename = editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
+  if isfield(jobset,'filename')
+    [~,file,ext] = fileparts(jobset.filename);
+    hs.filename.String = [file ext];
+  end
   btnw = 0.5*w;
   bx = x + w - btnw;
   y = y-2*h;
@@ -198,13 +202,16 @@ function hs = createControls(jobset)
   y = y-h;
   hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
   y = y-h;
-  hs.psfBtn = button(hs.fig,'Select PSF file',[x y labelw/2 h],@psfBtnCB,10);
+  hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
+  hs.psfFile = editbox(hs.fig,'',[x+labelw/2 y colwidth(3)-labelw/2 h],10);
   if opts.deconvolve
     hs.deconvolve.Value = hs.deconvolve.Max; % On
     hs.psfBtn.Enable = 'on';
+    hs.psfFile.Enable = 'on';
   else
     hs.deconvolve.Value = hs.deconvolve.Min; % Off.
     hs.psfBtn.Enable = 'off';
+    hs.psfFile.Enable = 'off';
   end
 
 end
@@ -343,29 +350,27 @@ end
 function deconvolveCB(hObj,event)
   if handles.deconvolve.Value
     handles.psfBtn.Enable = 'on';
+    handles.psfFile.Enable = 'on';
   else
     handles.psfBtn.Enable = 'off';
+    handles.psfFile.Enable = 'off';
   end
 end
 
 function psfBtnCB(hObj,event)
-  file = hObj.Value
-  if exist(file,'file')
-    [~,~,ext] = fileparts(file);
-    if strcmp(ext,'mat')
-      data = load(file);
-      % Assume PSF is only variable.
-      f = fieldnames(data);
-      if length(f) > 1
-        msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning');
-      end
-      jobset.psf = data.(f{1});
-    else
-      msgbox(sprintf('Not MAT-file: %s',file),'Error','Error');
-    end
-  else
-    msgbox(sprintf('File not found: %s',file),'Error','Error');
+  [file,path] = uigetfile('*.mat','Select PSF file');
+  if isequal(file,0)
+    return
   end
+  handles.psfFile.String = file;
+  file = fullfile(path,file);
+  data = load(file);
+  % Assume PSF is only variable.
+  f = fieldnames(data);
+  if length(f) > 1
+    msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning');
+  end
+  jobset.psf = data.(f{1});
 end
 
 function populateROIBox()
@@ -428,7 +433,7 @@ function updateJobset()
   opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
   opts.mmfAddSpots = handles.mmfAddSpots.Value;
   opts.maxMmfTime = str2double(handles.maxMmfTime.String);
-  opts.deconvole = handles.deconvolve.Value;
+  opts.deconvolve = handles.deconvolve.Value;
   jobset.options = opts;
 end
 
