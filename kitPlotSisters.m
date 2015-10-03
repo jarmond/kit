@@ -11,7 +11,7 @@ end
 opts.channel = 1;
 opts.sel = [];
 opts.useTracks = 0;
-opts.minLength = 0;
+opts.minLength = 0.75;
 % Process options
 opts = processOptions(opts, varargin{:});
 
