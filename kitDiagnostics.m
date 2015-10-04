@@ -45,9 +45,11 @@ if diag.nSisters > 0
   coords = diff([coords1(:,1:6:end) coords2(:,1:6:end)]);
   diag.sisterDisp  = nanmean(nanmean(abs(coords)));
   diag.sisterVar = nanmean(nanvar(coords));
+  diag.sisterPoints = sum(sum(~isnan(coords1(:,1:6:end))));
 else
   diag.sisterDisp = 0;
   diag.sisterVar = 0;
+  diag.sisterPoints = 0;
 end
 
 % Number of sister tracks with 75% length.

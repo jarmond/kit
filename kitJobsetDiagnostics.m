@@ -20,6 +20,7 @@ f(end+1) = struct('field','nSpotsPerFrame','fn',id,'name','# spots','fmt','.1f')
 f(end+1) = struct('field','nTracks','fn',id,'name','# tracks','fmt','d');
 f(end+1) = struct('field','nSisters','fn',id,'name','# sisters','fmt','d');
 f(end+1) = struct('field','avgSisterTrackLength','fn',id,'name','sister length','fmt','.1f');
+f(end+1) = struct('field','sisterPoints','fn',id,'name','sister points','fmt','d');
 f(end+1) = struct('field','percentWithPlane','fn',id,'name','plane fits','fmt','.1f');
 f(end+1) = struct('field','sisterVar','fn',@(x) sqrt(x),'name','std dev','fmt','.3f');
 f(end+1) = struct('field','sisterDisp','fn',id,'name','mean disp','fmt','.3f');
