@@ -38,6 +38,12 @@ end
 % Download BioFormats, if required.
 kitDownloadBioFormats();
 
+% Upgrade jobset options, if required.
+if ~isfield(jobset.options,'jobsetVersion') || ...
+    jobset.options.jobsetVersion < kitVersion(2)
+  jobset = kitJobset(jobset);
+end
+
 nROIs = length(jobset.ROI);
 
 % Default options.
@@ -63,11 +69,6 @@ else
   kitLog(['Running ' name ' serially']);
 end
 
-% Upgrade jobset options, if required.
-if ~isfield(jobset.options,'jobsetVersion') || ...
-    jobset.options.jobsetVersion < kitVersion(2)
-  jobset = kitJobset(jobset);
-end
 
 if isfield(jobset,'variantName')
   fprintf('Jobset variant: %s\n',jobset.variantName);
