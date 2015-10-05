@@ -20,8 +20,8 @@ method = job.options.coordMode{channel};
 if ~isfield(job.options,'spotMode')
   spotMode = 'histcut';
 else
-  % Method of identify first spot candidates: Histogram cut 'histcut' or
-  % multiscale wavelet product 'wavelet'.
+  % Method of identify first spot candidates: Histogram cut 'histcut',
+  % adaptive threshold 'adaptive', or  multiscale wavelet product 'wavelet'.
   spotMode = job.options.spotMode{channel};
 end
 
@@ -59,10 +59,23 @@ switch spotMode
       img = movie(:,:,:,i);
       spots{i} = histcutSpots(img,options,dataStruct.dataProperties);
     end
-    kitLog('Detecting spot candidates using adaptive thresholding');
 
   case 'adaptive'
+    kitLog('Detecting spot candidates using adaptive thresholding');
     spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
+
+  case 'wavelet'
+    kitLog('Detecting spot candidates using multiscale wavelet product');
+    if options.waveletLevelAdapt
+     options.waveletLevelThresh = waveletAdapt(movie,options);
+     job.options = options;
+     kitSaveJob(job); % Record used value.
+    end
+
+    for i=1:nFrames
+      img = movie(:,:,:,i);
+      spots{i} = waveletSpots(img,options);
+    end
 
   otherwise
     error('Unknown spot detector: %s',spotMode);

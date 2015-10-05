@@ -40,6 +40,8 @@ debug.groupSisters = 0; % 1 - plot 4 frames with sisters assigment
 debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
 debug.showCentroidFinal = 0; % visualize centroid final spots.
+debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
+debug.showWaveletAdapt = 0; % 1 to show adaptation of wavelet threshold.
 debug.showAdaptive = 0; % 1 to show adaptive thresholding algorithm verbosely.
 debug.asserts = 0; % check things that shouldn't go wrong
 opts.debug = debug;
@@ -94,5 +96,13 @@ opts.adaptiveLambda = 10; % Regularization for increasing number of spots.
 
 % Deconvolution.
 opts.deconvolve = 0;
+
+% Wavelet multiscale product spot detector options.
+opts.waveletLevelThresh = 2; % threshold scale for local MAD thresholding
+opts.waveletLevelAdapt = 1; % use adaptive setting for above.
+opts.waveletNumLevels = 3;  % number of wavelet levels
+opts.waveletLocalMAD = 0; % locally estimated MAD
+opts.waveletBackSub = 0;  % background subtraction
+opts.waveletMinLevel = 2; % discard wavelet levels below this
 
 job.options = opts;
