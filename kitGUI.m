@@ -16,8 +16,8 @@ end
 
 coordSystemValues = {'Plate','Image'}; % in GUI
 coordSystemValuesJS = lower(coordSystemValues); % in jobset
-spotDetectValues = {'Histogram','Adaptive','None'};
-spotDetectValuesJS = {'histcut','adaptive','none'};
+spotDetectValues = {'Histogram','Adaptive','Wavelet','None'};
+spotDetectValuesJS = {'histcut','adaptive','wavelet','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 
@@ -203,7 +203,7 @@ function hs = createControls(jobset)
   hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
   y = y-h;
   hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
-  hs.psfFile = editbox(hs.fig,'',[x+labelw/2 y colwidth(3)-labelw/2 h],10);
+  hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
   if opts.deconvolve
     hs.deconvolve.Value = hs.deconvolve.Max; % On
     hs.psfBtn.Enable = 'on';
