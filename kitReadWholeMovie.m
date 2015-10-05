@@ -7,12 +7,17 @@ function movie=kitReadWholeMovie(imageReader,metadata,c,crop,normalizePlanes,nor
 %    CROP Optional, vector of [XMIN,YMIN,WIDTH,HEIGHT] for cropping stack.
 %
 %    NORMALIZEPLANES Optional, 0, 1 or -1. Normalize by maximum pixel value. Defaults
-%    to 1. If -1, no normalization is performed and image is returned in
+%    to 0. If -1, no normalization is performed and image is returned in
 %    original datatype, otherwise it is converted to double.
 %
-%    NORMALIZE Optional, 0 or 1. Normalize by maximum pixel entire movie.
+%    NORMALIZE Optional, 0 or 1. Normalize by maximum pixel entire movie. Defaults to 0.
+%
+%    Alternatively, IMAGEREADER can be a string filename as a shortcut.
 %
 % Copyright (c) 2013 Jonathan W. Armond
+if nargin<3
+  c = 1;
+end
 
 if nargin<4
   crop = [];
@@ -23,6 +28,14 @@ if nargin<5
 end
 if nargin<6
   normalize = 0;
+end
+
+if ischar(imageReader)
+  % imageReader is a filename.
+  [metadata,rdr] = kitOpenMovie(imageReader);
+  movie = kitReadWholeMovie(rdr,metadata,c,crop,normalizePlanes,normalize);
+  rdr.close();
+  return
 end
 
 if normalizePlanes == -1
