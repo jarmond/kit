@@ -30,7 +30,7 @@ fields = f;
 
 % Read in diagnostics from each job.
 nFields = length(fields);
-nJobs = length(jobset.movieFiles);
+nJobs = length(jobset.ROI);
 stats = nan(nJobs,nFields);
 for i=1:nJobs
   try
