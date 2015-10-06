@@ -21,14 +21,13 @@ spotDetectValuesJS = {'histcut','adaptive','wavelet','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 
-% Setup GUI. TODO feed in default jobset options
+% Setup GUI.
 handles = createControls(jobset);
 populateROIBox();
 spotModeCB();
 refineModeCB();
 autoRadiiCB();
 handles.fig.Visible = 'on';
-
 uiwait(gcf);
 close(gcf);
 
@@ -121,8 +120,8 @@ function hs = createControls(jobset)
   label(hs.fig,'Jobset name',[x y labelw h],12);
   hs.filename = editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
   if isfield(jobset,'filename')
-    [~,file,ext] = fileparts(jobset.filename);
-    hs.filename.String = [file ext];
+    [~,file] = fileparts(jobset.filename);
+    hs.filename.String = file;
   end
   btnw = 0.5*w;
   bx = x + w - btnw;
@@ -446,56 +445,6 @@ end
 function r=computeUnalignedLaggingRadii(r)
 % Assume unaligned move 3x faster, lagging same speed.
   r = [r 3*r r];
-end
-
-
-function h=label(p,s,pos,sz)
-% Create text label
-  if nargin<4
-    sz=12;
-  end
-  h = uicontrol(p,'Style','text','String',s,'Units','characters','Position',pos,'FontSize',sz,'HorizontalAlignment','left');
-end
-
-function h=checkbox(p,s,pos,cb,sz)
-% Create checkbox
-  if nargin<4
-    cb = '';
-  end
-  if nargin<5
-    sz=12;
-  end
-  h = uicontrol(p,'Style','checkbox','String',s,'Units','characters','Position',pos,'FontSize',sz,'Callback',cb);
-end
-
-function h=editbox(p,s,pos,sz)
-% Create edit box
-  if nargin<4
-    sz=12;
-  end
-  h = uicontrol(p,'Style','edit','String',s,'Units','characters','Position',pos,'FontSize',sz,'HorizontalAlignment','left');
-end
-
-function h=popup(p,s,pos,cb,sz)
-% Create popup menu
-  if nargin<4
-    cb = '';
-  end
-  if nargin<5
-    sz=12;
-  end
-  h = uicontrol(p,'Style','popupmenu','String',s,'Units','characters','Position',pos,'FontSize',sz,'Callback',cb);
-end
-
-function h=button(p,s,pos,cb,sz)
-% Create button
-  if nargin<4
-    cb = '';
-  end
-  if nargin<5
-    sz=12;
-  end
-  h = uicontrol(p,'String',s,'Units','characters','Position',pos,'FontSize',sz,'Callback',cb);
 end
 
 end % kitGUI
