@@ -1,5 +1,5 @@
 function kitPlateCheck(job,varargin)
-% KITPLATECHECK Visualize plate in xy-plane for coord-sys verification
+% KITPLATECHECK Visualize plate in yz-plane for coord-sys verification
 %
 %    KITPLATECHECK(JOB,...) Visualize plate in xy-plane for
 %    coordinate-system verification. JOB may be either a job struct, loaded via
@@ -26,11 +26,11 @@ coords1 = horzcat(sisterList.coords1);
 coords2 = horzcat(sisterList.coords2);
 figure;
 if opts.colors
-  plot(coords1(:,1:6:end),coords1(:,2:6:end),...
-       coords2(:,1:6:end),coords2(:,2:6:end));
+  plot(coords1(:,2:6:end),coords1(:,3:6:end),...
+       coords2(:,2:6:end),coords2(:,3:6:end));
 else
-  plot(coords1(:,1:6:end),coords1(:,2:6:end),'b-',...
-       coords2(:,1:6:end),coords2(:,2:6:end),'g-');
+  plot(coords1(:,2:6:end),coords1(:,3:6:end),'b-',...
+       coords2(:,2:6:end),coords2(:,3:6:end),'g-');
 end
-xlabel('x');
-ylabel('y');
+xlabel('y');
+ylabel('z');
