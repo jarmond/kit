@@ -83,7 +83,7 @@ if options.existing
 else
   for i=1:nROIs
     jobs{i} = jobset;
-    jobs{i}.movie = jobset.movieFiles{jobset.ROI(i).movieIdx};
+    jobs{i}.movie = jobset.ROI(i).movie;
     jobs{i}.index = i;
     jobs{i}.crop = jobset.ROI(i).crop;
     jobs{i}.cropSize = jobset.ROI(i).cropSize;

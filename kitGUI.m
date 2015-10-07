@@ -24,6 +24,7 @@ spotRefineValuesJS = {'centroid','gaussian','none'};
 % Setup GUI.
 handles = createControls(jobset);
 populateROIBox();
+populateMovieBox();
 spotModeCB();
 refineModeCB();
 autoRadiiCB();
@@ -203,6 +204,9 @@ function hs = createControls(jobset)
   y = y-h;
   hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
   hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
+  if isfield(jobset,'psfFile')
+    hs.psfFile.String = jobset.psfFile;
+  end
   if opts.deconvolve
     hs.deconvolve.Value = hs.deconvolve.Max; % On
     hs.psfBtn.Enable = 'on';
@@ -226,13 +230,7 @@ function selectDirectoryCB(hObj,event)
   dirName = uigetdir([], 'Select directory tree containing movies');
   if ~isempty(dirName)
     set(handles.movieDirectory, 'String', dirName);
-    % Find movie files.
-    movieFiles = kitFindFiles(dirName, kitSupportedFormats());
-    % Strip search directory from filenames.
-    for i=1:length(movieFiles)
-      movieFiles{i} = strrep(movieFiles{i},[dirName filesep],'');
-    end
-    set(handles.movies,'String',movieFiles,'Value',1:length(movieFiles));
+    populateMovieBox();
     set(handles.ROIs,'String',[]);
     ROI = [];
   end
@@ -246,7 +244,7 @@ function addROICB(hObj,event)
     [crop,cropSize] = kitCropMovie(fullfile(movieDir,movieFiles{v(i)}));
     for j=1:size(crop,1)
       r = length(jobset.ROI) + 1;
-      jobset.ROI(r).movieIdx = v(i);
+      jobset.ROI(r).movie = handles.movies.String{v(i)};
       jobset.ROI(r).crop = crop(j,:);
       jobset.ROI(r).cropSize = cropSize(j,:);
     end
@@ -268,9 +266,8 @@ end
 function viewROICB(hObj,event)
   v = handles.ROIs.Value;
   if ~isempty(v)
-    movieFiles = handles.movies.String;
     movieDir = handles.movieDirectory.String;
-    kitMovieProj(fullfile(movieDir,movieFiles{jobset.ROI(v).movieIdx}),[],jobset.ROI(v).crop);
+    kitMovieProj(fullfile(movieDir,jobset.ROI(v).movie),[],jobset.ROI(v).crop);
   end
 end
 
@@ -336,7 +333,7 @@ function exectuteCB(hObj,event)
   end
 
   function trackProgress(idx)
-    waitbar(idx/length(jobset.ROIS),progh,sprintf('Tracking progress (%d/%d)',idx,length(jobset.ROI)));
+    waitbar(idx/length(jobset.ROI),progh,sprintf('Tracking progress (%d/%d)',idx,length(jobset.ROI)));
   end
 end
 
@@ -370,19 +367,36 @@ function psfBtnCB(hObj,event)
     msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning');
   end
   jobset.psf = data.(f{1});
+  jobset.psfFile = file;
+end
+
+function populateMovieBox()
+  movieDir = handles.movieDirectory.String;
+  if isempty(movieDir)
+    handles.movies.String = [];
+  else
+    % Find movie files.
+    movieFiles = kitFindFiles(movieDir, kitSupportedFormats());
+    % Strip search directory from filenames.
+    for i=1:length(movieFiles)
+      movieFiles{i} = strrep(movieFiles{i},[movieDir filesep],'');
+    end
+    set(handles.movies,'String',movieFiles,'Value',1:length(movieFiles));
+  end
 end
 
 function populateROIBox()
   handles.ROIs.String=[];
   maxMovLen = 32;
   movieFiles = handles.movies.String;
+  handles.ROIs.Value = 0; % Keep MATLAB quiet about invalid selection.
   if ~isempty(movieFiles)
     for i=1:length(jobset.ROI)
-      handles.ROIs.String{i} = [strshorten(movieFiles{jobset.ROI(i).movieIdx},maxMovLen) ' [' ...
+      handles.ROIs.String{i} = [strshorten(jobset.ROI(i).movie,maxMovLen) ' [' ...
                           num2str(round(jobset.ROI(i).crop),'%d ') ']'];
     end
   end
-  if handles.ROIs.Value < length(jobset.ROI)
+  if (handles.ROIs.Value <= 0 && length(handles.ROIs.String)>0) || handles.ROIs.Value > length(jobset.ROI)
     handles.ROIs.Value = 1;
   end
 end
