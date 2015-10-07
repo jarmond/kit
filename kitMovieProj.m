@@ -1,4 +1,4 @@
-function [rgbImg,z]=kitMovieProj(movieFileName,zPlane,roi)
+function [figH,rgbImg,z]=kitMovieProj(movieFileName,zPlane,roi)
 % KITMOVIEPROJ Presents movie projection in Z and T
 %
 %  SYNOPSIS kitShowMovieProj(movieFileName)
@@ -62,7 +62,7 @@ for c=1:min([maxMergeChannels, metadata.nChannels])
   rgbImg(:,:,mapChan(c)) = imadjust(maxProj,slim,[]);
 end
 
-figure;
+figH=figure;
 imshow(rgbImg);
 
 if ~isempty(roi)

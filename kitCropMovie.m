@@ -14,23 +14,18 @@ if nargin<2
   zPlane=[];
 end
 
-[rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane);
+[f,rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane);
 
 % Show image with crop tool.
 crop = [];
-f = gcf;
 p = [];
 title('Draw ROI rectangles. Double click to record each.');
-finBtn = uicontrol('Style', 'pushbutton', 'String', 'Finish','FontSize',14,...
-        'Position', [20 10 80 30],...
-        'Callback', 'close(gcf)');
-addBtn = uicontrol('Style', 'pushbutton', 'String', 'Add ROI','FontSize',14,...
-        'Position', [120 10 80 30],...
-        'Callback', @addROI_cb);
-fcn = makeConstrainToRectFcn('imrect',get(gca,'XLim'),get(gca,'YLim'));
+finBtn = button(f,'Finish',[2 1 12 2.5],@(hObj,event) close(f),14);
+addBtn = button(f,'Add ROI',[16 1 12 2.5],@addROI_cb,14);
+fcn = makeConstrainToRectFcn('imrect',get(f.CurrentAxes,'XLim'),get(f.CurrentAxes,'YLim'));
 while ishghandle(f)
-  uiwait(gcf);
-  if ~isempty(p)
+  uiwait(f);
+  if ~isempty(p) && ishghandle(f)
     rectangle('Position',p,'LineWidth',2,'EdgeColor','y');
     crop = [crop; p];
     p = [];
@@ -55,12 +50,12 @@ end
 function addROI_cb(hObj,eventdata,handles)
   set(addBtn,'Enable','off');
   set(finBtn,'Enable','off');
-  h = imrect(gca,'PositionConstraintFcn',fcn);
+  h = imrect(f.CurrentAxes,'PositionConstraintFcn',fcn);
   p = wait(h);
   delete(h);
   set(addBtn,'Enable','on');
   set(finBtn,'Enable','on');
-  uiresume(gcf);
+  uiresume(f);
 end
 
 end
