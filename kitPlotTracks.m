@@ -12,8 +12,6 @@ function kitPlotTracks(job,varargin)
 %    cutoff: 0 or {1}. Define distance, in microns, away from the metaphase
 %    plate beyond which a track is a candidate for that of a spindle pole.
 %
-%    dt: {7.5} or timelapse. Time lapse, in seconds, for plotting of x-axis.
-%
 %    overlay: 0 or {1}. Overlays tracks for each coordinate.
 %
 %    plotAx: {[1,2,3]} or subset of the default. Plot the specified axes,
