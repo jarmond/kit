@@ -60,13 +60,10 @@ function hs = createControls(jobset)
 
   % Get ROI names.
   maxMovLen = 32;
-  movieFiles = jobset.movieFiles;
   ROIString = {};
-  if ~isempty(movieFiles)
-    for i=1:length(jobset.ROI)
-      ROIString{i} = [strshorten(movieFiles{jobset.ROI(i).movieIdx},maxMovLen) ' [' ...
-                          num2str(round(jobset.ROI(i).crop),'%d ') ']'];
-    end
+  for i=1:length(jobset.ROI)
+    ROIString{i} = [strshorten(jobset.ROI(i).movie,maxMovLen) ' [' ...
+                    num2str(round(jobset.ROI(i).crop),'%d ') ']'];
   end
   y=y-h;
   label(hs.fig,'ROIs:',[x y w lh]);
