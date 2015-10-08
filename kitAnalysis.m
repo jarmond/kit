@@ -76,6 +76,8 @@ function hs = createControls(jobset)
   y=y-h;
   hs.sisters = button(hs.fig,'Sister trajectories',[x y w h],@sistersCB);
   y=y-h;
+  hs.tracks = button(hs.fig,'Track overlay',[x y w h],@tracksCB);
+  y=y-h;
   hs.plate = button(hs.fig,'Metaphase plate',[x y w h],@plateCB);
   y=y-h;
   label(hs.fig,'Intensity channel',[x y w lh]);
@@ -109,6 +111,11 @@ end
 function sistersCB(hObj,event)
   job = loadActiveJob();
   kitPlotSisters(job,'minLength',str2double(handles.minLength.String)/100,'channel',ch);
+end
+
+function tracksCB(hObj,event)
+  job = loadActiveJob();
+  kitPlotTracks(job,'minLength',str2double(handles.minLength.String)/100,'channel',ch);
 end
 
 function plateCB(hObj,event)
