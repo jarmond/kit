@@ -108,13 +108,13 @@ for i = options.subset
     batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
   else
     try
-      kitLog('Tracking movie %d', i);
+      kitLog('Tracking job %d', i);
       kitTrackMovie(jobs{i},options.tasks);
       if ~isempty(options.callback)
         options.callback(i);
       end
     catch me
-      kitLog('Error in movie %d: %s',i,me.identifier);
+      kitLog('Error in job %d: %s',i,me.identifier);
       ex.me = me;
       ex.idx = i;
       exceptions = [exceptions ex];
@@ -131,7 +131,7 @@ if ~isempty(exceptions)
 end
 for i = 1:length(exceptions)
   ex = exceptions(i);
-  fprintf('In movie %d, error %s:\n',ex.idx,ex.me.identifier);
+  fprintf('In job %d, error %s:\n',ex.idx,ex.me.identifier);
   disp(getReport(ex.me));
 end
 
