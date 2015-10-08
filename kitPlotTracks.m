@@ -19,6 +19,8 @@ function kitPlotTracks(job,varargin)
 %
 %    subset: {all tracks} or some vector of tracks. Subset of tracks for plotting.
 %
+%    minLength: {0.25} or number. Minimum number of tracked frames. Overridden by subset option.
+%
 % Created by: Jonathan W. Armond 2013
 % Edited by:  Chris Smith 10/2013
 
@@ -31,10 +33,10 @@ opts.channel = 1;
 opts.cutoff = 6;
 opts.overlay = 1;
 opts.plotAx = 1:3;
-opts.subset = -1;
+opts.subset = [];
 opts.plotPole = 0;
 opts.nLongest = 0;
-
+opts.minLength = 0.25;
 % Process options
 opts = processOptions(opts, varargin{:});
 
@@ -46,8 +48,15 @@ trackList = dataStruct.trackList;
 nTracks = length(trackList);
 maxTime = dataStruct.dataProperties.movieSize(4);
 
-if opts.subset == -1;
+if isempty(opts.subset)
+  if isempty(opts.minLength)
     opts.subset = 1:nTracks;
+  else
+    coords = horzcat(trackList.coords);
+    coords = coords(:,1:6:end); % X coordinate.
+    nancount = sum(isnan(coords),1);
+    opts.subset = find(nancount < job.metadata.nFrames*(1-opts.minLength));
+  end
 end
 
 if opts.nLongest > 0
