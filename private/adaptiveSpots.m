@@ -86,18 +86,20 @@ function [stop,options,optchanged] = progress(optimvalues,options,flag)
 end
 
 function y = objective(t)
-  m = zeros(length(locs)/2,2);
-  for i=1:length(locs)/2
+  m = zeros(length(locs)-1,1);
+  n = zeros(length(locs),1);
+  for i=1:length(locs)-1
     % Find local maxima passing threshold in this frame and the next.
-    s1 = findSpots(locs{2*i-1}(:,1:3),locs{2*i-1}(:,4),t);
-    s2 = findSpots(locs{2*i}(:,1:3),locs{2*i}(:,4),t);
+    s1 = findSpots(locs{i}(:,1:3),locs{i}(:,4),t);
+    s2 = findSpots(locs{i+1}(:,1:3),locs{i+1}(:,4),t);
 
     % Compute metric for point cloud difference.
-    m(i,1) = meanMinDiff(s1,s2);
+    m(i) = meanMinDiff(s1,s2);
     % Mean number of spots for optional penalty.
-    m(i,2) = 0.5*size(s1,1)*size(s2,1);
+    n(i) = size(s1,1);
   end
-  y = mean(m(:,1)) + lambda/(max(1,mean(m(:,2))^.25));
+  n(end) = size(s2,2);
+  y = mean(m) + lambda/(max(1,mean(n)));
 end
 
 function s=findSpots(locMax,amp,th)
