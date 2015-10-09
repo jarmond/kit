@@ -24,7 +24,7 @@ close(gcf);
 %% NESTED FUNCTIONS
 function hs = createControls(jobset)
   w = 30;
-  h = 70;
+  h = 52;
   hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 w+2 h]);
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
@@ -37,8 +37,8 @@ function hs = createControls(jobset)
 
   x = 1;
   logoh = 8;
-  y = h - logoh;
-  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[x y w h]);
+  y = figpos(4)-logoh-1;
+  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[x y w logoh]);
   pos = getpixelposition(hs.logo);
   set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
 
