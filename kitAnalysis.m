@@ -62,8 +62,7 @@ function hs = createControls(jobset)
   maxMovLen = 32;
   ROIString = {};
   for i=1:length(jobset.ROI)
-    ROIString{i} = [strshorten(jobset.ROI(i).movie,maxMovLen) ' [' ...
-                    num2str(round(jobset.ROI(i).crop),'%d ') ']'];
+    ROIString{i} = sprintf('%d: %s [%s]',i,strshorten(jobset.ROI(i).movie,maxMovLen),num2str(round(jobset.ROI(i).crop),'%d '));
   end
   y=y-h;
   label(hs.fig,'ROIs:',[x y w lh]);
