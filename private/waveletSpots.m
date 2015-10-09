@@ -106,8 +106,6 @@ if verbose
   title('log multiscale product');
 end
 
-R=sum(W(:,:,:,minProdL:end),4);
-
 % Threshold spots.
 Pt = P(P>0);
 if length(Pt)>50
