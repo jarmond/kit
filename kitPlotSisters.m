@@ -23,7 +23,7 @@ sisterList = dataStruct.sisterList;
 trackList = dataStruct.trackList;
 trackPairs = sisterList(1).trackPairs;
 if ~isempty(opts.sel)
-  sisterList = sisterList(sel);
+  sisterList = sisterList(opts.sel);
 elseif opts.minLength > 0
     coords = horzcat(sisterList.coords1);
     coords = coords(:,1:6:end); % X coordinate.
