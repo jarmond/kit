@@ -85,6 +85,12 @@ if ismember(2,tasks)
     end
   end
   job = kitSaveJob(job);
+else
+  for c = channels
+    if ~isfield(job.dataStruct{c},'planeFit')
+      job.dataStruct{c}.planeFit = [];
+    end
+  end
 end
 
 if ismember(3,tasks)
@@ -108,8 +114,10 @@ end
 if ismember(5,tasks)
   % Extract individual tracks.
   for c = channels
-    kitLog('Extracting individual tracks in channel %d', c);
-    job = kitExtractTracks(job, c);
+    if isfield(job.dataStruct{c},'planeFit')
+      kitLog('Extracting individual tracks in channel %d', c);
+      job = kitExtractTracks(job, c);
+    end
   end
   job = kitSaveJob(job);
 end
