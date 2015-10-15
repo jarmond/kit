@@ -315,12 +315,12 @@ function useSisterAlignmentCB(hObj,event)
 end
 
 
-function exectuteCB(hObj,event)
+function executeCB(hObj,event)
   updateJobset();
   kitSaveJobset(jobset);
   % Ask which tasks to run.
   taskStrs = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
-  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'Prompt','Select tasks to execute','Name','Select tasks...');
+  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'PromptString','Select tasks to execute','Name','Select tasks...');
   if ok
     % Map to task numbers and add defaults.
     taskMap = [1 2 3 4 8];
