@@ -153,7 +153,7 @@ end
 elapsed = toc(tstart);
 for c = channels
   kitLog('Gather diagnostics in channel %d',c);
-  job.dataStruct{c} = kitDiagnostics(job.dataStruct{c},elapsed);
+  job = kitDiagnostics(job,c,elapsed);
   fprintf('Diagnostics for channel %d\n', c);
   fprintf('-------------------------\n', c);
   kitPrintDiagnostics(job.dataStruct{c});
