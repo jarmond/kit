@@ -22,9 +22,15 @@ an.hasTrackInt = 0;
 
 % Load cell data.
 for i=1:nROIs
-  job = kitLoadJob(jobset, i);
+  try
+    job = kitLoadJob(jobset, i);
+  catch me
+    if strcmp(me.identifier,'MATLAB:load:couldNotReadFile')
+      warning('File missing for job %d.',i)
+    end
+  end
   empty = 0;
-  if length(job.dataStruct) < channel
+  if ~isfield(job,'dataStruct') || length(job.dataStruct) < channel
     empty = 1;
   else
     data = job.dataStruct{channel};
@@ -33,8 +39,7 @@ for i=1:nROIs
     end
   end
   if empty
-    warning('Empty data in file %s. Did you choose the right channel?',...
-            an.dataFilenames{i});
+    warning('Empty data in job %d. Did you choose the right channel?',i);
     continue;
   end
 

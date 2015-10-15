@@ -13,6 +13,12 @@ if nargin<2
   ch = 1;
 end
 
+% Upgrade jobset if required.
+if ~isfield(jobset.options,'jobsetVersion') || ...
+    jobset.options.jobsetVersion < kitVersion(2)
+  jobset = kitJobset(jobset);
+end
+
 % Setup GUI.
 roiChanged = 1;
 analysisLoaded = 0;
@@ -24,7 +30,7 @@ close(gcf);
 %% NESTED FUNCTIONS
 function hs = createControls(jobset)
   w = 30;
-  h = 52;
+  h = 54;
   hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 w+2 h]);
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
@@ -97,6 +103,8 @@ function hs = createControls(jobset)
   hs.speeds = button(hs.fig,'Speeds',[x y w h],@speedsCB);
   y=y-h;
   hs.msd = button(hs.fig,'Mean-squared displacement',[x y w h],@msdCB);
+  y=y-h;
+  hs.spindle = button(hs.fig,'Spindle length',[x y w h],@spindleCB);
   y=y-2*h;
   hs.save = button(hs.fig,'Save analysis',[x y w h],@saveCB);
   y=y-h;
@@ -165,6 +173,16 @@ function msdCB(hObj,event)
                'PlotXLabel','Time (s)','PlotYLabel','Mean square distance (\mum^2)');
 end
 
+function spindleCB(hObj,event)
+  analysis = loadAnalysis();
+  updateStatus('Computing spindle lengths');
+  analysis = cuplSpindleLength(analysis);
+  updateStatus('');
+  len = analysis.spindle.length;
+  cuplPlotHistogram(len,'PlotTitle','Pole-pole distance',...
+                    'PlotXLabel','Distance (um)','plotYLabel','Density','NumBins',20);
+end
+
 function saveCB(hObj,event)
   [filename,pathname] = uiputfile('*.mat','Save file name for analysis','analysis.mat');
   if ~(isequal(filename,0) || isequal(pathname,0))
@@ -178,6 +196,8 @@ function saveCB(hObj,event)
     analysis = cuplMsd(analysis);
     updateStatus('Computing sister distances');
     analysis = cuplDistances(analysis);
+    updateStatus('Computing spindle length');
+    analysis = cuplSpindleLength(analysis);
     analysis = cuplStripData(analysis);
 
     updateStatus('Saving');
@@ -211,7 +231,8 @@ function analysis = loadAnalysis()
     analysisP.options.channel = 1;
     analysisP.options.correctDrift = 0;
     analysisP.options.keepAllData = 1;
-    analysisP.options.doTracks = 0;
+    analysisP.options.doTracks = 1;
+    analysisP.options.poleCutoff = 4;
     analysisP.stages = {};
 
     updateStatus('Loading data');
@@ -226,6 +247,7 @@ end
 
 function updateStatus(s)
   handles.status.String = s;
+  drawnow;
 end
 
 end % kitAnalysis
