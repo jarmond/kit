@@ -727,7 +727,7 @@ for iTime = 1 : nTimePoints
 end
 
 %if there are frames to rotate ...
-if length(framesWiPlane) > 1
+if length(framesWiPlane) > 1 && ~strcmp(opts.coordSystem, 'com')
 
   %get first frame to rotate
   firstFrameRotate = framesWiPlane(1);

@@ -14,8 +14,8 @@ if ~isfield(jobset,'ROI')
   jobset.ROI = [];
 end
 
-coordSystemValues = {'Plate','Image'}; % in GUI
-coordSystemValuesJS = lower(coordSystemValues); % in jobset
+coordSystemValues = {'Plate','Image','Centre of mass'}; % in GUI
+coordSystemValuesJS = {'plate','image','com'}; % in jobset
 spotDetectValues = {'Histogram','Adaptive','Wavelet','None'};
 spotDetectValuesJS = {'histcut','adaptive','wavelet','none'};
 spotRefineValues = {'Centroid','MMF','None'};
