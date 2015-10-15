@@ -2,8 +2,7 @@ KiT (Kinetochore Tracking) software
 ===================================
 
 KiT is a MATLAB program for tracking kinetochores in microscopy movies in 2D or
-3D, and in multiple channels. KiT evolved from both Maki (Jaqaman, et al., JCB
-188:665-679 (2010)) and u-Track (Jaqaman, et al., Nat. Meth. 5:695-702 (2008)).
+3D, and in multiple channels.
 
 This software is licensed for use under the GNU GPL v3 license. See LICENSE file
 for details.
@@ -21,19 +20,18 @@ Usage
 An tracking experiment is organized in KiT as a 'jobset' stored in a
 mat-file. To create a jobset:
 
-   jobset = kitSetupJobs;
+   jobset = kitGUI
 
 This will display a GUI to allow modification of tracking parameters. Click
 'Select directory' to choose a directory to search for movie files. Select the
-movies to analyse by highlighting them in the list. Typically the default
-tracking parameters will be fine, but may need to be changed on a case-by-case
-basis. Finally, click 'Finish'. You will be asked to choose a location to save
-the jobset mat-file - it is recommended to save in the same directory as the
-movies. After saving, a culmulative max-projection of each movie is displayed
-one after the other. Drag a box around the cell to track to crop the
-movie. Double click to confirm each crop box.
+movies to analyse by highlighting them in the list and click Add ROI. For each
+movie, select one or more ROIs around the cell(s) to be tracked. Double click
+after drawing each ROI to save it. After ROI selection, configure tracking
+parameters. Typically the default tracking parameters will be fine, but may need
+to be changed on a case-by-case basis. Choose a name for the jobset. Finally,
+click either 'Execute' to run tracking immediately, or 'Save' to run later.
 
-To run tracking on the jobset:
+To run tracking on the jobset manually:
 
    kitRunJobs(jobset);
 
@@ -46,7 +44,7 @@ or, to run on just a subset of movies, e.g. 2, 4 and 6:
    kitRunJobs(jobset,'subset',[2 4 6]);
 
 After tracking is complete you will find a file named something like
-'kittracking_expname_moviefile.mat', where expname is replaced with the name of
+'kittracking001_expname_moviefile.mat', where expname is replaced with the name of
 jobset mat-file and moviefile is replaced with the name of the movie this result
 is associated with.
 
@@ -68,16 +66,13 @@ Many functions within KiT have optional parameters. The 'help' command is your
 friend here...
 
 
-Quick diagnostics
------------------
+Quick analysis and diagnostics
+------------------------------
 
-Assuming you've loaded a job, as described above, you can quickly examine how
-well tracking worked by using any of the following:
+Assuming you've loaded a jobset, as described above, you can quickly examine how
+well tracking worked and generate some basic plots using the analysis GUI:
 
-   kitPlateCheck(job);
-   kitPlotSisters(job);
-   KitPlotTracks(job);
-
+   kitAnalysis(jobset)
 
 Advanced usage
 --------------
@@ -95,7 +90,7 @@ particular try setting rotate, slow and plotPlane, e.g.
 
 There are more options to control tracking than those available in the GUI. Look
 at jobset.options, but you will have to inspect the code comments for
-documentation, if any.
+documentation.
 
 
 Bugs
@@ -108,14 +103,15 @@ Include:
   - Copy of the error text.
   - Jobset mat-file (if available).
 
-Movies will also be useful but should be sent via e.g. Dropbox or Files@Warwick.
+Movies will be useful but should be sent via e.g. Dropbox or Files@Warwick.
 
 
 Credits
 -------
 
-- Large portions of the core tracking code is lifted directly from Maki and
-  u-Track as mentioned above.
+- KiT evolved from both Maki (Jaqaman, et al., JCB 188:665-679 (2010)) and
+  u-Track (Jaqaman, et al., Nat. Meth. 5:695-702 (2008)). Large portions of the
+  core tracking code is lifted directly from Maki and u-Track.
 
 - E. Harry modified the u-Track mixture-model fitting to operate on 3D data,
   plus various other tweaks throughout.
@@ -123,7 +119,9 @@ Credits
 - E. Vladimirou made modifications to the coordinate system fitting for
   non-congressed kinetochores, plus various other tweaks throughout.
 
+- C. A. Smith contributed some bugfixes and additions to some of the plotting code.
+
 - J. W. Armond organised the code into its current form as KiT. He added the
-  wavelet spot finder, image-moment based coordinate system, spot intensity
+  adaptive wavelet spot finder, image-moment based coordinate system, spot intensity
   measurement, multiple channel tracking, and movie rendering. He also made a
   number of improvements toward code cleanliness and efficiency.
