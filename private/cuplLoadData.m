@@ -38,7 +38,7 @@ for i=1:nROIs
     continue;
   end
 
-  if ~isempty(data.sisterList) && ~isempty(data.sisterList(1).coords1)
+  if isfield(data,'sisterList') && ~isempty(data.sisterList) && ~isempty(data.sisterList(1).coords1)
     % Sister track coords, stored as sequential coordinates, e.g.
     % an.sisterCoords1(:,1:3) selects x,y,z of first sister.
     nSisters = length(data.sisterList);
