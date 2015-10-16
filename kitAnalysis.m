@@ -117,17 +117,26 @@ end
 
 function sistersCB(hObj,event)
   job = loadActiveJob();
-  kitPlotSisters(job,'minLength',str2double(handles.minLength.String)/100,'channel',ch);
+  minLen = str2double(handles.minLength.String)/100;
+  kitPlotSisters(job,'minLength',minLen,'channel',ch);
 end
 
 function tracksCB(hObj,event)
   job = loadActiveJob();
-  kitPlotTracks(job,'minLength',str2double(handles.minLength.String)/100,'channel',ch);
+  minLen = str2double(handles.minLength.String)/100;
+  kitPlotTracks(job,'minLength',minLen,'channel',ch);
 end
 
 function plateCB(hObj,event)
   job = loadActiveJob();
   kitPlateCheck(job,'channel',ch);
+end
+
+function intensityCB(hObj,event)
+  job = loadActiveJob();
+  signalCh = str2double(handles.intensityCh.String);
+  minLen = str2double(handles.minLength.String)/100;
+  kitPlotSisterSignal(job,signalCh,'channel',ch,'minLength',minLen);
 end
 
 function diagsCB(hObj,event)
