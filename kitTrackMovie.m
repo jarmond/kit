@@ -43,6 +43,12 @@ if isempty(channels)
 end
 job.analyzedChannels = channels;
 
+% Make dataStructs and take into account any changed options.
+for c = channels
+  ds = kitMakeMakiDatastruct(job,c);
+  job.dataStruct{c}.dataProperties = ds.dataProperties;
+end
+
 if ismember(1,tasks)
   % Find 3D spot coordinates per frame.
   for c = channels
@@ -54,12 +60,6 @@ if ismember(1,tasks)
       warning('Giving up on job.');
       return
     end
-  end
-else
-  % Take into account any changed options.
-  for c = channels
-    ds = kitMakeMakiDatastruct(job,c);
-    job.dataStruct{c}.dataProperties = ds.dataProperties;
   end
 end
 

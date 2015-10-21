@@ -26,8 +26,6 @@ else
 end
 
 % Set up data struct.
-dataStruct = kitMakeMakiDatastruct(job, channel);
-job.dataStruct{channel} = dataStruct;
 options = job.options;
 
 nFrames = job.metadata.nFrames;
