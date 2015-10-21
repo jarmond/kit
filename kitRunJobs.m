@@ -76,27 +76,27 @@ end
 
 % Copy out job info for each movie.
 jobs = cell(nROIs,1);
-if options.existing
-  for i=1:nROIs
+for i=1:nROIs
+  if options.existing
     jobs{i} = kitLoadJob(jobset,i);
-  end
-else
-  for i=1:nROIs
+    % Copy over any new options.
+    jobs{i}.options = jobset.options;
+  else
     jobs{i} = jobset;
     jobs{i}.movie = jobset.ROI(i).movie;
     jobs{i}.index = i;
     jobs{i}.crop = jobset.ROI(i).crop;
     jobs{i}.cropSize = jobset.ROI(i).cropSize;
-    % Update versions, may be different to jobset creator.
-    jobs{i}.version = kitVersion();
-    jobs{i}.matlabVersion = version;
-    %jobs{i}.lociVersion = char(loci.formats.FormatTools.VERSION);
-    % Record host.
-    if ispc
-      [~,jobs{i}.host] = system('echo %COMPUTERNAME%');
-    else
-      [~,jobs{i}.host] = system('hostname');
-    end
+  end
+  % Update versions, may be different to jobset creator.
+  jobs{i}.version = kitVersion();
+  jobs{i}.matlabVersion = version;
+  %jobs{i}.lociVersion = char(loci.formats.FormatTools.VERSION);
+  % Record host.
+  if ispc
+    [~,jobs{i}.host] = system('echo %COMPUTERNAME%');
+  else
+    [~,jobs{i}.host] = system('hostname');
   end
 end
 
