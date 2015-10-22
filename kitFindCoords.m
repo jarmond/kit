@@ -51,7 +51,7 @@ localMaxima = repmat(struct('cands',[]),nFrames,1);
 % Find candidate spots.
 switch spotMode
   case 'histcut'
-    kitLog('Detecting spot candidates using unimodal histogram threshold');
+    kitLog('Detecting particle candidates using unimodal histogram threshold');
     spots = cell(nFrames,1);
     for i=1:nFrames
       img = movie(:,:,:,i);
@@ -59,11 +59,11 @@ switch spotMode
     end
 
   case 'adaptive'
-    kitLog('Detecting spot candidates using adaptive thresholding');
+    kitLog('Detecting particle candidates using adaptive thresholding');
     spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
 
   case 'wavelet'
-    kitLog('Detecting spot candidates using multiscale wavelet product');
+    kitLog('Detecting particle candidates using multiscale wavelet product');
     if options.waveletLevelAdapt
      options.waveletLevelThresh = waveletAdapt(movie,options);
      job.options = options;
@@ -76,7 +76,7 @@ switch spotMode
     end
 
   otherwise
-    error('Unknown spot detector: %s',spotMode);
+    error('Unknown particle detector: %s',spotMode);
 end
 
 nSpots = zeros(nFrames,1);
@@ -108,7 +108,7 @@ for i=1:nFrames
     end
   end
 end
-kitLog('Average spots per frame: %.1f +/- %.1f',mean(nSpots),std(nSpots));
+kitLog('Average particles per frame: %.1f +/- %.1f',mean(nSpots),std(nSpots));
 
 % Refine spot candidates.
 switch method

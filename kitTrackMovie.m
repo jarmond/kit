@@ -52,7 +52,7 @@ end
 if ismember(1,tasks)
   % Find 3D spot coordinates per frame.
   for c = channels
-    kitLog('Finding spot coordinates in channel %d',c);
+    kitLog('Finding particle coordinates in channel %d',c);
     job = kitFindCoords(job, reader, c);
     job = kitSaveJob(job);
     % Give up if spot finding failed.
@@ -96,7 +96,7 @@ end
 if ismember(3,tasks)
   % Track spots.
   for c = channels
-    kitLog('Tracking spots in channel %d', c);
+    kitLog('Tracking particles in channel %d', c);
     job.dataStruct{c} = kitGenerateTracks(job.dataStruct{c});
   end
   job = kitSaveJob(job);
@@ -143,7 +143,7 @@ end
 if ismember(8,tasks)
   % Read spot intensity.
   for c = channels
-    kitLog('Measure spot intensity in channel %d',c);
+    kitLog('Measure particle intensity in channel %d',c);
     job = kitLocalIntensityTracks(job, reader, job.metadata, c);
   end
   job = kitSaveJob(job);

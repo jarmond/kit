@@ -43,7 +43,7 @@ end
 %initialize initCoord
 initCoord(1:nFrames) = struct('allCoord',[],'allCoordPix',[],'nSpots',0,'amp',[],'bg',[]);
 
-kitLog('Refining spots using mixture-model fitting');
+kitLog('Refining particles using mixture-model fitting');
 prog = kitProgress(0);
 %go over all non-empty images ...
 for iImage = goodImages
@@ -87,7 +87,7 @@ for iImage = goodImages
       plot(coordList(:,1),coordList(:,2),'rx');
     end
 
-    title('MMF fitted spots (r), cands (b), amp rej (g), dist rej (y)');
+    title('MMF fitted particles (r), cands (b), amp rej (g), dist rej (y)');
     hold off;
     drawnow;
     switch options.debug.showMmfFinal
