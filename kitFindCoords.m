@@ -31,7 +31,7 @@ options = job.options;
 nFrames = job.metadata.nFrames;
 is3D = job.metadata.is3D;
 ndims = 2 + is3D;
-filters = createFilters(ndims,dataStruct.dataProperties);
+filters = createFilters(ndims,job.dataStruct{channel}.dataProperties);
 
 % Read image
 movie = kitReadWholeMovie(reader,job.metadata,channel,job.crop,0,1);
@@ -55,7 +55,7 @@ switch spotMode
     spots = cell(nFrames,1);
     for i=1:nFrames
       img = movie(:,:,:,i);
-      spots{i} = histcutSpots(img,options,dataStruct.dataProperties);
+      spots{i} = histcutSpots(img,options,job.dataStruct{channel}.dataProperties);
     end
 
   case 'adaptive'
