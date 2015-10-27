@@ -16,6 +16,10 @@ function kitMakeSpotMovie(job, varargin)
 %
 %    plotSpots: 0 or {1}. Draw spots.
 %
+%    plotSisterFrames: {[]} or cell array. Plot arrows next to sisters in
+%    specific frames. Cell array with sister indexs in first element and
+%    corresponding frame lists in subsequent entrys.
+%
 %    annotate: {0} or 1. Add annotation with frame time, number etc..
 %
 %    showAttach: {0} or 1. Indicate pole attachment with triangle.
@@ -82,6 +86,7 @@ opts.intensityGraph = 0;
 opts.centerZoom = 0;
 opts.plotTracks = 0;
 opts.plotMaxCoord = 0; % Channel to plot max coord for.
+opts.plotSisterFrames = [];
 opts.drawMask = 0;
 opts.annotate = 1; % Add annotation text.
 opts.plotSpots = 1;
@@ -128,6 +133,8 @@ if opts.trackChannel == 0
 else
   plotChans = opts.trackChannel;
 end
+initCoord = job.dataStruct{plotChans}.initCoord;
+tracks = job.dataStruct{plotChans}.tracks;
 sisterList = job.dataStruct{plotChans}.sisterList;
 trackList = job.dataStruct{plotChans}.trackList;
 if isfield(job.dataStruct{plotChans},'trackInt')
@@ -317,7 +324,7 @@ for i=1:md.nFrames
         end
       end
     end
-  elseif opts.plotSisters == 1
+  elseif opts.plotSisters == 1 ||  ~isempty(opts.plotSisterFrames)
     % Plot sisters.
     for c=plotChans
       sisterCoords1 = horzcat(sisterList.coords1);
@@ -330,9 +337,35 @@ for i=1:md.nFrames
       coords1 = coords1 + repmat(imgCentre,size(coords1,1),1);
       coords2 = coords2 + repmat(imgCentre,size(coords2,1),1);
 
-      for k=1:size(coords1,1)
-        plot(coords1(k,1),coords1(k,2),'x','Color',colors(k,:))
-        plot(coords2(k,1),coords2(k,2),'x','Color',colors(k,:))
+      if opts.plotSisters
+        for k=1:size(coords1,1)
+          plot(coords1(k,1),coords1(k,2),'x','Color',colors(k,:))
+          plot(coords2(k,1),coords2(k,2),'x','Color',colors(k,:))
+        end
+      else
+        pairs = sisterList(1).trackPairs(:,1:2);
+        idx = opts.plotSisterFrames{1};
+        frames = opts.plotSisterFrames(2:end);
+        for k=1:length(idx)
+          if ismember(i,frames{k})
+            % get pixel coords.
+            p = pairs(idx(k),1:2);
+            if length(tracks(p(1)).tracksFeatIndxCG)>=i
+              f1 = tracks(p(1)).tracksFeatIndxCG(i);
+              if f1>0
+                plot(initCoord(i).allCoordPix(f1,1),initCoord(i).allCoordPix(f1,2),'rx')
+              end
+            end
+            if length(tracks(p(2)).tracksFeatIndxCG)>=i
+              f2 = tracks(p(2)).tracksFeatIndxCG(i);
+              if f2>0
+                plot(initCoord(i).allCoordPix(f2,1),initCoord(i).allCoordPix(f2,2),'rx')
+              end
+            end
+            %plot(coords1(idx(k),1),coords1(idx(k),2),'rx')
+            %plot(coords2(idx(k),1),coords2(idx(k),2),'rx')
+          end
+        end
       end
     end
   end
