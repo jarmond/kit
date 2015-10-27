@@ -24,7 +24,8 @@ f(end+1) = struct('field','sisterPoints','fn',id,'name','sister points','fmt','d
 f(end+1) = struct('field','percentWithPlane','fn',id,'name','plane fits','fmt','.1f');
 f(end+1) = struct('field','sisterVar','fn',@(x) sqrt(x),'name','std dev','fmt','.3f');
 f(end+1) = struct('field','sisterDisp','fn',id,'name','mean disp','fmt','.3f');
-f(end+1) = struct('field','nLongSisters','fn',id,'name','# long sisters','fmt','d');
+f(end+1) = struct('field','nLongSisters','fn',id,'name','# long','fmt','d');
+f(end+1) = struct('field','nFullSisters','fn',id,'name','# full','fmt','d');
 f(end+1) = struct('field','elapsedTime','fn',@(x) floor(x/60),'name','time(min)','fmt','d');
 fields = f;
 

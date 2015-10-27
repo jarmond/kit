@@ -58,14 +58,16 @@ else
   diag.sisterPoints = 0;
 end
 
-% Number of sister tracks with 75% length.
+% Number of sister tracks with 75%/100% length.
 if diag.nSisters > 0
   nFrames = size(coords,1);
   cutOff = floor(0.75*nFrames);
   coords = horzcat(ds.sisterList.coords1);
   diag.nLongSisters = sum(sum(~isnan(coords(:,1:6:end))) > cutOff);
+  diag.nFullSisters = sum(~any(isnan(coords(:,1:6:end)),1));
 else
   diag.nLongSisters = 0;
+  diag.nFullSisters = 0;
 end
 
 % Store result.
