@@ -104,6 +104,7 @@ end
 
 
 exceptions = [];
+pbsid = [];
 for i = options.subset
   switch options.exec
     case 'batch'
@@ -130,12 +131,19 @@ for i = options.subset
       kitLog('Submitting tracking jobs to PBS');
       [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
       trackFile = [trackFile ext];
-      cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplate.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
-      disp(cmd);
+      cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d ',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
+      if ~isempty(pbsid)
+        % Stagger execution to avoid overloading ssh when staging files.
+        cmd = [cmd '-Wdepend=after:' pbsid ' '];
+      end
+      cmd = [cmd 'private/pbstemplate.pbs'];
       [status,result] = system(cmd);
       if status~=0
         fprintf('Error submitting PBS job for job %d: %s\n',i,result);
-       end
+        pbsid = [];
+      else
+        pbsid = result;
+      end
   end
 end
 
