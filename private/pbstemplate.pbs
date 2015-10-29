@@ -1,0 +1,10 @@
+#!/bin/sh
+#PBS -l walltime=2:00:00
+#PBS -l mem=2gb,ncpus=1
+#PBS -W stagein=$MOVIE_FILE@$MOVIE_DIR/$MOVIE_FILE
+#PBS -W stageout=$TRACK_FILE@$MOVIE_DIR/$TRACK_FILE
+
+# PBS template for KiT. Edit to suit your configuration.
+
+cd $HOME/kit
+matlab -nodesktop -nosplash -singleCompThread -r "js=kitLoadJobset($JOBSET_FILE);js.movieDirectory='.';kitRunJobs(js,'subset',$JOB_ID);"

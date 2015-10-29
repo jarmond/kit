@@ -19,8 +19,7 @@ function kitRunJobs(jobset,varargin)
 %
 %    existing: {0} or 1. Load existing jobs first.
 %
-%    parallel: {0} or 1. Set 1 to use multiple processors to parallel
-%    process.
+%    exec: {'serial'}, 'batch', 'pbs'. Execution mode.
 %
 %    subset: {[]} or vector of job numbers. Set to a subset of indices of movies
 %    to analysis, instead of processing them all.
@@ -48,7 +47,7 @@ nROIs = length(jobset.ROI);
 
 % Default options.
 options.subset = 1:nROIs;
-options.parallel = 0;
+options.exec = 'serial';
 options.errorfail = 0;
 options.tasks = 1:7;
 options.existing = 0;
@@ -60,13 +59,19 @@ options = processOptions(options, varargin{:});
 if ~all(ismember(options.subset,1:nROIs))
   error('Subset values must be in range 1 to %d',nROIs);
 end
+if strcmp(options.exec,'pbs') && ~isequal(options.subset,1:nROIs)
+  error('Cannot subset PBS jobset.');
+end
 
 % If using matlabpool for parallel computation, report workers.
 [~,name] = fileparts(jobset.filename);
-if options.parallel
-  kitLog(['Running ' name ' in parallel']);
-else
-  kitLog(['Running ' name ' serially']);
+switch options.exec
+  case 'batch'
+    kitLog(['Running ' name ' in parallel']);
+  case 'serial'
+    kitLog(['Running ' name ' serially']);
+  case 'pbs'
+    kitLog(['Running ' name ' using PBS']);
 end
 
 
@@ -103,28 +108,40 @@ end
 
 exceptions = [];
 for i = options.subset
-  if options.parallel
-    kitLog('Submitting tracking job %d', i);
-    batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
-  else
-    try
-      kitLog('Tracking job %d', i);
-      kitTrackMovie(jobs{i},options.tasks);
-      if ~isempty(options.callback)
-        options.callback(i);
+  switch options.exec
+    case 'batch'
+      kitLog('Submitting tracking job %d', i);
+      batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
+    case 'serial'
+      try
+        kitLog('Tracking job %d', i);
+        kitTrackMovie(jobs{i},options.tasks);
+        if ~isempty(options.callback)
+          options.callback(i);
+        end
+      catch me
+        kitLog('Error in job %d: %s',i,me.identifier);
+        ex.me = me;
+        ex.idx = i;
+        exceptions = [exceptions ex];
+        if options.errorfail
+          disp(getReport(me));
+          throw(me);
+        end
       end
-    catch me
-      kitLog('Error in job %d: %s',i,me.identifier);
-      ex.me = me;
-      ex.idx = i;
-      exceptions = [exceptions ex];
-      if options.errorfail
-        disp(getReport(me));
-        throw(me);
-      end
-    end
+    case 'pbs'
+      kitLog('Submitting tracking jobs to PBS');
+      [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
+      trackFile = [trackFile ext];
+      cmd = sprintf('qsub -z -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplate.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
+      disp(cmd);
+      % [status,result] = system(cmd);
+      % if status~=0
+      %   fprintf('Error submitting PBS job for task %d: %s\n',task_id,result);
+      % end
   end
 end
+
 
 if ~isempty(exceptions)
   disp('Errors occured:')
@@ -135,7 +152,7 @@ for i = 1:length(exceptions)
   disp(getReport(ex.me));
 end
 
-if options.parallel
+if strcmp(options.exec,'batch');
   % Wait for parallel tracking jobs.
   for i = options.subset
     kitLog('Waiting for %d tracking jobs to complete', length(options.subset)-i+1);
