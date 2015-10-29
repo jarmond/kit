@@ -135,10 +135,10 @@ for i = options.subset
       trackFile = [trackFile ext];
       cmd = sprintf('qsub -z -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplate.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
       disp(cmd);
-      % [status,result] = system(cmd);
-      % if status~=0
-      %   fprintf('Error submitting PBS job for task %d: %s\n',task_id,result);
-      % end
+      [status,result] = system(cmd);
+      if status~=0
+        fprintf('Error submitting PBS job for task %d: %s\n',task_id,result);
+       end
   end
 end
 
