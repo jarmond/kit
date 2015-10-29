@@ -52,6 +52,7 @@ options.errorfail = 0;
 options.tasks = 1:7;
 options.existing = 0;
 options.callback = [];
+options.email = [];
 % Get user options.
 options = processOptions(options, varargin{:});
 
@@ -104,7 +105,7 @@ end
 
 
 exceptions = [];
-pbsid = [];
+pbsid = {};
 for i = options.subset
   switch options.exec
     case 'batch'
@@ -134,16 +135,24 @@ for i = options.subset
       cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d ',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
       if ~isempty(pbsid)
         % Stagger execution to avoid overloading ssh when staging files.
-        cmd = [cmd '-Wdepend=after:' pbsid ' '];
+        cmd = [cmd '-Wdepend=after:' pbsid{i-1} ' '];
       end
       cmd = [cmd 'private/pbstemplate.pbs'];
       [status,result] = system(cmd);
       if status~=0
-        fprintf('Error submitting PBS job for job %d: %s\n',i,result);
-        pbsid = [];
+        error('Error submitting PBS job for job %d: %s',i,result);
       else
-        pbsid = result;
+        pbsid = [pbsid result];
       end
+  end
+end
+
+if strcmp(options.exec,'pbs') && ~isempty(options.email) && ~isempty(pbsid)
+  pbsid
+  cmd = sprintf('qsub -N %s -m e -M %s -Wdepend=afterany:%s',name,options.email,strjoin(pbsid,':'));
+  [status,result] = system(cmd);
+  if status~=0
+    error('Error submitting PBS mail job: %s',result);
   end
 end
 
