@@ -129,13 +129,13 @@ for i = options.subset
         end
       end
     case 'pbs'
-      kitLog('Submitting tracking jobs to PBS');
+      kitLog('Submitting tracking job %d to PBS',i);
       [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
       trackFile = [trackFile ext];
       cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d ',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
       if ~isempty(pbsid)
         % Stagger execution to avoid overloading ssh when staging files.
-        cmd = [cmd '-Wdepend=after:' pbsid{i-1} ' '];
+        cmd = [cmd '-Wdepend=after:' strjoin(pbsid,':') ' '];
       end
       cmd = [cmd 'private/pbstemplate.pbs'];
       [status,result] = system(cmd);
