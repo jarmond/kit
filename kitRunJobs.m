@@ -59,9 +59,6 @@ options = processOptions(options, varargin{:});
 if ~all(ismember(options.subset,1:nROIs))
   error('Subset values must be in range 1 to %d',nROIs);
 end
-if strcmp(options.exec,'pbs') && ~isequal(options.subset,1:nROIs)
-  error('Cannot subset PBS jobset.');
-end
 
 % If using matlabpool for parallel computation, report workers.
 [~,name] = fileparts(jobset.filename);
@@ -133,11 +130,11 @@ for i = options.subset
       kitLog('Submitting tracking jobs to PBS');
       [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
       trackFile = [trackFile ext];
-      cmd = sprintf('qsub -z -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplate.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
+      cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplate.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
       disp(cmd);
       [status,result] = system(cmd);
       if status~=0
-        fprintf('Error submitting PBS job for task %d: %s\n',task_id,result);
+        fprintf('Error submitting PBS job for job %d: %s\n',i,result);
        end
   end
 end
@@ -163,7 +160,12 @@ if strcmp(options.exec,'batch');
   end
 end
 
-kitLog('Tracking complete');
+switch options.exec
+  case {'serial','batch'}
+    kitLog('Tracking complete');
+  case 'pbs'
+    kitLog('Submission complete');
+end
 
 % Dump jobset diagnostics.
 [pathstr,name,ext] = fileparts(jobset.filename);
