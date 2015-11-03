@@ -30,6 +30,12 @@ if nargin < 5 || isempty(verbose)
   verbose = false;
 end
 
+% if insufficient data, give up and return nan, rather than crash.
+if numel(data) < 2
+  cutValue = nan;
+  return
+end
+
 % first guess via cutFirstHistMode - put as 1 to see histograms
 [cutIdx, cutVal,sp] = cutFirstHistMode(data,0);
 

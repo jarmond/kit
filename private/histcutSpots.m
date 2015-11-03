@@ -49,11 +49,14 @@ poisson = amp./sqrt(noise./max(amp,eps));
 % Filter out spots by cutting first histogram mode.
 z = zeros(size(amp));
 % amplitude
-cutoff(1) = splitModes(amp(~isApproxEqual(amp,z,[],'absolute')),[],[],[]);
+amp = amp(~isApproxEqual(amp,z,[],'absolute'));
+cutoff(1) = splitModes(amp,[],[],[]);
 % amplitude/sqrt(noise) - dark noise
-cutoff(2) = splitModes(dark(~isApproxEqual(dark,z,[],'absolute')),[],[],[]);
+dark = dark(~isApproxEqual(dark,z,[],'absolute'));
+cutoff(2) = splitModes(dark,[],[],[]);
 % amplitude/sqrt(noise/amp) - poisson
-cutoff(3) = splitModes(poisson(~isApproxEqual(poisson,z,[],'absolute')),[],[],[]);
+poisson = poisson(~isApproxEqual(poisson,z,[],'absolute'));
+cutoff(3) = splitModes(poisson,[],[],[]);
 
 if verbose
   figure(1)

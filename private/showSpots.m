@@ -1,12 +1,21 @@
-function showSpots(img,spots,pixels)
-% Display spots on top of image.
+function showSpots(img,spots,pixels,transpose)
+% Display spots on top of image. Spots can be cell array then multiple colours used in non-pixel mode.
 
 if nargin<3
   pixels=0; % Set to rgb triple for colour.
 end
+if nargin<4
+  transpose=0;
+end
+
+if transpose
+  tx=2; ty=1;
+else
+  tx=1; ty=2;
+end
 
 h=figure(1);
-if (isscalar(pixels) && pixels) || ~isscalar(pixels)
+if ((isscalar(pixels) && pixels) || ~isscalar(pixels)) && ~iscell(spots)
   % If 3D image, max project.
   img = max(img,[],3);
 
@@ -20,13 +29,16 @@ if (isscalar(pixels) && pixels) || ~isscalar(pixels)
   end
 
   % Plot image.
-  imshow(img);
+  imshow(img,[]);
   drawnow;
 else
-  imshow(max(img,[],3));
+  if ~isempty(spots) && ~iscell(spots)
+    spots = {spots};
+  end
+  imshow(max(img,[],3),[]);
   hold on;
-  if ~isempty(spots)
-    plot(spots(:,2),spots(:,1),'rx');
+  for i=1:length(spots)
+        plot(spots{i}(:,tx),spots{i}(:,ty),'x');
   end
   hold off;
 end

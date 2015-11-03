@@ -1,26 +1,29 @@
 function job=kitTrackMovie(job,tasks)
 % KITTRACKMOVIE Generates tracks for a single movie
 %
-%    JOB = KITTRACKMOVIE(JOB) Generates tracks for a single movie described by
+%    JOB = KITTRACKMOVIE(JOB,TASKS) Generates tracks for a single movie described by
 %    JOB. Populates cell array field .dataStruct with results for each channel.
 %
-% Copyright (c) 2013 Jonathan W. Armond
+% Tasks:
+% 1: finding particles
+% 2: fitting plane
+% 3: tracking particles
+% 4: grouping sisters
+% 5: extracting tracks
+% 6: updating classes
+% 7: aligning
+% 8: intensity
+% 9: iterative particle detection (occurs between 3 and 4)
+%
+% Copyright (c) 2015 Jonathan W. Armond
 
 tstart = tic;
 
 if nargin<2
   tasks = 1:7;
 end
-% 1: finding spots
-% 2: fitting plane
-% 3: tracking spots
-% 4: grouping sisters
-% 5: extracting tracks
-% 6: updating classes
-% 7: aligning
-% 8: intensity
 
-if any(ismember(tasks,[1 2 8]))
+if any(ismember(tasks,[1 2 8 9]))
   % Open movie and read metadata.
   [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
   job = kitSaveJob(job);
@@ -98,6 +101,14 @@ if ismember(3,tasks)
   for c = channels
     kitLog('Tracking particles in channel %d', c);
     job.dataStruct{c} = kitGenerateTracks(job.dataStruct{c});
+  end
+  job = kitSaveJob(job);
+end
+
+if ismember(9,tasks)
+  for c = channels
+    kitLog('Iteratively detecting particles in channel %d', c);
+    job = kitIterative(job,reader,c);
   end
   job = kitSaveJob(job);
 end

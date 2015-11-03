@@ -284,6 +284,7 @@ for i=1:nClusters
     numCands = numCands - 1;
     if numCands == 0
       if verbose
+        kitLog('Removed candidate failing ampltitude test, p=%f',pValueMax);
         kitLog('All candidates removed due to failing ampltitude test');
       end
       break;
