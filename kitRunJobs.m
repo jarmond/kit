@@ -19,7 +19,7 @@ function kitRunJobs(jobset,varargin)
 %
 %    existing: {0} or 1. Load existing jobs first.
 %
-%    exec: {'serial'}, 'batch', 'pbs'. Execution mode.
+%    exec: {'serial'}, 'batch', 'pbs', 'pbsstage'. Execution mode.
 %
 %    subset: {[]} or vector of job numbers. Set to a subset of indices of movies
 %    to analysis, instead of processing them all.
@@ -68,7 +68,7 @@ switch options.exec
     kitLog(['Running ' name ' in parallel']);
   case 'serial'
     kitLog(['Running ' name ' serially']);
-  case 'pbs'
+  case {'pbs','pbsstage'}
     kitLog(['Running ' name ' using PBS']);
 end
 
@@ -105,50 +105,50 @@ end
 
 
 exceptions = [];
-pbsid = {};
-for i = options.subset
-  switch options.exec
-    case 'batch'
-      kitLog('Submitting tracking job %d', i);
-      batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
-    case 'serial'
-      try
-        kitLog('Tracking job %d', i);
-        kitTrackMovie(jobs{i},options.tasks);
-        if ~isempty(options.callback)
-          options.callback(i);
-        end
-      catch me
-        kitLog('Error in job %d: %s',i,me.identifier);
-        ex.me = me;
-        ex.idx = i;
-        exceptions = [exceptions ex];
-        if options.errorfail
-          disp(getReport(me));
-          throw(me);
-        end
-      end
-    case 'pbs'
-      kitLog('Submitting tracking job %d to PBS',i);
-      [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
-      trackFile = [trackFile ext];
-      cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplate.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
-      [status,result] = system(cmd);
-      if status~=0
-        error('Error submitting PBS job for job %d: %s',i,result);
-      else
-        pbsid = [pbsid result];
-      end
-      pause(0.5); % Wait a little bit.
+if strcmp(options.exec,'pbs')
+  cmd = sprintf('qsub -N KiT_%s -v JOBSET_FILE="%s" -t %s',name,jobset.filename,strjoin(arrayfun(@num2str,options.subset,'uniformoutput',0),','));
+  if ~isempty(options.email)
+    cmd = [cmd ' -m e -M ' options.email];
   end
-end
-
-if strcmp(options.exec,'pbs') && ~isempty(options.email) && ~isempty(pbsid)
-  pbsid
-  cmd = sprintf('qsub -N %s -m e -M %s -Wdepend=afterany:%s',name,options.email,strjoin(pbsid,':'));
+  cmd = [cmd ' private/pbstemplate.pbs'],
   [status,result] = system(cmd);
   if status~=0
-    error('Error submitting PBS mail job: %s',result);
+    error('Error submitting PBS job: %s',result);
+  end
+else
+  for i = options.subset
+    switch options.exec
+      case 'batch'
+        kitLog('Submitting tracking job %d', i);
+        batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
+      case 'serial'
+        try
+          kitLog('Tracking job %d', i);
+          kitTrackMovie(jobs{i},options.tasks);
+          if ~isempty(options.callback)
+            options.callback(i);
+          end
+        catch me
+          kitLog('Error in job %d: %s',i,me.identifier);
+          ex.me = me;
+          ex.idx = i;
+          exceptions = [exceptions ex];
+          if options.errorfail
+            disp(getReport(me));
+            throw(me);
+          end
+        end
+      case 'pbsstage'
+        kitLog('Submitting tracking job %d to PBS with staging',i);
+        [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
+        trackFile = [trackFile ext];
+        cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplatestage.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
+        [status,result] = system(cmd);
+        if status~=0
+          error('Error submitting PBS job for job %d: %s',i,result);
+        end
+        pause(0.5); % Wait a little bit.
+    end
   end
 end
 
