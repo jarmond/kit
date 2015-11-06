@@ -21,8 +21,13 @@ end
 filters = createFilters(ndims,dataProperties);
 
 % Filter image.
-imageF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
-background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
+if verLessThan('images','9.2')
+  imageF = fastGauss3D(img,filters.signalP(1:3),filters.signalP(4:6));
+  background = fastGauss3D(img,filters.backgroundP(1:3),filters.backgroundP(4:6));
+else
+  imageF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
+  background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
+end
 imageNoise = (img-imageF).^2;
 imageNoise = imfilter(imageNoise,fspecial('average',min(cellfun(@numel,filters.noise))));
 
