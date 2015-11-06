@@ -1,6 +1,7 @@
 #!/bin/bash
 #PBS -l walltime=2:00:00
-#PBS -l mem=2gb,ncpus=1
+#PBS -l pmem=2gb
+#PBS -l ncpus=1
 #PBS -V
 #PBS -e localhost:$HOME/$PBS_JOBNAME.err
 #PBS -o localhost:$HOME/$PBS_JOBNAME.out
