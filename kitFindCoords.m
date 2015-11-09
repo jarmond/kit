@@ -89,7 +89,11 @@ for i=1:nFrames
   % Store the cands of the current image
   % TODO this is computed in both spot detectors, just return it.
   img = movie(:,:,:,i);
-  background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
+  if verLessThan('images','9.2')
+    background = fastGauss3D(img,filters.backgroundP(1:3),filters.backgroundP(4:6));
+  else
+    background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
+  end
   localMaxima(i).cands = spots{i};
   spots1D = sub2ind(size(img),spots{i}(:,1),spots{i}(:,2),spots{i}(:,3));
   localMaxima(i).candsAmp = img(spots1D);

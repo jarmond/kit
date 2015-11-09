@@ -11,6 +11,8 @@ if nargin<3 || isempty(verbose)
   verbose = 0;
 end
 
+have92 = ~verLessThan('images','9.2');
+
 % Go over all frames and find local maxima.
 nFrames = size(movie,4);
 locs = cell(nFrames,1);
@@ -19,8 +21,13 @@ for i=1:nFrames
   img = movie(:,:,:,i);
   meanInt(i) = mean(img(:));
   % TODO options?
-  imgF = imgaussfilt3(img,2,'FilterSize',3);
-  bkgd = imgaussfilt3(img,16,'FilterSize',63);
+  if have92
+    imgF = imgaussfilt3(img,2,'FilterSize',3);
+    bkgd = imgaussfilt3(img,16,'FilterSize',63);
+  else
+    imgF = fastGauss3D(img,2,3);
+    bkgd = fastGauss3D(img,16,63);
+  end
   amp = imgF-bkgd;
 
   bw = imregionalmax(amp);
