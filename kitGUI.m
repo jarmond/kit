@@ -10,6 +10,12 @@ if nargin<1 || isempty(jobset)
   jobset = kitDefaultOptions();
 end
 
+% Upgrade jobset, if required.
+if ~isfield(jobset,'jobsetVersion') || ...
+    jobset.jobsetVersion < kitVersion(2)
+  jobset = kitJobset(jobset);
+end
+
 if ~isfield(jobset,'ROI')
   jobset.ROI = [];
 end

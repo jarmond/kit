@@ -39,8 +39,8 @@ end
 kitDownloadBioFormats();
 
 % Upgrade jobset options, if required.
-if ~isfield(jobset.options,'jobsetVersion') || ...
-    jobset.options.jobsetVersion < kitVersion(2)
+if ~isfield(jobset,'jobsetVersion') || ...
+    jobset.jobsetVersion < kitVersion(2)
   jobset = kitJobset(jobset);
 end
 
