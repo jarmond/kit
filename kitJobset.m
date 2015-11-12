@@ -5,7 +5,7 @@ if nargin<1
   jobset = kitDefaultOptions();
 end
 
-if jobset.jobsetVersion < 6
+if jobset.jobsetVersion < kitVersion(2)
   % Upgrade to use ROIs.
   for i=1:length(jobset.crop)
     jobset.ROI(i).movie = jobset.movieFiles{i};
@@ -14,6 +14,7 @@ if jobset.jobsetVersion < 6
   end
   jobset = rmfield(jobset,{'crop','cropSize'});
   jobset.movieFiles = unique(jobset.movieFiles);
+  jobset.jobsetVersion = kitVersion(2);
 end
 
 % Copy any missing fields.
