@@ -5,7 +5,7 @@ function kitPrintDiagnostics(dataStruct)
 
 diag = dataStruct.diagnostics;
 
-fprintf('Elasped compute time: %s\n',timeString(diag.elapsedTime));
+fprintf('Elapsed compute time: %s\n',timeString(diag.elapsedTime));
 fprintf('Particles per frame: %.1f\n',diag.nSpotsPerFrame);
 fprintf('# sister pairs tracked: %d\n',diag.nSisters);
 fprintf('# individual KTs tracked: %d\n',diag.nTracks);
