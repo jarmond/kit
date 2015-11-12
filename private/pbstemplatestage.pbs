@@ -20,8 +20,12 @@ TRACK_FILE="$(printf %q "$TRACK_FILE")"
 TRACK_OUTFILE="$(printf %q "$MOVIE_DIR/$TRACK_FILE")"
 
 # Stagein movie. NB can't use variables in PBS -W stagein directive, so do it manually.
-echo "Copying: $MOVIE_INFILE to $MOVIE_FILE"
-scp "$MOVIE_INFILE" "$MOVIE_FILE"
+if [ ! -f "$MOVIE_FILE" ]; then
+    echo "Copying: $MOVIE_INFILE to $MOVIE_FILE"
+    scp "$MOVIE_INFILE" "$MOVIE_FILE"
+else
+    echo "Not copying, already exists: $MOVIE_INFILE"
+fi
 
 cd $HOME/kit
 matlab -nodesktop -nosplash -singleCompThread -r "js=kitLoadJobset('../$JOBSET_FILE');js.movieDirectory='..';kitRunJobs(js,'subset',$JOB_ID);"
@@ -34,4 +38,4 @@ scp "$TRACK_FILE" "$TRACK_OUTFILE"
 # Cleanup
 echo "Cleaning up"
 rm -v $TRACK_FILE
-rm -v $MOVIE_FILE
+
