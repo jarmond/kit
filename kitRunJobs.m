@@ -19,8 +19,7 @@ function kitRunJobs(jobset,varargin)
 %
 %    existing: {0} or 1. Load existing jobs first.
 %
-%    parallel: {0} or 1. Set 1 to use multiple processors to parallel
-%    process.
+%    exec: {'serial'}, 'batch', 'pbs', 'pbsstage'. Execution mode.
 %
 %    subset: {[]} or vector of job numbers. Set to a subset of indices of movies
 %    to analysis, instead of processing them all.
@@ -48,11 +47,12 @@ nROIs = length(jobset.ROI);
 
 % Default options.
 options.subset = 1:nROIs;
-options.parallel = 0;
+options.exec = 'serial';
 options.errorfail = 0;
 options.tasks = 1:7;
 options.existing = 0;
 options.callback = [];
+options.email = [];
 % Get user options.
 options = processOptions(options, varargin{:});
 
@@ -63,10 +63,13 @@ end
 
 % If using matlabpool for parallel computation, report workers.
 [~,name] = fileparts(jobset.filename);
-if options.parallel
-  kitLog(['Running ' name ' in parallel']);
-else
-  kitLog(['Running ' name ' serially']);
+switch options.exec
+  case 'batch'
+    kitLog(['Running ' name ' in parallel']);
+  case 'serial'
+    kitLog(['Running ' name ' serially']);
+  case {'pbs','pbsstage'}
+    kitLog(['Running ' name ' using PBS']);
 end
 
 
@@ -102,29 +105,53 @@ end
 
 
 exceptions = [];
-for i = options.subset
-  if options.parallel
-    kitLog('Submitting tracking job %d', i);
-    batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
-  else
-    try
-      kitLog('Tracking job %d', i);
-      kitTrackMovie(jobs{i},options.tasks);
-      if ~isempty(options.callback)
-        options.callback(i);
-      end
-    catch me
-      kitLog('Error in job %d: %s',i,me.identifier);
-      ex.me = me;
-      ex.idx = i;
-      exceptions = [exceptions ex];
-      if options.errorfail
-        disp(getReport(me));
-        throw(me);
-      end
+if strcmp(options.exec,'pbs')
+  cmd = sprintf('qsub -N KiT_%s -v JOBSET_FILE="%s" -t %s',name,jobset.filename,strjoin(arrayfun(@num2str,options.subset,'uniformoutput',0),','));
+  if ~isempty(options.email)
+    cmd = [cmd ' -m e -M ' options.email];
+  end
+  cmd = [cmd ' private/pbstemplate.pbs'],
+  [status,result] = system(cmd);
+  if status~=0
+    error('Error submitting PBS job: %s',result);
+  end
+else
+  for i = options.subset
+    switch options.exec
+      case 'batch'
+        kitLog('Submitting tracking job %d', i);
+        batchJob{i} = batch(@kitTrackMovie, 1, {jobs{i},options.tasks});
+      case 'serial'
+        try
+          kitLog('Tracking job %d', i);
+          kitTrackMovie(jobs{i},options.tasks);
+          if ~isempty(options.callback)
+            options.callback(i);
+          end
+        catch me
+          kitLog('Error in job %d: %s',i,me.identifier);
+          ex.me = me;
+          ex.idx = i;
+          exceptions = [exceptions ex];
+          if options.errorfail
+            disp(getReport(me));
+            throw(me);
+          end
+        end
+      case 'pbsstage'
+        kitLog('Submitting tracking job %d to PBS with staging',i);
+        [~,trackFile,ext] = fileparts(kitGenerateOutputFilename(jobs{i}));
+        trackFile = [trackFile ext];
+        cmd = sprintf('qsub -N KiT_%s_%d -v MOVIE_FILE="%s",MOVIE_DIR="%s",TRACK_FILE="%s",JOBSET_FILE="%s",JOB_ID=%d private/pbstemplatestage.pbs',name,i,jobset.ROI(i).movie,jobset.movieDirectory,trackFile,jobset.filename,i);
+        [status,result] = system(cmd);
+        if status~=0
+          error('Error submitting PBS job for job %d: %s',i,result);
+        end
+        pause(0.5); % Wait a little bit.
     end
   end
 end
+
 
 if ~isempty(exceptions)
   disp('Errors occured:')
@@ -135,7 +162,7 @@ for i = 1:length(exceptions)
   disp(getReport(ex.me));
 end
 
-if options.parallel
+if strcmp(options.exec,'batch');
   % Wait for parallel tracking jobs.
   for i = options.subset
     kitLog('Waiting for %d tracking jobs to complete', length(options.subset)-i+1);
@@ -146,7 +173,12 @@ if options.parallel
   end
 end
 
-kitLog('Tracking complete');
+switch options.exec
+  case {'serial','batch'}
+    kitLog('Tracking complete');
+  case 'pbs'
+    kitLog('Submission complete');
+end
 
 % Dump jobset diagnostics.
 [pathstr,name,ext] = fileparts(jobset.filename);
