@@ -28,7 +28,7 @@ elseif opts.minLength > 0
     coords = horzcat(sisterList.coords1);
     coords = coords(:,1:6:end); % X coordinate.
     nancount = sum(isnan(coords),1);
-    sisterList = sisterList(nancount < job.metadata.nFrames*(1-opts.minLength));
+    sisterList = sisterList(nancount <= job.metadata.nFrames*(1-opts.minLength));
 end
 nSisters = length(sisterList);
 
