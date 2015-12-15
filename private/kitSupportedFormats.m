@@ -10,13 +10,14 @@ if nargin<1
   asfilterspec = 0;
 end
 
-% TODO use bfGetFileExtensions
-
-% Support DV and OME-TIFFs.
+% Use bfGetFileExtensions
+exts = bfGetFileExtensions;
 if asfilterspec == 0
-  fmtregexp = '(dv|ome.tiff|ome.tif|r3d|d3d)$';
+  allExt = exts{1,1};
+  allExt = strrep(allExt,';','|');
+  allExt = strrep(allExt,'*','');
+  allExt = strrep(allExt,'.','\.');
+  fmtregexp = ['(' allExt ')$'];
 else
-  fmtregexp = {'*.*', 'All files';
-               '*.dv;*.r3d;*.d3d', 'DeltaVision files';...
-               '*.ome.tiff;*.ome.tif', 'OME files'};
+  fmtregexp = exts;
 end
