@@ -382,7 +382,7 @@ function populateMovieBox()
     handles.movies.String = [];
   else
     % Find movie files.
-    movieFiles = kitFindFiles(movieDir, kitSupportedFormats());
+    movieFiles = kitFindFiles(movieDir, kitSupportedFormats(),0,1);
     % Strip search directory from filenames.
     for i=1:length(movieFiles)
       movieFiles{i} = strrep(movieFiles{i},[movieDir filesep],'');
