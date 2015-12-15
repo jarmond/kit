@@ -125,3 +125,17 @@ Credits
   adaptive wavelet spot finder, image-moment based coordinate system, spot intensity
   measurement, multiple channel tracking, and movie rendering. He also made a
   number of improvements toward code cleanliness and efficiency.
+
+
+MATLAB requirements
+--------------------
+
+MATLAB R2014b
+MATLAB Image Processing Toolbox 9.1
+MATLAB Curve Fitting Toolbox 3.5
+MATLAB Statistics Toolbox 9.1
+
+Optional toolboxes
+------------------
+
+MATLAB Parallel Computing Toolbox 6.5
