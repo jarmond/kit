@@ -127,6 +127,10 @@ Credits
   number of improvements toward code cleanliness and efficiency.
 
 
+The KiT package contains code from various other sources. See file headers to
+identity sources and licenses.
+
+
 MATLAB requirements
 --------------------
 
