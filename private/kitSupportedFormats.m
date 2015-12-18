@@ -11,6 +11,8 @@ if nargin<1
 end
 
 % Use bfGetFileExtensions
+addpath bfmatlab;
+bfCheckJavaPath(1);
 exts = bfGetFileExtensions;
 if asfilterspec == 0
   allExt = exts{1,1};
