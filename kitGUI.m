@@ -28,21 +28,16 @@ spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 
 % Setup GUI.
-handles = createControls(jobset);
-populateROIBox();
-populateMovieBox();
-spotModeCB();
-refineModeCB();
-autoRadiiCB();
+handles = createControls();
+updateControls(jobset);
 handles.fig.Visible = 'on';
 uiwait(gcf);
 close(gcf);
 
 %% NESTED FUNCTIONS
-function hs = createControls(jobset)
-  opts = jobset.options;
-
-  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 138 44]);
+function hs = createControls()
+  colwidth = [55 42 35];
+  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 sum(colwidth)+19 44]);
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
   hs.fig.Name = ['KiT ' kitVersion(1)];
@@ -50,9 +45,12 @@ function hs = createControls(jobset)
   hs.fig.IntegerHandle = 'off';
   hs.fig.ToolBar = 'none';
 
-  movegui(hs.fig,'center');
   figpos = hs.fig.Position;
-  colwidth = [53 42 35];
+  figw = figpos(3);
+  figh = figpos(4);
+  headfont = 16;
+  medfont = 14;
+  smallfont = 12;
 
   w=25; h=8;
   hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figpos(3)-w-3 1 w h]);
@@ -60,24 +58,33 @@ function hs = createControls(jobset)
   set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
 
   %% ROI selection
+  x = 2.5;
   w = colwidth(1);
-  toplabely = figpos(4)-2;
+  toplabely = figh-2;
   % Movies
-  hs.movies = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[2.5 23 w 15.15],'Max',inf,'Min',0);
+  hs.openBtn = button(hs.fig,'Open existing...',[x toplabely 20 2],@openExistingCB);
+  hs.movies = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 0.52*figh w 0.34*figh],'Max',inf,'Min',0,'FontSize',smallfont);
   hs.movies.String = jobset.movieFiles;
-  hs.movieDirectory = editbox(hs.fig,'',[2.5 40.1 w 1.7]);
+  % undocumentedmatlab.com hack to add horizontal scrollbars
+  jScrollPane = findjobj(hs.movies);
+  jScrollPane.setHorizontalScrollBarPolicy(32);
+
+  hs.movieDirectory = editbox(hs.fig,'',[x 0.91*figh w 1.7]);
   hs.movieDirectory.Enable = 'inactive';
   hs.movieDirectory.String = jobset.movieDirectory;
-  hs.selectDirectory = button(hs.fig,'Select directory',[38.8 38.1 17.5 2],@selectDirectoryCB);
-  label(hs.fig,'Available movies:',[2.5 38.3 20 1.5]);
-  label(hs.fig,'ROI selection:',[2.5 toplabely 20 1.5],14);
+  hs.selectDirectory = button(hs.fig,'Select directory',[w-15 0.865*figh 17.5 2],@selectDirectoryCB);
+  hs.labelAvail = label(hs.fig,'Available movies:',[x 0.871*figh 20 1.5]);
 
   % ROIs
-  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[2.5 3 w 18.15]);
-  label(hs.fig,'ROIs:',[2.5 21.2 20 1.5]);
-  hs.addROI = button(hs.fig,'Add ROI',[2.5 1 13 2],@addROICB);
-  hs.viewROI = button(hs.fig,'View ROI',[17 1 13 2],@viewROICB);
-  hs.deleteROI = button(hs.fig,'Delete ROI',[32 1 13 2],@deleteROICB);
+  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 3 w 18.15]);
+  % undocumentedmatlab.com hack to add horizontal scrollbars
+  jScrollPane = findjobj(hs.ROIs);
+  jScrollPane.setHorizontalScrollBarPolicy(32);
+
+  label(hs.fig,'ROIs:',[x 21.2 20 1.5]);
+  hs.addROI = button(hs.fig,'Add ROI',[x 1 13 2],@addROICB);
+  hs.viewROI = button(hs.fig,'View ROI',[x+14.5 1 13 2],@viewROICB);
+  hs.deleteROI = button(hs.fig,'Delete ROI',[x+14.5*2 1 13 2],@deleteROICB);
 
   %% Tracking setup
   x = colwidth(1) + 3;
@@ -86,10 +93,9 @@ function hs = createControls(jobset)
   t.FontWeight = 'bold';
   % Coordinate system
   label(hs.fig,'Coordinate system',[x 40 20 1.5]);
-  hs.coordSys = popup(hs.fig,coordSystemValues,[74 40.1 20 1.5]);
-  hs.coordSys.Value = mapStrings(opts.coordSystem,coordSystemValuesJS);
+  hs.coordSys = popup(hs.fig,coordSystemValues,[x+23 40.1 20 1.5]);
   label(hs.fig,'Coordinate system channel',[x 38 30 1.5]);
-  hs.coordSysCh = editbox(hs.fig,num2str(opts.coordSystemChannel),[87 38 6 1.5]);
+  hs.coordSysCh = editbox(hs.fig,[],[x+35 38 6 1.5]);
 
   % Channel modes
   b = 32;
@@ -97,11 +103,9 @@ function hs = createControls(jobset)
   for i=1:3
     p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
     hs.spotMode{i} = popup(p,spotDetectValues,[22 2.5 0.45*w 1.5],@spotModeCB);
-    hs.spotMode{i}.Value = mapStrings(opts.spotMode{i},spotDetectValuesJS);
     label(p,'Spot detection',[1 2.5 20 1.5]);
 
     hs.refineMode{i} = popup(p,spotRefineValues,[22 0.5 0.45*w 1.5],@refineModeCB);
-    hs.refineMode{i}.Value = mapStrings(opts.coordMode{i},spotRefineValuesJS);
     label(p,'Spot refinement',[1 0.5 20 1.5]);
   end
 
@@ -126,17 +130,17 @@ function hs = createControls(jobset)
   y = y-h;
   label(hs.fig,'Jobset name',[x y labelw h],12);
   hs.filename = editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
-  if isfield(jobset,'filename')
-    [~,file] = fileparts(jobset.filename);
-    hs.filename.String = file;
-  end
   btnw = 0.5*w;
   bx = x + w - btnw;
   y = y-2*h;
   hs.save = button(hs.fig,'Save',[bx y btnw h],@saveCB);
   y = y-h;
   hs.execute = button(hs.fig,'Execute',[bx y btnw h],@executeCB);
-
+  y = y-h;
+  hs.parallel = checkbox(hs.fig,'Execute in parallel',[x y w h]);
+  if ~license('test','Distrib_Computing_Toolbox') || verLessThan('distcomp','6.5')
+    hs.parallel.Enable = 'off';
+  end
 
   %% Options
   x = sum(colwidth(1:2)) + 4;
@@ -152,17 +156,69 @@ function hs = createControls(jobset)
   editw = 0.2*w;
   editx = x+w-editw;
   t = label(hs.fig,'Frame dt',[x y labelw h],10);
-  hs.autoRadiidt = editbox(hs.fig,num2str(opts.autoRadiidt),[editx y editw h],10);
+  hs.autoRadiidt = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Est. avg. disp. of spots (um)',[x y labelw h],10);
+  t = label(hs.fig,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
   % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
   hs.autoRadiiAvgDisp = editbox(hs.fig,num2str(0.06),[editx y editw h],10);
   y = y-h;
   t = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
-  hs.minSearchRadius = editbox(hs.fig,num2str(opts.minSearchRadius(1)),[editx y editw h],10);
+  hs.minSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
   t = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
-  hs.maxSearchRadius = editbox(hs.fig,num2str(opts.maxSearchRadius(1)),[editx y editw h],10);
+  hs.maxSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
+
+  y = y-h;
+  hs.useSisterAlignment = checkbox(hs.fig,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
+  y = y-h;
+  % Adjust text box pos for multiple lines.
+  t = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
+  hs.maxSisterAlignmentAngle = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-lh;
+  t = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
+  hs.maxSisterDist = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-lh;
+  t = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
+  hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-lh;
+  t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
+  hs.minSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  t = label(hs.fig,'Weight for spot count',[x y labelw h],10);
+  hs.adaptiveLambda = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
+  y = y-h;
+  t = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
+  hs.maxMmfTime = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
+  y = y-h;
+  hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
+  hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
+
+  movegui(hs.fig,'center');
+end
+
+% Update control status based on contents of jobset.
+function updateControls(jobset)
+  hs = handles;
+  opts = jobset.options;
+
+  if isfield(jobset,'movieDirectory')
+    handles.movieDirectory.String = jobset.movieDirectory;
+  end
+  if isfield(jobset,'filename')
+    [~,file] = fileparts(jobset.filename);
+    hs.filename.String = file;
+  end
+  hs.coordSys.Value = mapStrings(opts.coordSystem,coordSystemValuesJS);
+  hs.coordSysCh.String = num2str(opts.coordSystemChannel);
+  for i=1:3
+    hs.spotMode{i}.Value = mapStrings(opts.spotMode{i},spotDetectValuesJS);
+    hs.refineMode{i}.Value = mapStrings(opts.coordMode{i},spotRefineValuesJS);
+  end
+  hs.autoRadiidt.String = num2str(opts.autoRadiidt);
   if isempty(opts.autoRadiidt)
     hs.autoRadii.Value = hs.autoRadii.Min; % Off
     hs.autoRadiidt.Enable = 'off';
@@ -176,40 +232,19 @@ function hs = createControls(jobset)
     hs.minSearchRadius.Enable = 'off';
     hs.maxSearchRadius.Enable = 'off';
   end
-
-  y = y-h;
-  hs.useSisterAlignment = checkbox(hs.fig,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
+  hs.minSearchRadius.String = num2str(opts.minSearchRadius(1));
+  hs.maxSearchRadius.String = num2str(opts.maxSearchRadius(1));
   hs.useSisterAlignment.Value = opts.useSisterAlignment;
-  y = y-h;
-  % Adjust text box pos for multiple lines.
-  t = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
-  hs.maxSisterAlignmentAngle = editbox(hs.fig,num2str(opts.maxSisterAlignmentAngle),[editx y editw h],10);
+  hs.maxSisterAlignmentAngle.String = num2str(opts.maxSisterAlignmentAngle);
   if ~hs.useSisterAlignment.Value
     hs.maxSisterAlignmentAngle.Enable = 'off';
   end
-  y = y-lh;
-  t = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
-  hs.maxSisterDist = editbox(hs.fig,num2str(opts.maxSisterSeparation),[editx y editw h],10);
-  y = y-lh;
-  t = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
-  hs.minSisterTrackOverlap = editbox(hs.fig,num2str(opts.minSisterTrackOverlap),[editx y editw h],10);
-  y = y-lh;
-  t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
-  hs.minSpotsPerFrame = editbox(hs.fig,num2str(opts.minSpotsPerFrame),[editx y editw h],10);
-  y = y-h;
-  t = label(hs.fig,'Weight for spot count',[x y labelw h],10);
-  hs.adaptiveLambda = editbox(hs.fig,num2str(opts.adaptiveLambda),[editx y editw h],10);
-  y = y-h;
-  hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
+  hs.maxSisterDist.String = num2str(opts.maxSisterSeparation);
+  hs.minSisterTrackOverlap.String = num2str(opts.minSisterTrackOverlap);
+  hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
+  hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
   hs.mmfAddSpots.Value = opts.mmfAddSpots;
-  y = y-h;
-  t = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
-  hs.maxMmfTime = editbox(hs.fig,num2str(opts.maxMmfTime),[editx y editw h],10);
-  y = y-h;
-  hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
-  y = y-h;
-  hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
-  hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
+  hs.maxMmfTime.String = num2str(opts.maxMmfTime);
   if isfield(jobset,'psfFile')
     hs.psfFile.String = jobset.psfFile;
   end
@@ -223,6 +258,47 @@ function hs = createControls(jobset)
     hs.psfFile.Enable = 'off';
   end
 
+  populateMovieBox();
+  populateROIBox();
+  spotModeCB();
+  refineModeCB();
+  autoRadiiCB();
+end
+
+function openExistingCB(hObj,event)
+  if ~isempty(get(handles.ROIs,'String'))
+    r = questdlg('Selecting existing jobset will clear existing ROIs. Select?','Warning','Yes','No','No');
+    if strcmp(r,'No')
+      return
+    end
+  end
+
+  [filename,pathname] = uigetfile('*.mat','Select existing jobset');
+  if ~isempty(filename)
+    filename = fullfile(pathname,filename);
+    try
+      jobset = kitLoadJobset(filename);
+      if isempty(jobset) || ~isfield(jobset,'kit') || ~jobset.kit
+        error('Jobset file corrupt');
+      end
+      % Upgrade jobset, if required.
+      if ~isfield(jobset,'jobsetVersion') || ...
+          jobset.jobsetVersion < kitVersion(2)
+        jobset = kitJobset(jobset);
+      end
+
+      if ~isfield(jobset,'ROI')
+        jobset.ROI = [];
+      end
+
+      updateControls(jobset);
+      h=msgbox('Successfully loaded jobset','Success','Help','modal');
+      uiwait(h);
+    catch me
+      h=msgbox(sprintf('Error loading jobset %s: %s',filename,me.message),'Error','Error','modal');
+      uiwait(h);
+    end
+  end
 end
 
 function selectDirectoryCB(hObj,event)
@@ -332,8 +408,13 @@ function executeCB(hObj,event)
     taskMap = [1 2 3 4 8];
     tasks = [taskMap(tasks) 5:7];
 
+    if handles.parallel.Value
+      execmode = 'batch';
+    else
+      execmode = 'serial';
+    end
     progh = waitbar(0,sprintf('Tracking progress (%d/%d)',0,length(jobset.ROI)));
-    kitRunJobs(jobset,'callback',@trackProgress,'tasks',tasks);
+    kitRunJobs(jobset,'callback',@trackProgress,'tasks',tasks,'exec',execmode);
     delete(progh);
     uiresume(gcf);
   end
@@ -370,7 +451,8 @@ function psfBtnCB(hObj,event)
   % Assume PSF is only variable.
   f = fieldnames(data);
   if length(f) > 1
-    msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning');
+    h=msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning','modal');
+    uiwait(h);
   end
   jobset.psf = data.(f{1});
   jobset.psfFile = file;
