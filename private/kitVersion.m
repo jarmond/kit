@@ -8,7 +8,7 @@ end
 switch mode
   case 1
     % KiT version.
-    version = '1.5.0';
+    version = '1.5.3';
   case 2
     % Jobset structure version.
     version = 6;
