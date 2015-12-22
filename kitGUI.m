@@ -76,7 +76,8 @@ function hs = createControls()
   hs.labelAvail = label(hs.fig,'Available movies:',[x 0.871*figh 20 1.5]);
 
   % ROIs
-  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 3 w 18.15]);
+  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 3 w 18.15],'Callback',@roisCB);
+  hs.ROIs.Min = 1;
   % undocumentedmatlab.com hack to add horizontal scrollbars
   jScrollPane = findjobj(hs.ROIs);
   jScrollPane.setHorizontalScrollBarPolicy(32);
@@ -265,6 +266,100 @@ function updateControls(jobset)
   autoRadiiCB();
 end
 
+% Check controls for consistent input.
+function tf=checkControls()
+  hs = handles;
+  v = str2double(hs.coordSysCh.String);
+  if ~isfinite(v) || v<1 || v>3
+    errorbox('Invalid channel number for coordinate system channel. Should be a number between 1 and 3');
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.autoRadiidt.String)
+  if (hs.autoRadii.Value == hs.autoRadii.Max) && (~isfinite(v) || v<=0)
+    errorbox('Invalid value for frame dt. Should be a positive number.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.autoRadiiAvgDisp.String)
+  if (hs.autoRadii.Value == hs.autoRadii.Max) && (~isfinite(v) || v<0)
+    errorbox('Invalid value for avg. disp. of spots. Should be a positive number.')
+    tf = false;
+    return
+  end
+
+  v1 = str2double(hs.minSearchRadius.String)
+  v2 = str2double(hs.maxSearchRadius.String)
+  if (hs.autoRadii.Value ~= hs.autoRadii.Max) && (~isfinite(v1) || v1 > v2 || v1 < 0)
+    errorbox('Invalid value min search radius. Should be a positive number less than max search radius.')
+    tf = false;
+    return
+  end
+  if (hs.autoRadii.Value ~= hs.autoRadii.Max) && (~isfinite(v2) || v2 < v1 || v2 < 0)
+    errorbox('Invalid value max search radius. Should be a positive number less than min search radius.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.maxSisterAlignmentAngle.String);
+  if (hs.useSisterAlignment.Value == hs.useSisterAlignment.Max) && (~isfinite(v) || v < 0 || v > 180)
+    errorbox('Invalid value for max angle between sisters and plate normal. Should be a positive number.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.maxSisterDist.String);
+  if ~isfinite(v) || v < 0
+    errorbox('Invalid value for max intersister distance. Should be a positive number.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.minSisterTrackOverlap.String);
+  if ~isfinite(v) || v < 0
+    errorbox('Invalid value for min overlap between sister tracks. Should be a positive number.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.minSpotsPerFrame.String);
+  if ~isfinite(v) || v < 0
+    errorbox('Invalid value for min spots per frame. Should be a positive number.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.adaptiveLambda.String);
+  if (~isfinite(v) || v < 0)
+    errorbox('Invalid value for spot weight. Should be a positive number or zero.')
+    tf = false;
+    return
+  end
+
+  v = str2double(hs.maxMmfTime.String);
+  if (hs.mmfAddSpots.Value == hs.mmfAddSpots.Max) && (~isfinite(v) || v < 0)
+    errorbox('Invalid value for min spots per frame. Should be a positive number or zero.')
+    tf = false;
+    return
+  end
+
+  if isempty(hs.filename.String)
+    errorbox('Jobset name is a required field.');
+    tf = false;
+    return
+  end
+
+  tf = true;
+end
+
+function roisCB(hObj,event)
+  if isempty(handles.ROIs.Value)
+    handles.ROIs.Value = 1;
+  end
+end
+
 function openExistingCB(hObj,event)
   if ~isempty(get(handles.ROIs,'String'))
     r = questdlg('Selecting existing jobset will clear existing ROIs. Select?','Warning','Yes','No','No');
@@ -295,8 +390,7 @@ function openExistingCB(hObj,event)
       h=msgbox('Successfully loaded jobset','Success','Help','modal');
       uiwait(h);
     catch me
-      h=msgbox(sprintf('Error loading jobset %s: %s',filename,me.message),'Error','Error','modal');
-      uiwait(h);
+      errorbox(sprintf('Error loading jobset %s: %s',filename,me.message));
     end
   end
 end
@@ -322,6 +416,10 @@ function addROICB(hObj,event)
   movieFiles = handles.movies.String;
   movieDir = handles.movieDirectory.String;
   v = handles.movies.Value;
+  if isempty(v) || ~iscell(v)
+    errorbox('Must select movies first to add ROIs');
+    return
+  end
   for i=1:length(v)
     [crop,cropSize] = kitCropMovie(fullfile(movieDir,movieFiles{v(i)}));
     for j=1:size(crop,1)
@@ -398,6 +496,9 @@ end
 
 
 function executeCB(hObj,event)
+  if ~checkControls()
+    return
+  end
   updateJobset();
   kitSaveJobset(jobset);
   % Ask which tasks to run.
@@ -425,6 +526,9 @@ function executeCB(hObj,event)
 end
 
 function saveCB(hObj,event)
+  if ~checkControls()
+    return
+  end
   updateJobset();
   kitSaveJobset(jobset);
   uiresume(gcf);
@@ -547,6 +651,11 @@ end
 function r=computeUnalignedLaggingRadii(r)
 % Assume unaligned move 3x faster, lagging same speed.
   r = [r 3*r r];
+end
+
+function errorbox(msg)
+    h=msgbox(msg,'Error','Error','modal');
+    uiwait(h);
 end
 
 end % kitGUI
