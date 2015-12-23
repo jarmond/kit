@@ -14,7 +14,13 @@ if nargin<2
   zPlane=[];
 end
 
-[f,rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane,[],1);
+try
+  [f,rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane,[],1);
+catch
+  errordlg(sprintf('Error opening file %s',movieFileName));
+  crop = []; cropSize = [];
+  return
+end
 fax  = f.CurrentAxes;
 
 % Show image with crop tool.
