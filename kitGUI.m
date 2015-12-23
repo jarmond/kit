@@ -416,7 +416,7 @@ function addROICB(hObj,event)
   movieFiles = handles.movies.String;
   movieDir = handles.movieDirectory.String;
   v = handles.movies.Value;
-  if isempty(v) || ~iscell(v)
+  if isempty(v)
     errorbox('Must select movies first to add ROIs');
     return
   end
