@@ -422,11 +422,13 @@ function addROICB(hObj,event)
   end
   for i=1:length(v)
     [crop,cropSize] = kitCropMovie(fullfile(movieDir,movieFiles{v(i)}));
-    for j=1:size(crop,1)
-      r = length(jobset.ROI) + 1;
-      jobset.ROI(r).movie = handles.movies.String{v(i)};
-      jobset.ROI(r).crop = crop(j,:);
-      jobset.ROI(r).cropSize = cropSize(j,:);
+    if ~isempty(crop)
+      for j=1:size(crop,1)
+        r = length(jobset.ROI) + 1;
+        jobset.ROI(r).movie = handles.movies.String{v(i)};
+        jobset.ROI(r).crop = crop(j,:);
+        jobset.ROI(r).cropSize = cropSize(j,:);
+      end
     end
   end
   populateROIBox();
