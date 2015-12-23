@@ -14,7 +14,7 @@ if nargin<2
   zPlane=[];
 end
 
-[f,rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane);
+[f,rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane,[],1);
 fax  = f.CurrentAxes;
 
 % Show image with crop tool.

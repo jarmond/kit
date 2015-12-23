@@ -1,4 +1,4 @@
-function [figH,rgbImg,z]=kitMovieProj(movieFileName,zPlane,roi)
+function [figH,rgbImg,z]=kitMovieProj(movieFileName,zPlane,roi,progress)
 % KITMOVIEPROJ Presents movie projection in Z and T
 %
 %  SYNOPSIS kitShowMovieProj(movieFileName)
@@ -14,8 +14,14 @@ end
 if nargin<3
   roi=[];
 end
+if nargin<4
+  progress=0;
+end
 
 % Open movie.
+if progress
+  h = waitbar(0,'Opening movie');
+end
 [metadata,reader] = kitOpenMovie(movieFileName);
 
 % Load subset of frames and overlay.
@@ -38,6 +44,9 @@ mapChan = [2 1 3];
 for c=1:min([maxMergeChannels, metadata.nChannels])
   maxProj = zeros(metadata.frameSize(1:2));
   for f=1:length(frameList)
+    if progress
+      waitbar(f/length(frameList),h);;
+    end
     % Read stack.
     if isempty(zPlane)
       img = kitReadImageStack(reader, metadata, frameList(f), c);
@@ -62,6 +71,9 @@ for c=1:min([maxMergeChannels, metadata.nChannels])
   rgbImg(:,:,mapChan(c)) = imadjust(maxProj,slim,[]);
 end
 
+if progress
+  close(h);
+end
 figH=figure;
 imshow(rgbImg);
 
