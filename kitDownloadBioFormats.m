@@ -29,7 +29,8 @@ if exist(filename,'dir') == 0
 
     unzip(url);
     % Check successful.
-    if bfCheckJavaPath()
+    addpath bfmatlab;
+    if bfCheckJavaPath(1)
       kitLog('Download complete.');
     else
       error('Failed to download BioFormats. Please download bfmatlab.zip from http://downloads.openmicroscopy.org/bio-formats/ and unzip in the KiT directory.');
