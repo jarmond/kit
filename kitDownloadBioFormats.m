@@ -11,10 +11,10 @@ if exist('bfGetPlane') == 2
 end
 
 filename = 'bfmatlab';
-url = ['http://downloads.openmicroscopy.org/bio-formats/5.0.6/artifacts/' ...
+url = ['http://downloads.openmicroscopy.org/bio-formats/5.1.7/artifacts/' ...
        'bfmatlab.zip'];
 
-% Check for existing jar.
+% Check for existing distribution.
 download = 0;
 if exist(filename,'dir') == 0
   % Directory doesn't exist, check for zip.
@@ -24,11 +24,16 @@ if exist(filename,'dir') == 0
     kitLog('Downloading BioFormats...');
     % Check we are in KiT directory.
     if exist(fullfile(pwd,'kitDownloadBioFormats.m'),'file') ~= 2
-      error('Must be in KiT directory to download Loci Tools');
+      error('Must be in KiT directory to download BioFormats');
     end
 
     unzip(url);
-    kitLog('Download complete.');
+    % Check successful.
+    if bfCheckJavaPath()
+      kitLog('Download complete.');
+    else
+      error('Failed to download BioFormats. Please download bfmatlab.zip from http://downloads.openmicroscopy.org/bio-formats/ and unzip in the KiT directory.');
+    end
   else
     % Unzip.
     unzip([filename '.zip']);
