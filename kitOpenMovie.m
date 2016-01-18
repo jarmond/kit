@@ -55,7 +55,7 @@ warnWv = 0;
 for i=1:numWvs
   chWv = metaTable.getChannelEmissionWavelength(0,i-1);
   if ~isempty(chWv)
-    md.wavelength(i) = chWv.getValue()/1000;
+    md.wavelength(i) = chWv.value(ome.units.UNITS.MICROM).doubleValue()/1000;
   else
     warnWv = 1;
   end
@@ -107,9 +107,9 @@ end
 
 % Physical pixel size
 md.pixelSize = [
-  metaTable.getPixelsPhysicalSizeX(0).getValue(),...
-  metaTable.getPixelsPhysicalSizeY(0).getValue(),...
-  metaTable.getPixelsPhysicalSizeZ(0).getValue()];
+  metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
+  metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
+  metaTable.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROM).doubleValue()];
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
     md.pixelSize(3) > 5
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
