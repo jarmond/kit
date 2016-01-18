@@ -223,10 +223,11 @@ if ~isempty(opts.photobleachCorrect)
       pbProfile(:,c) = pbProfile(:,c)/pbProfile(1,c);
     end
 
-    if numel(t) > 4
+    if numel(t) > 4 && license('test','Curve_Fitting_Toolbox')
       % Fit double exp.
       pbF = fit(t,pbProfile(:,c),'exp2');
     else
+      kitLog('Warning: Not correcting for photobleach');
       break;
     end
 

@@ -37,11 +37,15 @@ for i=1:nFrames
 end
 
 % Correct photobleach.
-t = (0:nFrames-1)';
-pbFun = fit(t,meanInt,'exp1');
-pb0 = pbFun(t(1));
-for i=1:nFrames
-  locs{i}(:,4) = pb0*locs{i}(:,4)/pbFun(t(i));
+if license('test','Curve_Fitting_Toolbox')
+  t = (0:nFrames-1)';
+  pbFun = fit(t,meanInt,'exp1');
+  pb0 = pbFun(t(1));
+  for i=1:nFrames
+    locs{i}(:,4) = pb0*locs{i}(:,4)/pbFun(t(i));
+  end
+else
+  warning('Curve fitting toolbox unavailable. Not correcting for photobleach.');
 end
 if verbose
   figure;
