@@ -276,22 +276,22 @@ function tf=checkControls()
     return
   end
 
-  v = str2double(hs.autoRadiidt.String)
+  v = str2double(hs.autoRadiidt.String);
   if (hs.autoRadii.Value == hs.autoRadii.Max) && (~isfinite(v) || v<=0)
     errorbox('Invalid value for frame dt. Should be a positive number.')
     tf = false;
     return
   end
 
-  v = str2double(hs.autoRadiiAvgDisp.String)
+  v = str2double(hs.autoRadiiAvgDisp.String);
   if (hs.autoRadii.Value == hs.autoRadii.Max) && (~isfinite(v) || v<0)
     errorbox('Invalid value for avg. disp. of spots. Should be a positive number.')
     tf = false;
     return
   end
 
-  v1 = str2double(hs.minSearchRadius.String)
-  v2 = str2double(hs.maxSearchRadius.String)
+  v1 = str2double(hs.minSearchRadius.String);
+  v2 = str2double(hs.maxSearchRadius.String);
   if (hs.autoRadii.Value ~= hs.autoRadii.Max) && (~isfinite(v1) || v1 > v2 || v1 < 0)
     errorbox('Invalid value min search radius. Should be a positive number less than max search radius.')
     tf = false;
