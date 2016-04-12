@@ -607,4 +607,5 @@ function colors=presetColors()
     0.4138         0    0.7586;
     0.1724    0.3793    0.2759;
          0    0.5862    0.9655];
+  colors = repmat(colors,[3,1]);
 end
