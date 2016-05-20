@@ -16,6 +16,7 @@ function kitRunJobs(jobset,varargin)
 %                              6: updating classes
 %                              7: aligning
 %                              8: intensity
+%                              9: iterative particle detection (occurs between 3 and 4)
 %
 %    existing: {0} or 1. Load existing jobs first.
 %

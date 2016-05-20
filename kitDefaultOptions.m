@@ -43,6 +43,8 @@ debug.showCentroidFinal = 0; % visualize centroid final spots.
 debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
 debug.showWaveletAdapt = 0; % 1 to show adaptation of wavelet threshold.
 debug.showAdaptive = 0; % 1 to show adaptive thresholding algorithm verbosely.
+debug.showIterative = 0; % 1 to show spots adding in iterative detection.
+debug.showIterativeFrames = 0; % 1 to show frame-by-frame comparison of tracking loss.
 debug.asserts = 0; % check things that shouldn't go wrong
 opts.debug = debug;
 
