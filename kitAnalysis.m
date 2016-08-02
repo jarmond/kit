@@ -3,20 +3,32 @@ function kitAnalysis(jobset,ch)
 %
 %   kitAnalysis(jobset,channel)
 %
-%  jobset: Struct containing tracking job setup options.
+%  jobset: Struct containing tracking job setup options, or cell array of
+%  multiple jobsets.
 %
 %  channel: Channel to plot. Defaults to 1.
 %
 % Copyright (c) 2015 Jonathan W. Armond
+
+if ~iscell(jobset)
+  jobset = {jobset};
+end
+njs = length(jobset);
 
 if nargin<2
   ch = 1;
 end
 
 % Upgrade jobset if required.
-if ~isfield(jobset.options,'jobsetVersion') || ...
-    jobset.options.jobsetVersion < kitVersion(2)
-  jobset = kitJobset(jobset);
+for i=1:njs
+  if ~isfield(jobset{i}.options,'jobsetVersion') || ...
+    jobset{i}.options.jobsetVersion < kitVersion(2)
+    jobset{i} = kitJobset(jobset{i});
+  end
+end
+% Number of ROIs in each job.
+for i=1:njs
+  nroi(i) = length(jobset{i}.ROI);
 end
 
 % Setup GUI.
@@ -55,7 +67,7 @@ function hs = createControls(jobset)
   ex = lw + 1; % edit box start
   ew = 0.25*w - 1; % edit box width
 
-  [~,name] = fileparts(jobset.filename);
+  [~,name] = fileparts(jobset{1}.filename);
   t=label(hs.fig,['Jobset: ' name],[x y w lh]);
   t.FontWeight='bold';
   y=y-h;
@@ -67,8 +79,12 @@ function hs = createControls(jobset)
   % Get ROI names.
   maxMovLen = 32;
   ROIString = {};
-  for i=1:length(jobset.ROI)
-    ROIString{i} = sprintf('%d: %s [%s]',i,strshorten(jobset.ROI(i).movie,maxMovLen),num2str(round(jobset.ROI(i).crop),'%d '));
+  idx = 1;
+  for j=1:njs
+    for i=1:length(jobset{j}.ROI)
+      ROIString{idx} = sprintf('%d: %s [%s]',idx,strshorten(jobset{j}.ROI(i).movie,maxMovLen),num2str(round(jobset{j}.ROI(i).crop),'%d '));
+      idx = idx+1;
+    end
   end
   y=y-h;
   label(hs.fig,'ROIs:',[x y w lh]);
@@ -140,7 +156,9 @@ function intensityCB(hObj,event)
 end
 
 function diagsCB(hObj,event)
-  kitJobsetDiagnostics(jobset,ch);
+  for j=1:njs
+    kitJobsetDiagnostics(jobset{j},ch);
+  end
 end
 
 function autocorrCB(hObj,event)
@@ -219,8 +237,14 @@ function job = loadActiveJob()
   persistent jobP
   if roiChanged
     idx = handles.ROI.Value;
+    % Figure out which jobset is selected.
+    sroi = cumsum(nroi);
+    jsidx = find(sroi>=idx,1);
+    if jsidx>1
+      idx = idx-sroi(jsidx-1);
+    end
     updateStatus('Loading ROI');
-    jobP = kitLoadJob(jobset,idx);
+    jobP = kitLoadJob(jobset{jsidx},idx);
     updateStatus('');
     roiChanged = 0;
   end
