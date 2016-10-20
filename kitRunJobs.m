@@ -13,9 +13,10 @@ function kitRunJobs(jobset,varargin)
 %                              3: tracking spots
 %                              4: grouping sisters
 %                              5: extracting tracks
-%                              6: updating classes
-%                              7: aligning
-%                              8: intensity
+%                              6: neighbour spot finding
+%                              7: updating classes
+%                              8: aligning
+%                              9: intensity
 %
 %    existing: {0} or 1. Load existing jobs first.
 %
@@ -49,7 +50,7 @@ nROIs = length(jobset.ROI);
 options.subset = 1:nROIs;
 options.exec = 'serial';
 options.errorfail = 0;
-options.tasks = 1:7;
+options.tasks = 1:8;
 options.existing = 0;
 options.callback = [];
 options.email = [];

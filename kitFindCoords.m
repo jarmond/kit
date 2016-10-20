@@ -12,7 +12,9 @@ function job=kitFindCoords(job, reader, channel)
 %
 % OUTPUT job: as input but with updated values.
 %
-% Copyright (c) 2012 Jonathan W. Armond
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 % Method of fixing spot locations: centroid or Gaussian MMF, or none.
 method = job.options.coordMode{channel};
@@ -74,7 +76,12 @@ switch spotMode
       img = movie(:,:,:,i);
       spots{i} = waveletSpots(img,options);
     end
-
+    
+  case 'neighbour'
+    kitLog('Detecting particle candidates using neighbouring channel');
+    refDataStruct = job.dataStruct{options.coordSystemChannel};
+    [spots,spotIDs] = neighbourSpots(movie,refDataStruct,channel,job.metadata,options);
+    
   otherwise
     error('Unknown particle detector: %s',spotMode);
 end
@@ -95,6 +102,9 @@ for i=1:nFrames
     background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
   end
   localMaxima(i).cands = spots{i};
+  if strcmp(spotMode,'neighbour')
+      localMaxima(i).spotID = spotIDs{i};
+  end
   spots1D = sub2ind(size(img),spots{i}(:,1),spots{i}(:,2),spots{i}(:,3));
   localMaxima(i).candsAmp = img(spots1D);
   localMaxima(i).candsBg = background(spots1D);

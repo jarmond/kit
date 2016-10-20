@@ -42,7 +42,6 @@ for i=1:nJobs
   if ~isfield(job,'dataStruct')
     continue
   end
-
   ds = job.dataStruct{channel};
   if isempty(ds)
     continue

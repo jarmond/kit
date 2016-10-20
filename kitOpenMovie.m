@@ -55,7 +55,7 @@ warnWv = 0;
 for i=1:numWvs
   chWv = metaTable.getChannelEmissionWavelength(0,i-1);
   if ~isempty(chWv)
-    md.wavelength(i) = chWv.value(ome.units.UNITS.MICROM).doubleValue()/1000;
+    md.wavelength(i) = chWv.value(ome.units.UNITS.MICROM).doubleValue();
   else
     warnWv = 1;
   end

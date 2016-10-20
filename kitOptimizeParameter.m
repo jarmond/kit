@@ -47,7 +47,7 @@ for i = 1:nValues
   else
     % Create job.
     job = jobset;
-    job.movie = jobset.movieFiles{jobId};
+    job.movie = jobset.ROI(jobId).movie;
     job.index = jobId;
     job.crop = jobset.crop{jobId};
     job.cropSize = jobset.cropSize{jobId};
