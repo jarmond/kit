@@ -16,16 +16,28 @@ job.matlabVersion = version;
 job.movieDirectory = [];
 job.movieFiles = [];
 
-opts.coordMode{1} = 'centroid'; % Possible values: centroid, gaussian, none
+opts.jobProcess = 'tracking';
+opts.coordMode{1} = 'gaussian'; % Possible values: centroid, gaussian, none
 opts.coordMode{2} = 'none';
 opts.coordMode{3} = 'none';
 opts.coordSystem = 'plate'; % Possible values: plate, image
 opts.coordSystemChannel = 1;
-opts.spotMode{1} = 'histcut'; % Possible values: histcut, wavelet, none
+opts.spotMode{1} = 'histcut'; % Possible values: histcut, wavelet, neighbour none
 opts.spotMode{2} = 'none';
 opts.spotMode{3} = 'none';
 opts.cropAsked = 0;
 opts.disableSave = 0; % Don't save job at each step. For debugging.
+
+%Chromatic shift information
+chrShift.result = repmat({zeros(1,6)},3,3);
+chrShift.jobset = [];
+chrShift.maskRadius = 0.3; % um
+chrShift.maskShape = 'circle';
+chrShift.filtering = 1;
+chrShift.amplitudeFilter = 0.25;
+chrShift.nnDistFilter = 0.75;
+chrShift.interphase = 1;
+opts.chrShift = chrShift;
 
 % Debug options.
 debug.showMmfClusters = 0; % visualize clustering from overlapping PSFs, -1
@@ -70,6 +82,7 @@ opts.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole
 opts.alphaF = 0.05; % N vs N+1 F-test cutoff.
 opts.alphaA = 0.05; % amplitude t-test cutoff.
 opts.alphaD = 0.01; % distance t-test cutoff.
+opts.mmfTol = 1e-5; % accuracy to which MMF fits Gaussians.
 opts.oneBigCluster = 0; % fit all spots together as one big cluster
 opts.maxMmfTime = 300; % Maximum per-frame time (sec) to attempt mixture model fit
                       % before giving up.  Use zero to disable.
@@ -78,6 +91,14 @@ opts.mmfAddSpots = 0; % Try fitting multiple Gaussians to spots to identify over
 % Image moment coordinate system.
 opts.momentPrctile = 99; % percentile to threshold image at before computing
                          % moments
+
+% Neighbouring spot localisation.
+neighbourSpots.maskRadius = 0.3; % um
+neighbourSpots.maskShape = 'semicircle';
+neighbourSpots.maskConeAngle = 10; % degrees, only used with maskShape=='cone'.
+neighbourSpots.timePoints = repmat({[]},1,3);
+neighbourSpots.zSlices = repmat({[]},1,3);
+opts.neighbourSpots = neighbourSpots;
 
 % Local spot intensity.
 opts.maskRadius = 0.3; % um
