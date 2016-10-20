@@ -1,44 +1,19 @@
-function [spots,spotID,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma,options)
+function [spots,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma,options)
 % MIXTUREMODELFIT Fit Gaussian mixture models to spots
 %
 % Enhances candidate spots obtained by centroid fitting by fitting Gaussian
 % mixture models. F-test is used to determine appropriate number of
 % Gaussians.
 %
-% EDITS REQUIRED: Addition of job process, binning and tolfun into options,
-% plus editing of mmfAddSpot, alphaA and tolfun between job process.
-%
 % Copyright (c) 2014 J. W. Armond
-% Copyright (c) 2016 C. A. Smith
 
 verbose = options.debug.mmfVerbose;
 
-process = options.jobProcess;        %%% JOB PROCESS NEEDS INCORPORATING INTO OPTIONS
-% create default values before changing based on process
-                                    %%% BINNING NEEDS INCORPORATING INTO OPTIONS
-                                    %%% CONSIDER INCORPORATING ALPHA CALCULATION INTO OPTIONS PRODUCTION
-                                    %%% NEED TO INCORPORATE MMFADDSPOT CHANGES FOR CHRSHIFT AND STATIC
-% switch process
-%     case 'tracking'
-%         if nargin<5 || isempty(neighbour) || ~neighbour
-%             alphaA = 0.40/(options.binning^3);
-%         elseif neighbour
-%             tolfun = 1e-7;
-%             alphaA = 0.50/(options.binning^3);
-%         end
-%     case {'chrshift', 'static'}
-%         if nargin<5 || isempty(neighbour) || ~neighbour
-%             alphaA = 0.50/(options.binning^3);
-%         elseif neighbour
-%             tolfun = 1e-7;
-%             alphaA = 0.50/(options.binning^3);
-%         end
-% end
-
 % Set optimization options.
-optoptions = optimset('Jacobian','on','Display','off','Tolfun',options.mmfTol,'TolX',1e-6);
-alphaA = options.alphaA; % amplitude t-test cutoff.
+optoptions = optimset('Jacobian','on','Display','off','Tolfun',1e-4,'TolX',1e-4);
+
 alphaF = options.alphaF; % N vs N+1 F-test cutoff.
+alphaA = options.alphaA; % amplitude t-test cutoff.
 alphaD = options.alphaD;
 is3D = ndims(image) == 3;
 if is3D
@@ -54,20 +29,16 @@ end
 clusterSep = options.clusterSeparation*psfSigma;
 
 % Cluster spots.
-clusters = clusterSpots(cands(:,1:cols));
-% cands = [cands clusters]; %%% I'M NOT SURE THIS IS REQUIRED, DELETE IF POSSIBLE
+clusters = clusterSpots(cands);
 nClusters = max(clusters);
 if verbose
   kitLog('Mmf fitting on %d clusters',nClusters);
 end
 spots = [];
-spotID = [];
 amps = [];
 bgAmps = [];
 rejects.amp = []; % Candidates rejected on amplitude test.
-rejects.ampCandID = [];
 rejects.dist = []; % Candidate rejected on distance test.
-rejects.distCandID = [];
 
 % Disable singular matrix warning. Some clusters are ill-conditioned and cause
 % the warning in the variance, but is harmless
@@ -79,9 +50,7 @@ startTime = clock;
   % number of Gaussians and F-testing.
   for i=1:nClusters
     % Extract cluster data.
-    idx = clusters==i;
-    clusterCandsT = cands(idx,1:cols); % Candidates in this cluster.
-    candID = cands(idx,cols+1); % extract candIDs
+    clusterCandsT = cands(clusters==i,:); % Candidates in this cluster.
     if is3D
       clusterCands1D = sub2ind(size(image),clusterCandsT(:,1),clusterCandsT(:,2),...
                                clusterCandsT(:,3));
@@ -141,7 +110,7 @@ startTime = clock;
           kitLog('N+1 fit complete, %d cands, p=%f (%s)',numCandsT,pValue,resultStr);
         end
       end % if first
-          
+
       if ~failed
         % Update accepted variables.
         numCands = numCandsT;
@@ -170,12 +139,9 @@ startTime = clock;
       spots = []; amps = []; bgAmps = [];
       return % Abort
     end
-    
-    % Increase candID allocation if new spot(s) found.
-    candID = [candID; NaN(numCandsT-length(candID),1)];
+
     % Accumulate spots.
     spots = [spots; clusterCands];
-    spotID = [spotID; candID];
     amps = [amps; clusterAmp];
     bgAmps = [bgAmps; repmat(bgAmp,[numCands,1])];
   end
@@ -193,7 +159,6 @@ end
 
 % New output variables.
 spots2 = [];
-candID2 = [];
 amps2 = [];
 bgAmps2 = [];
 
@@ -202,7 +167,6 @@ for i=1:nClusters
   % Extract candidate information for new cluster.
   idx = clusters==i;
   clusterCands = spots(idx,1:cols);
-  candID = spotID(idx);
   clusterAmp = amps(idx,1);
   firstIdx = find(idx,1);
   bgAmp = bgAmps(firstIdx,1);
@@ -262,9 +226,7 @@ for i=1:nClusters
 
     % Remove candidate.
     rejects.dist = [rejects.dist; clusterCands(indxBad,:) pValueMax];
-    rejects.distCandID = [rejects.distCandID; candID(indxBad,:)];
     clusterCands(indxBad,:) = [];
-    candID(indxBad,:) = [];
     clusterAmp(indxBad,:) = [];
     numCands = numCands - 1;
     if numCands == 0
@@ -304,7 +266,7 @@ for i=1:nClusters
   % Repeat while some amplitudes not signifcant.
   while numCands > 0
     testStat = clusterAmp./sqrt(clusterAmpVar+residVar);
-    pValue = 1-tcdf(testStat,numDegFree); %%% HAD A TRY FUNCTION HERE, WITH p=1 IF FAILED, SO MIGHT ENCOUNTER THIS LATER
+    pValue = 1-tcdf(testStat,numDegFree);
     [pValueMax,indxBad] = max(pValue);
     testAmp = pValueMax > alphaA;
     if ~testAmp
@@ -317,9 +279,7 @@ for i=1:nClusters
     % Remove candidate.
     rejects.amp = [rejects.amp; clusterCands(indxBad,:) clusterAmp(indxBad,:) ...
                   pValueMax];
-    rejects.ampCandID = [rejects.ampCandID; candID(indxBad,:)];
     clusterCands(indxBad,:) = [];
-    candID(indxBad,:) = [];
     clusterAmp(indxBad,:) = [];
     numCands = numCands - 1;
     if numCands == 0
@@ -337,7 +297,7 @@ for i=1:nClusters
                                    clusterImg,clusterPix,psfSigma);
 
     numDegFree = size(clusterPix,1) - degFreePerSpot*numCands - 1;
-    residVar = resnorm/numDegFree;
+    residVar = resnorm/numDegFreeT;
 
     % Extract values from solution vector.
     [bgAmp,clusterCands,clusterAmp] = extractSolution(solution,numCands);
@@ -345,7 +305,7 @@ for i=1:nClusters
     [~,clusterAmpVar] = computeVariances(jac,residVar,numCands);
 
     if verbose
-      kitLog('Removed candidate failing amplitude test, p=%f, %d cands',pValueMax,numCands);
+      kitLog('Removed candidate failing ampltitude test, p=%f, %d cands',pValueMax,numCands);
     end
   end
 
@@ -371,13 +331,11 @@ for i=1:nClusters
 
   % Convert clusters into array of spots.
   spots2 = [spots2; [clusterCands clusterCandsVar]];
-  candID2 = [candID2; candID];
   amps2 = [amps2; [clusterAmp clusterAmpVar pValue]];
   bgAmps2 = [bgAmps2; repmat([bgAmp bgAmpVar],[numCands,1])];
 end
 
 spots = spots2;
-spotID = candID2;
 amps = amps2;
 bgAmps = bgAmps2;
 

@@ -722,7 +722,7 @@ for iTime = 1 : nTimePoints
   tmpCoord(iTime).allCoord = initCoord(iTime).allCoord;
   if nSpots(iTime)>0
     tmpCoord(iTime).allCoord(:,1:3) = tmpCoord(iTime).allCoord(:,1:3) - ...
-        repmat(frameOrigin(iTime,:),size(tmpCoord(iTime).allCoord(:,1:3),1),1);
+        repmat(frameOrigin(iTime,:),nSpots(iTime),1);
   end
 end
 

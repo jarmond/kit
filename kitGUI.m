@@ -22,8 +22,8 @@ end
 
 coordSystemValues = {'Plate','Image','Centre of mass'}; % in GUI
 coordSystemValuesJS = {'plate','image','com'}; % in jobset
-spotDetectValues = {'Histogram','Adaptive','Wavelet','Neighbour','None'};
-spotDetectValuesJS = {'histcut','adaptive','wavelet','neighbour','none'};
+spotDetectValues = {'Histogram','Adaptive','Wavelet','None'};
+spotDetectValuesJS = {'histcut','adaptive','wavelet','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 
