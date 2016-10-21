@@ -20,8 +20,10 @@ if ~isfield(jobset,'ROI')
   jobset.ROI = [];
 end
 
-coordSystemValues = {'Plate','Image','Centre of mass'}; % in GUI
-coordSystemValuesJS = {'plate','image','com'}; % in jobset
+jobProcessValues = {'Tracking','Static','Chromatic shift'}; % in GUI
+jobProcessValuesJS = {'tracking','static','chrshift'}; % in jobset
+coordSystemValues = {'Plate','Image','Centre of mass'};
+coordSystemValuesJS = {'plate','image','com'};
 spotDetectValues = {'Histogram','Adaptive','Wavelet','Neighbour','None'};
 spotDetectValuesJS = {'histcut','adaptive','wavelet','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
@@ -87,19 +89,22 @@ function hs = createControls()
   hs.viewROI = button(hs.fig,'View ROI',[x+14.5 1 13 2],@viewROICB);
   hs.deleteROI = button(hs.fig,'Delete ROI',[x+14.5*2 1 13 2],@deleteROICB);
 
-  %% Tracking setup
-  x = colwidth(1) + 3;
+  %% Process setup
+  x = colwidth(1) + 5;
   w = colwidth(2);
-  t = label(hs.fig,'Tracking setup',[x toplabely 20 1.5],14);
+  t = label(hs.fig,'Process setup',[x toplabely 20 1.5],14);
   t.FontWeight = 'bold';
+  % Job process
+  label(hs.fig,'Job process',[x 40 14 1.5]);
+  hs.jobProc = popup(hs.fig,jobProcessValues,[x+21 40.1 22 1.5],@jobProcessCB);
   % Coordinate system
-  label(hs.fig,'Coordinate system',[x 40 20 1.5]);
-  hs.coordSys = popup(hs.fig,coordSystemValues,[x+23 40.1 20 1.5]);
-  label(hs.fig,'Coordinate system channel',[x 38 30 1.5]);
-  hs.coordSysCh = editbox(hs.fig,[],[x+35 38 6 1.5]);
+  label(hs.fig,'Coordinate system',[x 38 20 1.5]);
+  hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 38.1 22 1.5]);
+  label(hs.fig,'Coordinate system channel',[x 36 30 1.5]);
+  hs.coordSysCh = editbox(hs.fig,[],[x+35 36 6 1.5]);
 
   % Channel modes
-  b = 32;
+  b = 30;
   h = 5.5;
   for i=1:3
     p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
@@ -144,13 +149,16 @@ function hs = createControls()
   end
 
   %% Options
-  x = sum(colwidth(1:2)) + 4;
+  x = sum(colwidth(1:2)) + 8;
   w = 35;
-  t = label(hs.fig,'Tracking options',[x toplabely 20 1.5],14);
+  t = label(hs.fig,'Options',[x toplabely 20 1.5],14);
   t.FontWeight = 'bold';
   h = 1.5;
   lh = 1.5*h; % large height
-  y = toplabely-h;
+  y = toplabely-lh;
+  t = label(hs.fig,'Tracking options',[x y 20 1.5],12);
+  t.FontWeight = 'bold';
+  y = y-h;
   hs.autoRadii = checkbox(hs.fig,'Calculate search radii from dt',[x y w h],@autoRadiiCB,10);
   y = y-h;
   labelw = 0.75*w;
@@ -182,6 +190,9 @@ function hs = createControls()
   t = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
   hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
+  t = label(hs.fig,'General options',[x y 20 1.5],12);
+  t.FontWeight = 'bold';
+  y = y-h;
   t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
@@ -213,6 +224,7 @@ function updateControls(jobset)
     [~,file] = fileparts(jobset.filename);
     hs.filename.String = file;
   end
+  hs.jobProc.Value = mapStrings(opts.jobProcess,jobProcessValuesJS);
   hs.coordSys.Value = mapStrings(opts.coordSystem,coordSystemValuesJS);
   hs.coordSysCh.String = num2str(opts.coordSystemChannel);
   for i=1:3
@@ -261,6 +273,7 @@ function updateControls(jobset)
 
   populateMovieBox();
   populateROIBox();
+  jobProcessCB();
   spotModeCB();
   refineModeCB();
   autoRadiiCB();
@@ -453,6 +466,35 @@ function viewROICB(hObj,event)
   end
 end
 
+function jobProcessCB(hObj,event)
+  if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
+    handles.coordSys.Enable = 'off';
+  else
+    handles.coordSys.Enable = 'on';
+  end
+  if any(strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),{'Static','Chromatic shift'}))
+    handles.autoRadii.Value = 0;
+    autoRadiiCB();
+    handles.autoRadii.Enable = 'off';
+    handles.minSearchRadius.Enable = 'off';
+    handles.maxSearchRadius.Enable = 'off';
+    handles.useSisterAlignment.Value = 0;
+    useSisterAlignmentCB();
+    handles.useSisterAlignment.Enable = 'off';
+    handles.maxSisterDist.Enable = 'off';
+    handles.minSisterTrackOverlap.Enable = 'off';
+  else
+    handles.autoRadii.Enable = 'on';
+    handles.autoRadii.Value = 1;
+    autoRadiiCB();
+    handles.useSisterAlignment.Enable = 'on';
+    handles.useSisterAlignment.Value = 1;
+    useSisterAlignmentCB();
+    handles.maxSisterDist.Enable = 'on';
+    handles.minSisterTrackOverlap.Enable = 'on';
+  end
+end
+
 function spotModeCB(hObj,event)
   if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Adaptive'),handles.spotMode))
     handles.adaptiveLambda.Enable = 'on';
@@ -613,6 +655,7 @@ function updateJobset()
   jobset.filename = fullfile(jobset.movieDirectory,[handles.filename.String '.mat']);
 
   opts = jobset.options;
+  opts.jobProcess = mapStrings(handles.jobProc.Value,jobProcessValuesJS);
   opts.coordSystem = mapStrings(handles.coordSys.Value,coordSystemValuesJS);
   opts.coordSystemChannel = str2double(handles.coordSysCh.String);
   for i=1:3
