@@ -22,14 +22,16 @@ dataStruct = job.dataStruct{opts.channel};
 sisterList = dataStruct.sisterList;
 trackList = dataStruct.trackList;
 trackPairs = sisterList(1).trackPairs;
-if ~isempty(opts.sel)
-  sisterList = sisterList(opts.sel);
-elseif opts.minLength > 0
-    coords = horzcat(sisterList.coords1);
-    coords = coords(:,1:6:end); % X coordinate.
-    nancount = sum(isnan(coords),1);
-    sisterList = sisterList(nancount <= job.metadata.nFrames*(1-opts.minLength));
+if opts.minLength > 0 && isempty(opts.sel)
+  coords = horzcat(sisterList.coords1);
+  coords = coords(:,1:6:end); % X coordinate.
+  nancount = sum(isnan(coords),1);
+  opts.sel = find(nancount <= job.metadata.nFrames*(1-opts.minLength));
 end
+if isempty(opts.sel)
+  opts.sel = 1:length(sisterList);
+end
+sisterList = sisterList(opts.sel);
 nSisters = length(sisterList);
 
 figure;
@@ -49,7 +51,7 @@ for i=1:nSisters
     end
     t=((1:length(x1))-1)*dt;
     plot(t,x1,t,x2);
-    title(sprintf('sister %d tracks %d,%d',i,pair(1),pair(2)));
+    title(sprintf('sister %d tracks %d,%d',opts.sel(i),pair(1),pair(2)));
     xlim([t(1) t(end)]);
     xlabel('t');
     ylabel('x');
