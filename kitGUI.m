@@ -28,6 +28,8 @@ spotDetectValues = {'Histogram','Adaptive','Wavelet','Neighbour','None'};
 spotDetectValuesJS = {'histcut','adaptive','wavelet','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
+neighbourMaskValues = {'Circle','Semi-circle','Cone'};
+neighbourMaskValuesJS = {'circle','semicircle','cone'};
 
 % Setup GUI.
 handles = createControls();
@@ -38,7 +40,7 @@ close(gcf);
 
 %% NESTED FUNCTIONS
 function hs = createControls()
-  colwidth = [55 42 35];
+  colwidth = [55 42 35 35];
   hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 sum(colwidth)+19 44]);
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
@@ -104,15 +106,38 @@ function hs = createControls()
   hs.coordSysCh = editbox(hs.fig,[],[x+35 36 6 1.5]);
 
   % Channel modes
-  b = 30;
-  h = 5.5;
+  b = 26.5;
+  h = 9;
   for i=1:3
     p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
-    hs.spotMode{i} = popup(p,spotDetectValues,[22 2.5 0.45*w 1.5],@spotModeCB);
-    label(p,'Spot detection',[1 2.5 20 1.5]);
+    hs.spotMode{i} = popup(p,spotDetectValues,[22 6 0.45*w 1.5],@spotModeCB);
+    label(p,'Spot detection',[1 6 20 1.5]);
 
-    hs.refineMode{i} = popup(p,spotRefineValues,[22 0.5 0.45*w 1.5],@refineModeCB);
-    label(p,'Spot refinement',[1 0.5 20 1.5]);
+    hs.refineMode{i} = popup(p,spotRefineValues,[22 4 0.45*w 1.5],@refineModeCB);
+    label(p,'Spot refinement',[1 4 20 1.5]);
+    
+    t = label(p,'z-slice limits',[1 2 w/2-2 1.5],10);
+    t.HorizontalAlignment = 'center';
+    t = label(p,'Time-point limits',[w/2+1 2 w/2-2 1.5],10);
+    t.HorizontalAlignment = 'center';
+    editw = 0.1*w;
+    editx = 1;
+    label(p,'Min',[editx 0.5 4 1.5],10);
+    editx = editx+4.5;
+    hs.zStackMin{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
+    editx = editw+editx+0.5;
+    label(p,'Max',[editx 0.5 4 1.5],10);
+    editx = editx+4.5;
+    hs.zStackMax{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
+    editx = editw+editx+3;
+    label(p,'Min',[editx 0.5 4 1.5],10);
+    editx = editx+4.5;
+    hs.tPointsMin{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
+    editx = editw+editx+0.5;
+    label(p,'Max',[editx 0.5 4 1.5],10);
+    editx = editx+4.5;
+    hs.tPointsMax{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
+    
   end
 
   b = b-2*h;
@@ -127,28 +152,7 @@ function hs = createControls()
   % end
   % b = b-panelh;
 
-  %% Execution
-  y = b-h;
-  labelw = 0.5*w;
-  t = label(hs.fig,'Execution',[x y labelw 1.5],14);
-  t.FontWeight = 'bold';
-  h = 2;
-  y = y-h;
-  label(hs.fig,'Jobset name',[x y labelw h],12);
-  hs.filename = editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
-  btnw = 0.5*w;
-  bx = x + w - btnw;
-  y = y-2*h;
-  hs.save = button(hs.fig,'Save',[bx y btnw h],@saveCB);
-  y = y-h;
-  hs.execute = button(hs.fig,'Execute',[bx y btnw h],@executeCB);
-  y = y-h;
-  hs.parallel = checkbox(hs.fig,'Execute in parallel',[x y w h]);
-  if ~license('test','Distrib_Computing_Toolbox') || verLessThan('distcomp','6.5')
-    hs.parallel.Enable = 'off';
-  end
-
-  %% Options
+  %% Options ? Tracking options, column 1
   x = sum(colwidth(1:2)) + 8;
   w = 35;
   t = label(hs.fig,'Options',[x toplabely 20 1.5],14);
@@ -190,6 +194,8 @@ function hs = createControls()
   t = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
   hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
+  
+  %% Options ? General options, column 1
   t = label(hs.fig,'General options',[x y 20 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
@@ -208,8 +214,108 @@ function hs = createControls()
   y = y-h;
   hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
   hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
+  
+  %% Execution
+  y = b+0.5*h;
+  labelw = 0.5*w;
+  t = label(hs.fig,'Execution',[x y labelw 1.5],14);
+  t.FontWeight = 'bold';
+  h = 2;
+  lh = 1.5*h;
+  y = y-lh;
+  label(hs.fig,'Jobset name',[x y labelw h],12);
+  hs.filename = editbox(hs.fig,'jobset',[x+w-(w-labelw) y (w-labelw) h]);
+  btnw = 0.5*w;
+  bx = x + w - btnw;
+  y = y-h;
+  hs.save = button(hs.fig,'Save',[bx y btnw h],@saveCB);
+  y = y-h;
+  hs.execute = button(hs.fig,'Execute',[bx y btnw h],@executeCB);
+  y = y-h;
+  hs.parallel = checkbox(hs.fig,'Execute in parallel',[x y labelw h],'FontSize',10);
+  if ~license('test','Distrib_Computing_Toolbox') || verLessThan('distcomp','6.5')
+    hs.parallel.Enable = 'off';
+  end
+  
+  %% Options ? Chromatic shift options, column 2
+  x = sum(colwidth(1:3)) + 11;
+  h = 1.5;
+  lh = 1.5*h;
+  y = toplabely-lh;
+  t = label(hs.fig,'Chromatic shift options',[x y w 1.5],12);
+  t.FontWeight = 'bold';
+  y = y-h;
+  labelw = 0.75*w;
+  editw = 0.2*w;
+  editx = x+w-editw;
+  hs.chromaticShift = checkbox(hs.fig,'Provide chromatic shift correction',[x y w h],@chromaticShiftCB,10);
+  y = y-h;
+  t = label(hs.fig,'Min spots per jobset',[x y labelw h],10);
+  hs.minChrShiftSpots = editbox(hs.fig,[],[editx y editw h],10);
+  p = uipanel(hs.fig,'Units','characters','Position',[x y-5.75*h w 5.75*h],'FontSize',10,'Title','Chromatic shift jobsets');
+  y = y-lh;
+  editxl = w-4.25*(editw-1);
+  editxc = w-1.5*(editw-1);
+  editxr = w-editw/3-2;
+  edity = 4.25*h;
+  t = label(p,'Channel vector',[1 edity-h labelw/3 h*1.5],10);
+  t.FontWeight = 'bold'; t.HorizontalAlignment = 'left';
+  t = label(p,'Jobset',[editxl edity-h/2 labelw h],10);
+  t.FontWeight = 'bold';
+  t = label(p,'Channel order',[editxc edity-h labelw/3 h*1.5],10);
+  t.FontWeight = 'bold'; t.HorizontalAlignment = 'left';
+  edity = edity-2*h;
+  label(p,'1  ->  2',[1 edity labelw h],10);
+  label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
+  hs.ch1to2 = button(p,'-',[editxl edity 2*editw h],@ch1to2CB,10);
+  hs.ch1to2_ch1num = editbox(p,[],[editxc edity editw/3 h],10);
+  hs.ch1to2_ch2num = editbox(p,[],[editxr edity editw/3 h],10);
+  edity = edity-h;
+  label(p,'1  ->  3',[1 edity labelw h],10);
+  label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
+  hs.ch1to3 = button(p,'-',[editxl edity 2*editw h],@ch1to3CB,10);
+  hs.ch1to3_ch1num = editbox(p,[],[editxc edity editw/3 h],10);
+  hs.ch1to3_ch3num = editbox(p,[],[editxr edity editw/3 h],10);
+  edity = edity-h;
+  label(p,'2  ->  3',[1 edity labelw h],10);
+  label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
+  hs.ch2to3 = button(p,'-',[editxl edity 2*editw h],@ch2to3CB,10);
+  hs.ch2to3_ch2num = editbox(p,[],[editxc edity editw/3 h],10);
+  hs.ch2to3_ch3num = editbox(p,[],[editxr edity editw/3 h],10);
+  y = y-5.5*h;
+  hs.chrShiftFilter = checkbox(hs.fig,'Filter chromatic shift spots',[x y w h],@chrShiftFilterCB,10);
+  y = y-h;
+  t = label(hs.fig,'Min spot intensity (% of max)',[x y labelw h],10);
+  hs.chrShiftamplitude = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  t = label(hs.fig,'Min spot separation (um)',[x y labelw h],10);
+  hs.chrShiftnnDist = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-lh;
+  
+  %% Options ? Neighbour spot-detection options, column 2
+  t = label(hs.fig,'Neighbour spot-detection options',[x y w 1.5],12);
+  t.FontWeight = 'bold';
+  y = y-h;
+  t = label(hs.fig,'Mask shape',[x y labelw h],10);
+  hs.neighbourMaskShape = popup(hs.fig,neighbourMaskValues,[editx-10 y editw+11 h],@neighbourOptionsCB,10);
+  y = y-h;
+  t = label(hs.fig,'Mask radius (um)',[x y labelw h],10);
+  hs.neighbourMaskRadius = editbox(hs.fig,[],[editx y editw h],10);
+  p = uipanel(hs.fig,'Units','characters','Position',[x y-3*h w 3*h],'FontSize',10,'Title','Neighbour orientation');
+  editxl = 10;
+  editxr = w-10-editw/3;
+  editxc = (editxl+editxr)/2;
+  t = label(p,'Channel number',[(w-labelw)/2 edity+h labelw h],10);
+  t.FontWeight = 'bold'; t.HorizontalAlignment = 'center';
+  t = label(p,'inner kchore',[1 edity-h*2/3 labelw/3 2*h],10);
+  t = label(p,'outer kchore',[w-labelw*2/5 edity-h*2/3 labelw/3 2*h],10);
+  t.HorizontalAlignment = 'right';
+  hs.neighbourOrientInner = editbox(p,[],[editxl edity editw/3 h],10);
+  hs.neighbourOrientMiddle = editbox(p,[],[editxc edity editw/3 h],10);
+  hs.neighbourOrientOuter = editbox(p,[],[editxr edity editw/3 h],10);
 
   movegui(hs.fig,'center');
+  
 end
 
 % Update control status based on contents of jobset.
@@ -230,6 +336,14 @@ function updateControls(jobset)
   for i=1:3
     hs.spotMode{i}.Value = mapStrings(opts.spotMode{i},spotDetectValuesJS);
     hs.refineMode{i}.Value = mapStrings(opts.coordMode{i},spotRefineValuesJS);
+    if ~isempty(opts.neighbourSpots.zSlices{i})
+      hs.zStackMin{i}.String = num2str(opts.neighbourSpots.zSlices{i}(1));
+      hs.zStackMax{i}.String = num2str(opts.neighbourSpots.zSlices{i}(end));
+    end
+    if ~isempty(opts.neighbourSpots.timePoints{i})
+      hs.tPointsMin{i}.String = num2str(opts.neighbourSpots.timePoints{i}(1));
+      hs.tPointsMax{i}.String = num2str(opts.neighbourSpots.timePoints{i}(end));
+    end 
   end
   hs.autoRadiidt.String = num2str(opts.autoRadiidt);
   if isempty(opts.autoRadiidt)
@@ -270,6 +384,30 @@ function updateControls(jobset)
     hs.psfBtn.Enable = 'off';
     hs.psfFile.Enable = 'off';
   end
+  hs.minChrShiftSpots.String = num2str(opts.chrShift.minSpots);
+  if ~isempty(opts.chrShift.jobset{1,2})
+    hs.ch1to2.String = opts.chrShift.jobset{1,2};
+  end
+  hs.ch1to2_ch1num.String = num2str(opts.chrShift.chanOrder{1,2}(1));
+  hs.ch1to2_ch2num.String = num2str(opts.chrShift.chanOrder{1,2}(2));
+  if ~isempty(opts.chrShift.jobset{1,3})
+    hs.ch1to3.String = opts.chrShift.jobset{1,3};
+  end
+  hs.ch1to3_ch1num.String = num2str(opts.chrShift.chanOrder{1,3}(1));
+  hs.ch1to3_ch3num.String = num2str(opts.chrShift.chanOrder{1,3}(2));
+  if ~isempty(opts.chrShift.jobset{2,3})
+    hs.ch2to3.String = opts.chrShift.jobset{2,3};
+  end
+  hs.ch2to3_ch2num.String = num2str(opts.chrShift.chanOrder{2,3}(1));
+  hs.ch2to3_ch3num.String = num2str(opts.chrShift.chanOrder{2,3}(2));
+  hs.chrShiftamplitude.String = num2str(opts.chrShift.amplitudeFilter);
+  hs.chrShiftnnDist.String = num2str(opts.chrShift.nnDistFilter);
+  
+  hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,neighbourMaskValuesJS);
+  hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
+  hs.neighbourOrientInner.String = num2str(opts.neighbourSpots.channelOrientation(1));
+  hs.neighbourOrientMiddle.String = num2str(opts.neighbourSpots.channelOrientation(2));
+  hs.neighbourOrientOuter.String = num2str(opts.neighbourSpots.channelOrientation(3));
 
   populateMovieBox();
   populateROIBox();
@@ -277,6 +415,9 @@ function updateControls(jobset)
   spotModeCB();
   refineModeCB();
   autoRadiiCB();
+  chromaticShiftCB();
+  chrShiftFilterCB();
+  neighbourOptionsCB();
 end
 
 % Check controls for consistent input.
@@ -469,8 +610,12 @@ end
 function jobProcessCB(hObj,event)
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
     handles.coordSys.Enable = 'off';
+    handles.chromaticShift.Value = 0;
+    chromaticShiftCB();
+    handles.chromaticShift.Enable = 'off';
   else
     handles.coordSys.Enable = 'on';
+    handles.chromaticShift.Enable = 'on';
   end
   if any(strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),{'Static','Chromatic shift'}))
     handles.autoRadii.Value = 0;
@@ -493,14 +638,31 @@ function jobProcessCB(hObj,event)
     handles.maxSisterDist.Enable = 'on';
     handles.minSisterTrackOverlap.Enable = 'on';
   end
+  neighbourOptionsCB();
 end
 
 function spotModeCB(hObj,event)
+  for i=1:3
+    if strcmp(mapStrings(handles.spotMode{i}.Value,spotDetectValues),'None')
+      handles.refineMode{i}.Enable= 'off';
+      handles.zStackMin{i}.Enable= 'off';
+      handles.zStackMax{i}.Enable= 'off';
+      handles.tPointsMin{i}.Enable= 'off';
+      handles.tPointsMax{i}.Enable= 'off';
+    else
+      handles.refineMode{i}.Enable= 'on';
+      handles.zStackMin{i}.Enable= 'on';
+      handles.zStackMax{i}.Enable= 'on';
+      handles.tPointsMin{i}.Enable= 'on';
+      handles.tPointsMax{i}.Enable= 'on';
+    end
+  end
   if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Adaptive'),handles.spotMode))
     handles.adaptiveLambda.Enable = 'on';
   else
     handles.adaptiveLambda.Enable = 'off';
   end
+  neighbourOptionsCB();
 end
 
 function refineModeCB(hObj,event)
@@ -538,6 +700,111 @@ function useSisterAlignmentCB(hObj,event)
   end
 end
 
+function chromaticShiftCB(hObj,event)
+  if handles.chromaticShift.Value
+    handles.minChrShiftSpots.Enable = 'on';
+    handles.ch1to2.Enable = 'on';
+    handles.ch1to3.Enable = 'on';
+    handles.ch2to3.Enable = 'on';
+    handles.ch1to2_ch1num.Enable = 'on';
+    handles.ch1to2_ch2num.Enable = 'on';
+    handles.ch1to3_ch1num.Enable = 'on';
+    handles.ch1to3_ch3num.Enable = 'on';
+    handles.ch2to3_ch2num.Enable = 'on';
+    handles.ch2to3_ch3num.Enable = 'on';
+    handles.chrShiftFilter.Enable = 'on';
+  else
+    handles.minChrShiftSpots.Enable = 'off';
+    handles.ch1to2.Enable = 'off';
+    handles.ch1to3.Enable = 'off';
+    handles.ch2to3.Enable = 'off';
+    handles.ch1to2_ch1num.Enable = 'off';
+    handles.ch1to2_ch2num.Enable = 'off';
+    handles.ch1to3_ch1num.Enable = 'off';
+    handles.ch1to3_ch3num.Enable = 'off';
+    handles.ch2to3_ch2num.Enable = 'off';
+    handles.ch2to3_ch3num.Enable = 'off';
+    handles.chrShiftFilter.Value = 0;
+    chrShiftFilterCB();
+    handles.chrShiftFilter.Enable = 'off';
+  end
+end
+
+function chrShiftFilterCB(hObj,event)
+  if handles.chrShiftFilter.Value
+    handles.chrShiftamplitude.Enable = 'on';
+    handles.chrShiftnnDist.Enable = 'on';
+  else
+    handles.chrShiftamplitude.Enable = 'off';
+    handles.chrShiftnnDist.Enable = 'off';
+  end
+end
+
+function ch1to2CB(hObj,event)
+  [file,path] = uigetfile('*.mat','Select chromatic shift jobset file');
+  if isequal(file,0)
+    return
+  end
+  handles.ch1to2.String = file;
+  file = fullfile(path,file);
+  jobset.options.chrShift.jobset{1,2} = file;
+end
+
+function ch1to3CB(hObj,event)
+  [file,path] = uigetfile('*.mat','Select chromatic shift jobset file');
+  if isequal(file,0)
+    return
+  end
+  handles.ch1toch2.String = file;
+  file = fullfile(path,file);
+  jobset.options.chrShift.jobset{1,3} = file;
+end
+
+function ch2to3CB(hObj,event)
+  [file,path] = uigetfile('*.mat','Select chromatic shift jobset file');
+  if isequal(file,0)
+    return
+  end
+  handles.ch1to2.String = file;
+  file = fullfile(path,file);
+  jobset.options.chrShift.jobset{2,3} = file;
+end
+
+function neighbourOptionsCB(hObj,event)
+  switch sum(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Neighbour'),handles.spotMode))
+    case 0
+      handles.neighbourMaskShape.Enable = 'off';
+      handles.neighbourMaskRadius.Enable = 'off';
+      handles.neighbourOrientInner.Enable = 'off';
+      handles.neighbourOrientMiddle.Enable = 'off';
+      handles.neighbourOrientOuter.Enable = 'off';
+    case 1
+      handles.neighbourMaskShape.Enable = 'on';
+      handles.neighbourMaskRadius.Enable = 'on';
+      handles.neighbourOrientInner.Enable = 'on';
+      handles.neighbourOrientMiddle.Enable = 'on';
+      handles.neighbourOrientOuter.Enable = 'off';
+    case 2
+      handles.neighbourMaskShape.Enable = 'on';
+      handles.neighbourMaskRadius.Enable = 'on';
+      handles.neighbourOrientInner.Enable = 'on';
+      handles.neighbourOrientMiddle.Enable = 'on';
+      handles.neighbourOrientOuter.Enable = 'on';
+  end
+  if strcmp(mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValues),'Circle')
+    handles.neighbourOrientInner.Enable = 'off';
+    handles.neighbourOrientMiddle.Enable = 'off';
+    handles.neighbourOrientOuter.Enable = 'off';
+  end
+  if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
+    handles.neighbourMaskShape.Value = 1;
+    handles.neighbourMaskShape.Enable = 'off';
+    handles.neighbourMaskRadius.Enable = 'off';
+    handles.neighbourOrientInner.Enable = 'off';
+    handles.neighbourOrientMiddle.Enable = 'off';
+    handles.neighbourOrientOuter.Enable = 'off';
+  end
+end
 
 function executeCB(hObj,event)
   if ~checkControls()
@@ -550,9 +817,12 @@ function executeCB(hObj,event)
   [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'PromptString','Select tasks to execute','Name','Select tasks...');
   if ok
     % Map to task numbers and add defaults.
-    taskMap = [1 2 3 4 8];
-    tasks = [taskMap(tasks) 5:7];
-
+    taskMap = [1 2 3 4 9];
+    tasks = [taskMap(tasks) 6:8];
+    if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Neighbour'),handles.spotMode))
+      tasks = [tasks 5];
+    end
+    
     if handles.parallel.Value
       execmode = 'batch';
     else
@@ -661,6 +931,8 @@ function updateJobset()
   for i=1:3
     opts.spotMode{i} = spotDetectValuesJS{handles.spotMode{i}.Value};
     opts.coordMode{i} = spotRefineValuesJS{handles.refineMode{i}.Value};
+    opts.neighbourSpots.timePoints{i} = str2double(handles.tPointsMin{i}.String):str2double(handles.tPointsMax{i}.String);
+    opts.neighbourSpots.zSlices{i} = str2double(handles.zStackMin{i}.String):str2double(handles.zStackMax{i}.String);
   end
   if handles.autoRadii.Value
     opts.autoRadiidt = str2double(handles.autoRadiidt.String);
@@ -684,6 +956,28 @@ function updateJobset()
   opts.mmfAddSpots = handles.mmfAddSpots.Value;
   opts.maxMmfTime = str2double(handles.maxMmfTime.String);
   opts.deconvolve = handles.deconvolve.Value;
+  if handles.chromaticShift.Value
+    chrShift = opts.chrShift;
+    chrShift.minSpots = str2double(handles.minChrShiftSpots.String);
+    chrShift.chanOrder{1,2}(1) = str2double(handles.ch1to2_ch1num.String);
+    chrShift.chanOrder{1,2}(2) = str2double(handles.ch1to2_ch2num.String);
+    chrShift.chanOrder{1,3}(1) = str2double(handles.ch1to3_ch1num.String);
+    chrShift.chanOrder{1,3}(2) = str2double(handles.ch1to3_ch3num.String);
+    chrShift.chanOrder{2,3}(1) = str2double(handles.ch2to3_ch2num.String);
+    chrShift.chanOrder{2,3}(2) = str2double(handles.ch2to3_ch3num.String);
+    if handles.chrShiftFilter.Value
+      chrShift.amplitudeFilter = str2double(handles.chrShiftamplitude.String);
+      chrShift.nnDistFilter = str2double(handles.chrShiftnnDist.String);
+    end
+    opts.chrShift = chrShift;
+  end
+  neighbourSpots = opts.neighbourSpots;
+  neighbourSpots.maskShape = mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValuesJS);
+  neighbourSpots.maskRadius = str2double(handles.neighbourMaskRadius.String);
+  neighbourSpots.channelOrientation(1) = str2double(handles.neighbourOrientInner.String);
+  neighbourSpots.channelOrientation(2) = str2double(handles.neighbourOrientMiddle.String);
+  neighbourSpots.channelOrientation(3) = str2double(handles.neighbourOrientOuter.String);
+  opts.neighbourSpots = neighbourSpots;
   jobset.options = opts;
 end
 
