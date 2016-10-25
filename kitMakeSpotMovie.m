@@ -49,7 +49,7 @@ function kitMakeSpotMovie(job, varargin)
 %    enabled.
 %
 %    codec: {'Motion JPEG AVI'} Codec to use for image compression. See help
-%    VideoWriter.
+%    VideoWriter. Can also specify 'pdf' to output multiple PDF files.
 %
 %    saturate: {[1 100]} or 2 element vector or scalar, between 0 and 100. As a
 %    scalar, percentage of pixel values, at either end of histogram, to
@@ -111,7 +111,7 @@ opts = processOptions(opts, varargin{:});
 if opts.plotSisters == 1
   opts.plotSpots = 0;
 end
-
+pdfOut = strcmp(upper(opts.codec),'PDF');
 colors = presetColors();
 
 % Open movie.
@@ -119,7 +119,7 @@ colors = presetColors();
 
 h = figure;
 clf;
-if ~isempty(opts.outfile)
+if ~isempty(opts.outfile) && ~pdfOut
   vWriter = VideoWriter(opts.outfile, opts.codec);
   vWriter.FrameRate = 5;
   vWriter.Quality = 95;
@@ -497,9 +497,19 @@ for i=1:md.nFrames
     set(h,'Position',[figpos(1:2) figpos(3:4)*opts.scale]);
   end
 
-  if ~isempty(opts.outfile)
+  if ~isempty(opts.outfile) && ~pdfOut
     % Save frame.
     writeVideo(vWriter, getframe);
+  end
+  if pdfOut
+    % Save frame to PDF.
+    set(gcf,'Color','w');
+    pdfname = sprintf('%s%04d.pdf',opts.outfile,i);
+    if exist('export_fig')
+      export_fig(pdfname);
+    else
+      saveas(gcf,pdfname);
+    end
   end
 
   if opts.slow > 0
@@ -509,7 +519,7 @@ for i=1:md.nFrames
   end
 end
 
-  if ~isempty(opts.outfile)
+  if ~isempty(opts.outfile) && ~pdfOut
     close(vWriter);
   end
 end
