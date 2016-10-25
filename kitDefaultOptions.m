@@ -30,13 +30,15 @@ opts.disableSave = 0; % Don't save job at each step. For debugging.
 
 %Chromatic shift information
 chrShift.result = repmat({zeros(1,6)},3,3);
-chrShift.jobset = [];
+chrShift.jobset = repmat({[]},3,3);
+for i=1:3; for j=1:3; chrShift.chanOrder{i,j} = [i j]; end; end
 chrShift.maskRadius = 0.3; % um
 chrShift.maskShape = 'circle';
-chrShift.filtering = 1;
-chrShift.amplitudeFilter = 0.25;
-chrShift.nnDistFilter = 0.75;
+chrShift.filtering = 0;
+chrShift.amplitudeFilter = 0;
+chrShift.nnDistFilter = 0;
 chrShift.interphase = 1;
+chrShift.minSpots = 20;
 opts.chrShift = chrShift;
 
 % Debug options.
@@ -96,6 +98,7 @@ opts.momentPrctile = 99; % percentile to threshold image at before computing
 neighbourSpots.maskRadius = 0.3; % um
 neighbourSpots.maskShape = 'semicircle';
 neighbourSpots.maskConeAngle = 10; % degrees, only used with maskShape=='cone'.
+neighbourSpots.channelOrientation = 1:3; % from inner to outer
 neighbourSpots.timePoints = repmat({[]},1,3);
 neighbourSpots.zSlices = repmat({[]},1,3);
 opts.neighbourSpots = neighbourSpots;
