@@ -20,9 +20,9 @@ if ~isfield(jobset,'ROI')
   jobset.ROI = [];
 end
 
-jobProcessValues = {'Tracking','Static','Chromatic shift'}; % in GUI
-jobProcessValuesJS = {'tracking','static','chrshift'}; % in jobset
-coordSystemValues = {'Plate','Image','Centre of mass'};
+jobProcessValues = {'2D/3D and time','2D/3D only','Chromatic shift'}; % in GUI
+jobProcessValuesJS = {'zandt','zonly','chrshift'}; % in jobset
+coordSystemValues = {'Plate','Image moments','Centre of mass'};
 coordSystemValuesJS = {'plate','image','com'};
 spotDetectValues = {'Histogram','Adaptive','Wavelet','Neighbour','None'};
 spotDetectValuesJS = {'histcut','adaptive','wavelet','neighbour','none'};
@@ -100,10 +100,14 @@ function hs = createControls()
   label(hs.fig,'Job process',[x 40 14 1.5]);
   hs.jobProc = popup(hs.fig,jobProcessValues,[x+21 40.1 22 1.5],@jobProcessCB);
   % Coordinate system
-  label(hs.fig,'Coordinate system',[x 38 20 1.5]);
+  hs.coordSysText = label(hs.fig,'Coordinate system',[x 38 20 1.5]);
   hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 38.1 22 1.5]);
   label(hs.fig,'Coordinate system channel',[x 36 30 1.5]);
-  hs.coordSysCh = editbox(hs.fig,[],[x+35 36 6 1.5]);
+  for i=1:3
+    hs.coordSysCh{i} = uicontrol('Parent',hs.fig,'Style','radio','String',num2str(i),'Position',[490+30*i 545 30 20],'Callback',@coordSysChCB);
+  end
+  hs.coordSysChNum = 1;
+  hs.coordSysCh{1}.Value = 1;
 
   % Channel modes
   b = 26.5;
@@ -111,30 +115,30 @@ function hs = createControls()
   for i=1:3
     p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
     hs.spotMode{i} = popup(p,spotDetectValues,[22 6 0.45*w 1.5],@spotModeCB);
-    label(p,'Spot detection',[1 6 20 1.5]);
+    hs.spotModeText{i} = label(p,'Spot detection',[1 6 20 1.5]);
 
     hs.refineMode{i} = popup(p,spotRefineValues,[22 4 0.45*w 1.5],@refineModeCB);
-    label(p,'Spot refinement',[1 4 20 1.5]);
+    hs.refineModeText{i} = label(p,'Spot refinement',[1 4 20 1.5]);
     
-    t = label(p,'z-slice limits',[1 2 w/2-2 1.5],10);
-    t.HorizontalAlignment = 'center';
-    t = label(p,'Time-point limits',[w/2+1 2 w/2-2 1.5],10);
-    t.HorizontalAlignment = 'center';
+    hs.zSliceText{i} = label(p,'z-slice limits',[1 2 w/2-2 1.5],10);
+    hs.zSliceText{i}.HorizontalAlignment = 'center';
+    hs.tPointsText{i} = label(p,'Time-point limits',[w/2+1 2 w/2-2 1.5],10);
+    hs.tPointsText{i}.HorizontalAlignment = 'center';
     editw = 0.1*w;
     editx = 1;
-    label(p,'Min',[editx 0.5 4 1.5],10);
+    hs.zStackMinText{i} = label(p,'Min',[editx 0.5 4 1.5],10);
     editx = editx+4.5;
     hs.zStackMin{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
     editx = editw+editx+0.5;
-    label(p,'Max',[editx 0.5 4 1.5],10);
+    hs.zStackMaxText{i} = label(p,'Max',[editx 0.5 4 1.5],10);
     editx = editx+4.5;
     hs.zStackMax{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
     editx = editw+editx+3;
-    label(p,'Min',[editx 0.5 4 1.5],10);
+    hs.tPointsMinText{i} = label(p,'Min',[editx 0.5 4 1.5],10);
     editx = editx+4.5;
     hs.tPointsMin{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
     editx = editw+editx+0.5;
-    label(p,'Max',[editx 0.5 4 1.5],10);
+    hs.tPointsMaxText{i} = label(p,'Max',[editx 0.5 4 1.5],10);
     editx = editx+4.5;
     hs.tPointsMax{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
     
@@ -152,7 +156,7 @@ function hs = createControls()
   % end
   % b = b-panelh;
 
-  %% Options ? Tracking options, column 1
+  %% Options - Tracking options, column 1
   x = sum(colwidth(1:2)) + 8;
   w = 35;
   t = label(hs.fig,'Options',[x toplabely 20 1.5],14);
@@ -160,54 +164,54 @@ function hs = createControls()
   h = 1.5;
   lh = 1.5*h; % large height
   y = toplabely-lh;
-  t = label(hs.fig,'Tracking options',[x y 20 1.5],12);
-  t.FontWeight = 'bold';
+  hs.trackOptionsText = label(hs.fig,'Tracking options',[x y 20 1.5],12);
+  hs.trackOptionsText.FontWeight = 'bold';
   y = y-h;
   hs.autoRadii = checkbox(hs.fig,'Calculate search radii from dt',[x y w h],@autoRadiiCB,10);
   y = y-h;
   labelw = 0.75*w;
   editw = 0.2*w;
   editx = x+w-editw;
-  t = label(hs.fig,'Frame dt',[x y labelw h],10);
+  hs.autoRadiidtText = label(hs.fig,'Frame dt',[x y labelw h],10);
   hs.autoRadiidt = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
+  hs.autoRadiiAvgDispText = label(hs.fig,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
   % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
   hs.autoRadiiAvgDisp = editbox(hs.fig,num2str(0.06),[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
+  hs.minSearchRadiusText = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
   hs.minSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
+  hs.maxSearchRadiusText = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
   hs.maxSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
 
   y = y-h;
   hs.useSisterAlignment = checkbox(hs.fig,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
   y = y-h;
   % Adjust text box pos for multiple lines.
-  t = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
+  hs.maxSisterAlignmentAngleText = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
   hs.maxSisterAlignmentAngle = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
-  t = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
+  hs.maxSisterDistText = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
   hs.maxSisterDist = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
-  t = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
+  hs.minSisterTrackOverlapText = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
   hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
   
-  %% Options ? General options, column 1
+  %% Options - General options, column 1
   t = label(hs.fig,'General options',[x y 20 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
   t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Weight for spot count',[x y labelw h],10);
+  hs.adaptiveLambdaText = label(hs.fig,'Weight for spot count',[x y labelw h],10);
   hs.adaptiveLambda = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
   hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
   y = y-h;
-  t = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
+  hs.maxMmfTimeText = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
   hs.maxMmfTime = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
   hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
@@ -237,79 +241,84 @@ function hs = createControls()
     hs.parallel.Enable = 'off';
   end
   
-  %% Options ? Chromatic shift options, column 2
+  %% Options - Chromatic shift options, column 2
   x = sum(colwidth(1:3)) + 11;
   h = 1.5;
   lh = 1.5*h;
   y = toplabely-lh;
-  t = label(hs.fig,'Chromatic shift options',[x y w 1.5],12);
-  t.FontWeight = 'bold';
+  hs.chrShiftOptionsText = label(hs.fig,'Chromatic shift options',[x y w 1.5],12);
+  hs.chrShiftOptionsText.FontWeight = 'bold';
   y = y-h;
   labelw = 0.75*w;
   editw = 0.2*w;
   editx = x+w-editw;
   hs.chromaticShift = checkbox(hs.fig,'Provide chromatic shift correction',[x y w h],@chromaticShiftCB,10);
   y = y-h;
-  t = label(hs.fig,'Min spots per jobset',[x y labelw h],10);
+  hs.minChrShiftSpotsText = label(hs.fig,'Min spots per jobset',[x y labelw h],10);
   hs.minChrShiftSpots = editbox(hs.fig,[],[editx y editw h],10);
-  p = uipanel(hs.fig,'Units','characters','Position',[x y-5.75*h w 5.75*h],'FontSize',10,'Title','Chromatic shift jobsets');
+  hs.chrShiftPanel = uipanel(hs.fig,'Units','characters','Position',[x y-5.75*h w 5.75*h],'FontSize',10,'Title','Chromatic shift jobsets');
+  p = hs.chrShiftPanel;
   y = y-lh;
   editxl = w-4.25*(editw-1);
   editxc = w-1.5*(editw-1);
   editxr = w-editw/3-2;
   edity = 4.25*h;
-  t = label(p,'Channel vector',[1 edity-h labelw/3 h*1.5],10);
-  t.FontWeight = 'bold'; t.HorizontalAlignment = 'left';
-  t = label(p,'Jobset',[editxl edity-h/2 labelw h],10);
-  t.FontWeight = 'bold';
-  t = label(p,'Channel order',[editxc edity-h labelw/3 h*1.5],10);
-  t.FontWeight = 'bold'; t.HorizontalAlignment = 'left';
+  hs.chrShiftChanVectText = label(p,'Channel vector',[1 edity-h labelw/3 h*1.5],10);
+  hs.chrShiftChanVectText.FontWeight = 'bold';
+  hs.chrShiftChanVectText.HorizontalAlignment = 'left';
+  hs.chrShiftJobsetText = label(p,'Jobset',[editxl edity-h/2 labelw h],10);
+  hs.chrShiftJobsetText.FontWeight = 'bold';
+  hs.chrShiftChanOrderText = label(p,'Channel order',[editxc edity-h labelw/3 h*1.5],10);
+  hs.chrShiftChanOrderText.FontWeight = 'bold';
+  hs.chrShiftChanOrderText.HorizontalAlignment = 'left';
   edity = edity-2*h;
-  label(p,'1  ->  2',[1 edity labelw h],10);
-  label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
+  hs.ch1to2Text = label(p,'1  ->  2',[1 edity labelw h],10);
+  hs.ch1to2Arrow = label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
   hs.ch1to2 = button(p,'-',[editxl edity 2*editw h],@ch1to2CB,10);
   hs.ch1to2_ch1num = editbox(p,[],[editxc edity editw/3 h],10);
   hs.ch1to2_ch2num = editbox(p,[],[editxr edity editw/3 h],10);
   edity = edity-h;
-  label(p,'1  ->  3',[1 edity labelw h],10);
-  label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
+  hs.ch1to3Text = label(p,'1  ->  3',[1 edity labelw h],10);
+  hs.ch1to3Arrow = label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
   hs.ch1to3 = button(p,'-',[editxl edity 2*editw h],@ch1to3CB,10);
   hs.ch1to3_ch1num = editbox(p,[],[editxc edity editw/3 h],10);
   hs.ch1to3_ch3num = editbox(p,[],[editxr edity editw/3 h],10);
   edity = edity-h;
-  label(p,'2  ->  3',[1 edity labelw h],10);
-  label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
+  hs.ch2to3Text = label(p,'2  ->  3',[1 edity labelw h],10);
+  hs.ch2to3Arrow = label(p,'->',[(editxc+editxr+0.75)/2 edity editw h],10);
   hs.ch2to3 = button(p,'-',[editxl edity 2*editw h],@ch2to3CB,10);
   hs.ch2to3_ch2num = editbox(p,[],[editxc edity editw/3 h],10);
   hs.ch2to3_ch3num = editbox(p,[],[editxr edity editw/3 h],10);
   y = y-5.5*h;
   hs.chrShiftFilter = checkbox(hs.fig,'Filter chromatic shift spots',[x y w h],@chrShiftFilterCB,10);
   y = y-h;
-  t = label(hs.fig,'Min spot intensity (% of max)',[x y labelw h],10);
+  hs.chrShiftamplitudeText = label(hs.fig,'Min spot intensity (% of max)',[x y labelw h],10);
   hs.chrShiftamplitude = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Min spot separation (um)',[x y labelw h],10);
+  hs.chrShiftnnDistText = label(hs.fig,'Min spot separation (um)',[x y labelw h],10);
   hs.chrShiftnnDist = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
   
-  %% Options ? Neighbour spot-detection options, column 2
+  %% Options - Neighbour spot-detection options, column 2
   t = label(hs.fig,'Neighbour spot-detection options',[x y w 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
-  t = label(hs.fig,'Mask shape',[x y labelw h],10);
+  hs.neighbourMaskShapeText = label(hs.fig,'Mask shape',[x y labelw h],10);
   hs.neighbourMaskShape = popup(hs.fig,neighbourMaskValues,[editx-10 y editw+11 h],@neighbourOptionsCB,10);
   y = y-h;
-  t = label(hs.fig,'Mask radius (um)',[x y labelw h],10);
+  hs.neighbourMaskRadiusText = label(hs.fig,'Mask radius (um)',[x y labelw h],10);
   hs.neighbourMaskRadius = editbox(hs.fig,[],[editx y editw h],10);
-  p = uipanel(hs.fig,'Units','characters','Position',[x y-3*h w 3*h],'FontSize',10,'Title','Neighbour orientation');
+  hs.neighbourOrientPanel = uipanel(hs.fig,'Units','characters','Position',[x y-3*h w 3*h],'FontSize',10,'Title','Neighbour orientation');
+  p = hs.neighbourOrientPanel;
   editxl = 10;
   editxr = w-10-editw/3;
   editxc = (editxl+editxr)/2;
-  t = label(p,'Channel number',[(w-labelw)/2 edity+h labelw h],10);
-  t.FontWeight = 'bold'; t.HorizontalAlignment = 'center';
-  t = label(p,'inner kchore',[1 edity-h*2/3 labelw/3 2*h],10);
-  t = label(p,'outer kchore',[w-labelw*2/5 edity-h*2/3 labelw/3 2*h],10);
-  t.HorizontalAlignment = 'right';
+  hs.neighbourChanNumText = label(p,'Channel number',[(w-labelw)/2 edity+h labelw h],10);
+  hs.neighbourChanNumText.FontWeight = 'bold';
+  hs.neighbourChanNumText.HorizontalAlignment = 'center';
+  hs.neighbourInnerText = label(p,'inner kchore',[1 edity-h*2/3 labelw/3 2*h],10);
+  hs.neighbourOuterText = label(p,'outer kchore',[w-labelw*2/5 edity-h*2/3 labelw/3 2*h],10);
+  hs.neighbourOuterText.HorizontalAlignment = 'right';
   hs.neighbourOrientInner = editbox(p,[],[editxl edity editw/3 h],10);
   hs.neighbourOrientMiddle = editbox(p,[],[editxc edity editw/3 h],10);
   hs.neighbourOrientOuter = editbox(p,[],[editxr edity editw/3 h],10);
@@ -332,7 +341,7 @@ function updateControls(jobset)
   end
   hs.jobProc.Value = mapStrings(opts.jobProcess,jobProcessValuesJS);
   hs.coordSys.Value = mapStrings(opts.coordSystem,coordSystemValuesJS);
-  hs.coordSysCh.String = num2str(opts.coordSystemChannel);
+%   hs.coordSysCh.String = num2str(opts.coordSystemChannel);
   for i=1:3
     hs.spotMode{i}.Value = mapStrings(opts.spotMode{i},spotDetectValuesJS);
     hs.refineMode{i}.Value = mapStrings(opts.coordMode{i},spotRefineValuesJS);
@@ -609,24 +618,30 @@ end
 
 function jobProcessCB(hObj,event)
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
+    handles.coordSysText.Enable = 'off';
     handles.coordSys.Enable = 'off';
     handles.chromaticShift.Value = 0;
     chromaticShiftCB();
     handles.chromaticShift.Enable = 'off';
   else
+    handles.coordSysText.Enable = 'on';
     handles.coordSys.Enable = 'on';
     handles.chromaticShift.Enable = 'on';
   end
-  if any(strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),{'Static','Chromatic shift'}))
+  if any(strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),{'2D/3D only','Chromatic shift'}))
     handles.autoRadii.Value = 0;
     autoRadiiCB();
     handles.autoRadii.Enable = 'off';
+    handles.minSearchRadiusText.Enable = 'off';
     handles.minSearchRadius.Enable = 'off';
+    handles.maxSearchRadiusText.Enable = 'off';
     handles.maxSearchRadius.Enable = 'off';
     handles.useSisterAlignment.Value = 0;
     useSisterAlignmentCB();
     handles.useSisterAlignment.Enable = 'off';
+    handles.maxSisterDistText.Enable = 'off';
     handles.maxSisterDist.Enable = 'off';
+    handles.minSisterTrackOverlapText.Enable = 'off';
     handles.minSisterTrackOverlap.Enable = 'off';
   else
     handles.autoRadii.Enable = 'on';
@@ -635,31 +650,74 @@ function jobProcessCB(hObj,event)
     handles.useSisterAlignment.Enable = 'on';
     handles.useSisterAlignment.Value = 1;
     useSisterAlignmentCB();
+    handles.maxSisterDistText.Enable = 'on';
     handles.maxSisterDist.Enable = 'on';
+    handles.minSisterTrackOverlapText.Enable = 'on';
     handles.minSisterTrackOverlap.Enable = 'on';
   end
   neighbourOptionsCB();
 end
 
+function coordSysChCB(hObj,event)
+  chan = str2double(hObj.String);
+  handles.coordSysChNum = chan;
+  handles.spotMode{chan}.Value = 1;
+  handles.refineMode{chan}.Value = 2;
+%   handles.spotMode{chan}.String = {'Histogram','Adaptive','Wavelet'};
+  for notChan = setdiff(1:3,chan)
+    handles.coordSysCh{notChan}.Value = 0;
+%     handles.spotMode{notChan}.String = {'Neighbour','None'};
+    handles.spotMode{notChan}.Value = 5;
+%     if handles.spotMode{notChan}.Value==5
+%       handles.spotMode{notChan}.Value = 2;
+%     else
+%       handles.spotMode{notChan}.Value = 1;
+%     end
+%     handles.spotMode{notChan}.Enable = 'off';
+%     spotDetectValues = {'Neighbour','None'};
+%     spotDetectValuesJS = {'neighbour','none'};
+  end
+  spotModeCB();
+  neighbourOptionsCB();
+end
+
+
 function spotModeCB(hObj,event)
   for i=1:3
     if strcmp(mapStrings(handles.spotMode{i}.Value,spotDetectValues),'None')
-      handles.refineMode{i}.Enable= 'off';
-      handles.zStackMin{i}.Enable= 'off';
-      handles.zStackMax{i}.Enable= 'off';
-      handles.tPointsMin{i}.Enable= 'off';
-      handles.tPointsMax{i}.Enable= 'off';
+      handles.refineModeText{i}.Enable = 'off';
+      handles.refineMode{i}.Value = 3;
+      handles.refineMode{i}.Enable = 'off';
+      handles.zSliceText{i}.Enable = 'off';
+      handles.zStackMinText{i}.Enable = 'off';
+      handles.zStackMin{i}.Enable = 'off';
+      handles.zStackMaxText{i}.Enable = 'off';
+      handles.zStackMax{i}.Enable = 'off';
+      handles.tPointsText{i}.Enable = 'off';
+      handles.tPointsMinText{i}.Enable = 'off';
+      handles.tPointsMin{i}.Enable = 'off';
+      handles.tPointsMaxText{i}.Enable = 'off';
+      handles.tPointsMax{i}.Enable = 'off';
     else
-      handles.refineMode{i}.Enable= 'on';
-      handles.zStackMin{i}.Enable= 'on';
-      handles.zStackMax{i}.Enable= 'on';
-      handles.tPointsMin{i}.Enable= 'on';
-      handles.tPointsMax{i}.Enable= 'on';
+      handles.refineModeText{i}.Enable = 'on';  
+      handles.refineMode{i}.Enable = 'on';
+      handles.zSliceText{i}.Enable = 'on';
+      handles.zStackMinText{i}.Enable = 'on';
+      handles.zStackMin{i}.Enable = 'on';
+      handles.zStackMaxText{i}.Enable = 'on';
+      handles.zStackMax{i}.Enable = 'on';
+      handles.tPointsText{i}.Enable = 'on';
+      handles.tPointsMinText{i}.Enable = 'on';
+      handles.tPointsMin{i}.Enable = 'on';
+      handles.tPointsMaxText{i}.Enable = 'on';
+      handles.tPointsMax{i}.Enable = 'on';
     end
   end
   if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Adaptive'),handles.spotMode))
+    handles.adaptiveLambdaText.Enable = 'on';
     handles.adaptiveLambda.Enable = 'on';
   else
+    handles.adaptiveLambdaText.Enable = 'off';
     handles.adaptiveLambda.Enable = 'off';
   end
   neighbourOptionsCB();
@@ -668,43 +726,66 @@ end
 function refineModeCB(hObj,event)
   if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotRefineValues),'MMF'),handles.refineMode))
     handles.mmfAddSpots.Enable = 'on';
+    handles.maxMmfTimeText.Enable = 'on';
     handles.maxMmfTime.Enable = 'on';
   else
     handles.mmfAddSpots.Enable = 'off';
+    handles.maxMmfTimeText.Enable = 'off';
     handles.maxMmfTime.Enable = 'off';
   end
 end
 
 function autoRadiiCB(hObj,event)
   if handles.autoRadii.Value
+    handles.autoRadiidtText.Enable = 'on';
     handles.autoRadiidt.Enable = 'on';
+    handles.autoRadiiAvgDispText.Enable = 'on';
     handles.autoRadiiAvgDisp.Enable = 'on';
+    handles.minSearchRadiusText.Enable = 'off';
     handles.minSearchRadius.Enable = 'off';
+    handles.maxSearchRadiusText.Enable = 'off';
     handles.maxSearchRadius.Enable = 'off';
     r = computeSearchRadii(str2double(handles.autoRadiidt.String),str2double(handles.autoRadiiAvgDisp.String));
     handles.minSearchRadius.String = num2str(r(1));
     handles.maxSearchRadius.String = num2str(r(2));
   else
+    handles.autoRadiidtText.Enable = 'off';
     handles.autoRadiidt.Enable = 'off';
+    handles.autoRadiiAvgDispText.Enable = 'off';
     handles.autoRadiiAvgDisp.Enable = 'off';
+    handles.minSearchRadiusText.Enable = 'on';
     handles.minSearchRadius.Enable = 'on';
+    handles.maxSearchRadiusText.Enable = 'on';
     handles.maxSearchRadius.Enable = 'on';
   end
 end
 
 function useSisterAlignmentCB(hObj,event)
   if handles.useSisterAlignment.Value
+    handles.maxSisterAlignmentAngleText.Enable = 'on';
     handles.maxSisterAlignmentAngle.Enable = 'on';
   else
+    handles.maxSisterAlignmentAngleText.Enable = 'off';  
     handles.maxSisterAlignmentAngle.Enable = 'off';
   end
 end
 
 function chromaticShiftCB(hObj,event)
   if handles.chromaticShift.Value
+    handles.minChrShiftSpotsText.Enable = 'on';
     handles.minChrShiftSpots.Enable = 'on';
+    handles.chrShiftPanel.ForegroundColor = [0 0 0];
+    handles.chrShiftChanVectText.Enable = 'on';
+    handles.chrShiftJobsetText.Enable = 'on';
+    handles.chrShiftChanOrderText.Enable = 'on';
+    handles.ch1to2Text.Enable = 'on';
+    handles.ch1to2Arrow.Enable = 'on';
     handles.ch1to2.Enable = 'on';
     handles.ch1to3.Enable = 'on';
+    handles.ch1to3Text.Enable = 'on';
+    handles.ch1to3Arrow.Enable = 'on';
+    handles.ch2to3Text.Enable = 'on';
+    handles.ch2to3Arrow.Enable = 'on';
     handles.ch2to3.Enable = 'on';
     handles.ch1to2_ch1num.Enable = 'on';
     handles.ch1to2_ch2num.Enable = 'on';
@@ -714,9 +795,20 @@ function chromaticShiftCB(hObj,event)
     handles.ch2to3_ch3num.Enable = 'on';
     handles.chrShiftFilter.Enable = 'on';
   else
+    handles.minChrShiftSpotsText.Enable = 'off';
     handles.minChrShiftSpots.Enable = 'off';
+    handles.chrShiftPanel.ForegroundColor = [0.5 0.5 0.5];
+    handles.chrShiftChanVectText.Enable = 'off';
+    handles.chrShiftJobsetText.Enable = 'off';
+    handles.chrShiftChanOrderText.Enable = 'off';
+    handles.ch1to2Text.Enable = 'off';
+    handles.ch1to2Arrow.Enable = 'off';
     handles.ch1to2.Enable = 'off';
+    handles.ch1to3Text.Enable = 'off';
+    handles.ch1to3Arrow.Enable = 'off';
     handles.ch1to3.Enable = 'off';
+    handles.ch2to3Text.Enable = 'off';
+    handles.ch2to3Arrow.Enable = 'off';
     handles.ch2to3.Enable = 'off';
     handles.ch1to2_ch1num.Enable = 'off';
     handles.ch1to2_ch2num.Enable = 'off';
@@ -732,10 +824,14 @@ end
 
 function chrShiftFilterCB(hObj,event)
   if handles.chrShiftFilter.Value
+    handles.chrShiftamplitudeText.Enable = 'on';
     handles.chrShiftamplitude.Enable = 'on';
+    handles.chrShiftnnDistText.Enable = 'on';
     handles.chrShiftnnDist.Enable = 'on';
   else
+    handles.chrShiftamplitudeText.Enable = 'off';
     handles.chrShiftamplitude.Enable = 'off';
+    handles.chrShiftnnDistText.Enable = 'off';
     handles.chrShiftnnDist.Enable = 'off';
   end
 end
@@ -773,36 +869,67 @@ end
 function neighbourOptionsCB(hObj,event)
   switch sum(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Neighbour'),handles.spotMode))
     case 0
+      handles.neighbourMaskShapeText.Enable = 'off';
       handles.neighbourMaskShape.Enable = 'off';
+      handles.neighbourMaskRadiusText.Enable = 'off';
       handles.neighbourMaskRadius.Enable = 'off';
+      handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
+      handles.neighbourChanVectText.Enable = 'off';
+      handles.neighbourChanNumText.Enable = 'off';
+      handles.neighbourInnerText.Enable = 'off';
       handles.neighbourOrientInner.Enable = 'off';
       handles.neighbourOrientMiddle.Enable = 'off';
       handles.neighbourOrientOuter.Enable = 'off';
+      handles.neighbourOuterText.Enable = 'off';
     case 1
+      handles.neighbourMaskShapeText.Enable = 'on';
       handles.neighbourMaskShape.Enable = 'on';
+      handles.neighbourMaskRadiusText.Enable = 'on';
       handles.neighbourMaskRadius.Enable = 'on';
+      handles.neighbourOrientPanel.ForegroundColor = [0 0 0];
+      handles.neighbourChanVectText.Enable = 'on';
+      handles.neighbourChanNumText.Enable = 'on';
+      handles.neighbourInnerText.Enable = 'on';
       handles.neighbourOrientInner.Enable = 'on';
       handles.neighbourOrientMiddle.Enable = 'on';
       handles.neighbourOrientOuter.Enable = 'off';
+      handles.neighbourOuterText.Enable = 'on';
     case 2
+      handles.neighbourMaskShapeText.Enable = 'on';
       handles.neighbourMaskShape.Enable = 'on';
+      handles.neighbourMaskRadiusText.Enable = 'on';
       handles.neighbourMaskRadius.Enable = 'on';
+      handles.neighbourOrientPanel.ForegroundColor = [0 0 0];
+      handles.neighbourChanVectText.Enable = 'on';
+      handles.neighbourChanNumText.Enable = 'on';
+      handles.neighbourInnerText.Enable = 'on';
       handles.neighbourOrientInner.Enable = 'on';
       handles.neighbourOrientMiddle.Enable = 'on';
       handles.neighbourOrientOuter.Enable = 'on';
+      handles.neighbourOuterText.Enable = 'on';
   end
   if strcmp(mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValues),'Circle')
-    handles.neighbourOrientInner.Enable = 'off';
-    handles.neighbourOrientMiddle.Enable = 'off';
-    handles.neighbourOrientOuter.Enable = 'off';
+    handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
+      handles.neighbourChanVectText.Enable = 'off';
+      handles.neighbourChanNumText.Enable = 'off';
+      handles.neighbourInnerText.Enable = 'off';
+      handles.neighbourOrientInner.Enable = 'off';
+      handles.neighbourOrientMiddle.Enable = 'off';
+      handles.neighbourOrientOuter.Enable = 'off';
+      handles.neighbourOuterText.Enable = 'off';
   end
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
+    handles.neighbourMaskShapeText.Enable = 'off';
     handles.neighbourMaskShape.Value = 1;
     handles.neighbourMaskShape.Enable = 'off';
-    handles.neighbourMaskRadius.Enable = 'off';
+    handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
+    handles.neighbourChanVectText.Enable = 'off';
+    handles.neighbourChanNumText.Enable = 'off';
+    handles.neighbourInnerText.Enable = 'off';
     handles.neighbourOrientInner.Enable = 'off';
     handles.neighbourOrientMiddle.Enable = 'off';
     handles.neighbourOrientOuter.Enable = 'off';
+    handles.neighbourOuterText.Enable = 'off';
   end
 end
 
