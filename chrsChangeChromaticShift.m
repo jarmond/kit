@@ -32,9 +32,21 @@ opts = processOptions(opts,varargin{:});
 % ensure a channel vector is provided
 if isempty(opts.chanVect)
     if ~iscell(newShift)
-       error('If providing only one chromatic shift vector, need to specify channels.')
+        error('If providing only one chromatic shift vector, need to specify channels.')
     else
         chrShift = newShift;
+        source = jobset.options.chrShift.jobset;
+        for fromChan=1:2
+          for toChan=2:3
+            if fromChan<toChan && sum(chrShift{fromChan,toChan})~=0
+              source{fromChan,toChan} = 'Unknown source';
+              source{toChan,fromChan} = 'Unknown source';
+            else
+              source{fromChan,toChan} = [];
+              source{toChan,fromChan} = [];
+            end
+          end
+        end
     end
     
 % check whether the channel vector includes only allowed channels
@@ -48,6 +60,7 @@ else % if channel vector provided, proceed as appropriate
     
     % get original chromatic shift cell array
     chrShift = jobset.options.chrShift.result;
+    source = jobset.options.chrShift.jobset;
     
     % replace the newShift with only the vector specified in chanVect
     if iscell(newShift)
@@ -64,10 +77,15 @@ else % if channel vector provided, proceed as appropriate
     revShift(1:3) = revShift(1:3)*-1;
     chrShift{toChan,fromChan}(1:lenShift) = revShift;
     
+    % give a source for the chromatic shift calculation
+    source{fromChan,toChan} = 'Unknown source';
+    source{toChan,fromChan} = 'Unknown source';
+    
 end
 
 % change chromatic shift information in the jobset and save
 jobset.options.chrShift.result = chrShift;
+jobset.options.chrShift.jobset = source;
 kitSaveJobset(jobset);
 
 %% Change jobs information if required

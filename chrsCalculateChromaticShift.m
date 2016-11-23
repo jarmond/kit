@@ -24,9 +24,13 @@ function [chrShift,nDataPoints] = chrsCalculateChromaticShift(jobs,chanVect,vara
 % set default options
 opts.filtered = 0;
 opts.interphaseToMetaphase = 1;
-
 % process options
 opts = processOptions(opts,varargin{:});
+
+% check that a channel vector has been provided
+if nargin<2 || isempty(chanVect)
+    chanVect = [1 2];
+end
 
 % find number of jobs
 nJobs = length(jobs);
@@ -36,7 +40,7 @@ accumZeta = [];
 % loop over jobs
 for iJob = 1:nJobs
     % get number of channels
-    nChans = length(jobs(iJob).dataStruct);
+    nChans = length(jobs{iJob}.dataStruct);
     % check that this is enough based on the provided channel vector
     if any(chanVect>nChans)
         chrShift = zeros(1,6);
@@ -45,25 +49,25 @@ for iJob = 1:nJobs
     end
     
     % get coordinates, calculate zeta
-    if isfield(jobs(iJob).dataStruct{chanVect(2)},'initCoord')
+    if isfield(jobs{iJob}.dataStruct{chanVect(2)},'initCoord')
       
       % get coordinates for each channel
       if opts.filtered
-        coords1 = jobs(iJob).dataStruct{chanVect(1)}.initCoord.allCoord(:,1:3);
-        coords2 = jobs(iJob).dataStruct{chanVect(2)}.initCoord.allCoord(:,1:3);
+        coords1 = jobs{iJob}.dataStruct{chanVect(1)}.initCoord.allCoord(:,1:3);
+        coords2 = jobs{iJob}.dataStruct{chanVect(2)}.initCoord.allCoord(:,1:3);
       else
         % check for a rawInitCoord in each channel dataStruct
         % channel 1
-        if isfield(jobs(iJob).dataStruct{chanVect(1)},'rawInitCoord')
-            coords1 = jobs(iJob).dataStruct{chanVect(1)}.rawInitCoord.allCoord(:,1:3);
+        if isfield(jobs{iJob}.dataStruct{chanVect(1)},'rawInitCoord')
+            coords1 = jobs{iJob}.dataStruct{chanVect(1)}.rawInitCoord.allCoord(:,1:3);
         else
-            coords1 = jobs(iJob).dataStruct{chanVect(1)}.initCoord.allCoord(:,1:3);
+            coords1 = jobs{iJob}.dataStruct{chanVect(1)}.initCoord.allCoord(:,1:3);
         end
         % channel 2
-        if isfield(jobs(iJob).dataStruct{chanVect(2)},'rawInitCoord')
-            coords2 = jobs(iJob).dataStruct{chanVect(2)}.rawInitCoord.allCoord(:,1:3);
+        if isfield(jobs{iJob}.dataStruct{chanVect(2)},'rawInitCoord')
+            coords2 = jobs{iJob}.dataStruct{chanVect(2)}.rawInitCoord.allCoord(:,1:3);
         else
-            coords2 = jobs(iJob).dataStruct{chanVect(2)}.initCoord.allCoord(:,1:3);
+            coords2 = jobs{iJob}.dataStruct{chanVect(2)}.initCoord.allCoord(:,1:3);
         end
       end
       
@@ -75,7 +79,7 @@ for iJob = 1:nJobs
 end
 
 % find number of datapoints accumulated across the entire jobset
-nDataPoints = size(accumZeta,1);
+nDataPoints = sum(~isnan(prod(accumZeta,2)));
 if nDataPoints == 0
     chrShift = zeros(1,6);
     warning('No data. Setting chromatic shift = [0 0 0].')
