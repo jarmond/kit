@@ -1,7 +1,9 @@
 function jobset=kitGUI(jobset)
 % KITGUI Display GUI to setup and run tracking.
 %
-% Copyright (c) 2015 Jonathan W. Armond
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 % Download BioFormats, if required.
 kitDownloadBioFormats();
@@ -29,7 +31,7 @@ spotDetectValuesJS = {'histcut','adaptive','wavelet','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 neighbourMaskValues = {'Circle','Semi-circle','Cone'};
-neighbourMaskValuesJS = {'circle','semicircle','cone'};
+neighbourMaskValuesJS = {'circle','semicirc','cone'};
 
 % Setup GUI.
 handles = createControls();
@@ -87,9 +89,10 @@ function hs = createControls()
   jScrollPane.setHorizontalScrollBarPolicy(32);
 
   label(hs.fig,'ROIs:',[x 21.2 20 1.5]);
-  hs.addROI = button(hs.fig,'Add ROI',[x 1 13 2],@addROICB);
-  hs.viewROI = button(hs.fig,'View ROI',[x+14.5 1 13 2],@viewROICB);
-  hs.deleteROI = button(hs.fig,'Delete ROI',[x+14.5*2 1 13 2],@deleteROICB);
+  hs.cropROI = button(hs.fig,'Add crop',[x 1 13.5 2],@addROICB);
+  hs.fullROI = button(hs.fig,'Add full',[x+13.9 1 13.5 2],@skipROICB);
+  hs.deleteROI = button(hs.fig,'Delete',[x+13.9*2 1 13.5 2],@deleteROICB);
+  hs.viewROI = button(hs.fig,'View',[x+13.9*3 1 13.5 2],@viewROICB);
 
   %% Process setup
   x = colwidth(1) + 5;
@@ -104,11 +107,10 @@ function hs = createControls()
   hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 38.1 22 1.5]);
   label(hs.fig,'Coordinate system channel',[x 36 30 1.5]);
   for i=1:3
-    hs.coordSysCh{i} = uicontrol('Parent',hs.fig,'Style','radio','String',num2str(i),'Position',[490+30*i 545 30 20],'Callback',@coordSysChCB);
+    hs.coordSysCh{i} = uicontrol('Parent',hs.fig,'Units','characters','Style','radio','String',num2str(i),'Position',[x+21+5.3*i 36 6 1.5],'Callback',@coordSysChCB);
   end
-  hs.coordSysChNum = 1;
   hs.coordSysCh{1}.Value = 1;
-
+  hs.coordSysChNum = 1;
   % Channel modes
   b = 26.5;
   h = 9;
@@ -341,8 +343,9 @@ function updateControls(jobset)
   end
   hs.jobProc.Value = mapStrings(opts.jobProcess,jobProcessValuesJS);
   hs.coordSys.Value = mapStrings(opts.coordSystem,coordSystemValuesJS);
-%   hs.coordSysCh.String = num2str(opts.coordSystemChannel);
+  hs.coordSysChNum = opts.coordSystemChannel;
   for i=1:3
+    hs.coordSysCh{i}.Value = (i==opts.coordSystemChannel);
     hs.spotMode{i}.Value = mapStrings(opts.spotMode{i},spotDetectValuesJS);
     hs.refineMode{i}.Value = mapStrings(opts.coordMode{i},spotRefineValuesJS);
     if ~isempty(opts.neighbourSpots.zSlices{i})
@@ -393,24 +396,50 @@ function updateControls(jobset)
     hs.psfBtn.Enable = 'off';
     hs.psfFile.Enable = 'off';
   end
+  hs.chromaticShift.Value = any(~cellfun('isempty',opts.chrShift.jobset(:)));
   hs.minChrShiftSpots.String = num2str(opts.chrShift.minSpots);
   if ~isempty(opts.chrShift.jobset{1,2})
     hs.ch1to2.String = opts.chrShift.jobset{1,2};
+    hs.ch1to2_ch1num.Enable = 'on';
+    hs.ch1to2_ch2num.Enable = 'on';
+    hs.ch1to2_ch1num.String = num2str(opts.chrShift.chanOrder{1,2}(1));
+    hs.ch1to2_ch2num.String = num2str(opts.chrShift.chanOrder{1,2}(2));
+  else
+    hs.ch1to2.String = '-';
+    hs.ch1to2_ch1num.String = '';
+    hs.ch1to2_ch2num.String = '';
+    hs.ch1to2_ch1num.Enable = 'off';
+    hs.ch1to2_ch2num.Enable = 'off';
   end
-  hs.ch1to2_ch1num.String = num2str(opts.chrShift.chanOrder{1,2}(1));
-  hs.ch1to2_ch2num.String = num2str(opts.chrShift.chanOrder{1,2}(2));
   if ~isempty(opts.chrShift.jobset{1,3})
-    hs.ch1to3.String = opts.chrShift.jobset{1,3};
+    hs.ch1to2.String = opts.chrShift.jobset{1,3};
+    hs.ch1to3_ch1num.Enable = 'on';
+    hs.ch1to3_ch3num.Enable = 'on';
+    hs.ch1to3_ch1num.String = num2str(opts.chrShift.chanOrder{1,3}(1));
+    hs.ch1to3_ch3num.String = num2str(opts.chrShift.chanOrder{1,3}(2));
+  else
+    hs.ch1to3.String = '-';
+    hs.ch1to3_ch1num.String = '';
+    hs.ch1to3_ch3num.String = '';
+    hs.ch1to3_ch1num.Enable = 'off';
+    hs.ch1to3_ch3num.Enable = 'off';
   end
-  hs.ch1to3_ch1num.String = num2str(opts.chrShift.chanOrder{1,3}(1));
-  hs.ch1to3_ch3num.String = num2str(opts.chrShift.chanOrder{1,3}(2));
   if ~isempty(opts.chrShift.jobset{2,3})
     hs.ch2to3.String = opts.chrShift.jobset{2,3};
+    hs.ch2to3_ch2num.Enable = 'on';
+    hs.ch2to3_ch3num.Enable = 'on';
+    hs.ch2to3_ch2num.String = num2str(opts.chrShift.chanOrder{2,3}(1));
+    hs.ch2to3_ch3num.String = num2str(opts.chrShift.chanOrder{2,3}(2));
+  else
+    hs.ch2to3.String = '-';
+    hs.ch2to3_ch2num.String = '';
+    hs.ch2to3_ch3num.String = '';
+    hs.ch2to3_ch2num.Enable = 'off';
+    hs.ch2to3_ch3num.Enable = 'off';
   end
-  hs.ch2to3_ch2num.String = num2str(opts.chrShift.chanOrder{2,3}(1));
-  hs.ch2to3_ch3num.String = num2str(opts.chrShift.chanOrder{2,3}(2));
-  hs.chrShiftamplitude.String = num2str(opts.chrShift.amplitudeFilter);
-  hs.chrShiftnnDist.String = num2str(opts.chrShift.nnDistFilter);
+  hs.chrShiftFilter.Value = opts.chrShift.filtering;
+  hs.chrShiftamplitude.String = num2str(opts.chrShift.intensityFilter);
+  hs.chrShiftnnDist.String = num2str(opts.chrShift.neighbourFilter);
   
   hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,neighbourMaskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
@@ -421,6 +450,7 @@ function updateControls(jobset)
   populateMovieBox();
   populateROIBox();
   jobProcessCB();
+  coordSysChCB();
   spotModeCB();
   refineModeCB();
   autoRadiiCB();
@@ -432,7 +462,7 @@ end
 % Check controls for consistent input.
 function tf=checkControls()
   hs = handles;
-  v = str2double(hs.coordSysCh.String);
+  v = hs.coordSysChNum;
   if ~isfinite(v) || v<1 || v>3
     errorbox('Invalid channel number for coordinate system channel. Should be a number between 1 and 3');
     tf = false;
@@ -608,6 +638,26 @@ function deleteROICB(hObj,event)
   populateROIBox();
 end
 
+function skipROICB(hObj,event)
+  movieFiles = handles.movies.String;
+  movieDir = handles.movieDirectory.String;
+  v = handles.movies.Value;
+  if isempty(v)
+    errorbox('Must select movies first to skip ROIs');
+    return
+  end
+  for i=1:length(v)
+    [md,~]=kitOpenMovie(fullfile(movieDir,movieFiles{v(i)}));
+    crop = [1 1 md.frameSize(1:2)];
+    cropSize = md.frameSize(1:3);
+    r = length(jobset.ROI) + 1;
+    jobset.ROI(r).movie = handles.movies.String{v(i)};
+    jobset.ROI(r).crop = crop(i,:);
+    jobset.ROI(r).cropSize = cropSize(i,:);
+  end
+  populateROIBox();
+end
+
 function viewROICB(hObj,event)
   v = handles.ROIs.Value;
   if ~isempty(v)
@@ -618,6 +668,7 @@ end
 
 function jobProcessCB(hObj,event)
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
+    handles.coordSys.Value = 3;
     handles.coordSysText.Enable = 'off';
     handles.coordSys.Enable = 'off';
     handles.chromaticShift.Value = 0;
@@ -659,23 +710,15 @@ function jobProcessCB(hObj,event)
 end
 
 function coordSysChCB(hObj,event)
-  chan = str2double(hObj.String);
-  handles.coordSysChNum = chan;
-  handles.spotMode{chan}.Value = 1;
-  handles.refineMode{chan}.Value = 2;
-%   handles.spotMode{chan}.String = {'Histogram','Adaptive','Wavelet'};
-  for notChan = setdiff(1:3,chan)
-    handles.coordSysCh{notChan}.Value = 0;
-%     handles.spotMode{notChan}.String = {'Neighbour','None'};
-    handles.spotMode{notChan}.Value = 5;
-%     if handles.spotMode{notChan}.Value==5
-%       handles.spotMode{notChan}.Value = 2;
-%     else
-%       handles.spotMode{notChan}.Value = 1;
-%     end
-%     handles.spotMode{notChan}.Enable = 'off';
-%     spotDetectValues = {'Neighbour','None'};
-%     spotDetectValuesJS = {'neighbour','none'};
+  if exist('hObj')
+    chan = str2double(hObj.String);
+    handles.coordSysChNum = chan;
+    handles.spotMode{chan}.Value = 1;
+    handles.refineMode{chan}.Value = 2;
+    for notChan = setdiff(1:3,chan)
+      handles.coordSysCh{notChan}.Value = 0;
+      handles.spotMode{notChan}.Value = 5;
+    end
   end
   spotModeCB();
   neighbourOptionsCB();
@@ -787,12 +830,33 @@ function chromaticShiftCB(hObj,event)
     handles.ch2to3Text.Enable = 'on';
     handles.ch2to3Arrow.Enable = 'on';
     handles.ch2to3.Enable = 'on';
-    handles.ch1to2_ch1num.Enable = 'on';
-    handles.ch1to2_ch2num.Enable = 'on';
-    handles.ch1to3_ch1num.Enable = 'on';
-    handles.ch1to3_ch3num.Enable = 'on';
-    handles.ch2to3_ch2num.Enable = 'on';
-    handles.ch2to3_ch3num.Enable = 'on';
+    if all(~strcmp(handles.ch1to2.String,{'-','Unknown source'}))
+      handles.ch1to2_ch1num.Enable = 'on';
+      handles.ch1to2_ch2num.Enable = 'on';
+    else
+      handles.ch1to2_ch1num.String = '';
+      handles.ch1to2_ch2num.String = '';
+      handles.ch1to2_ch1num.Enable = 'off';
+      handles.ch1to2_ch2num.Enable = 'off';
+    end
+    if all(~strcmp(handles.ch1to3.String,{'-','Unknown source'}))
+      handles.ch1to3_ch1num.Enable = 'on';
+      handles.ch1to3_ch3num.Enable = 'on';
+    else
+      handles.ch1to3_ch1num.String = '';
+      handles.ch1to3_ch3num.String = '';
+      handles.ch1to3_ch1num.Enable = 'off';
+      handles.ch1to3_ch3num.Enable = 'off';
+    end
+    if all(~strcmp(handles.ch2to3.String,{'-','Unknown source'}))
+      handles.ch2to3_ch2num.Enable = 'on';
+      handles.ch2to3_ch3num.Enable = 'on';
+    else
+      handles.ch2to3_ch2num.String = '';
+      handles.ch2to3_ch3num.String = '';
+      handles.ch2to3_ch2num.Enable = 'off';
+      handles.ch2to3_ch3num.Enable = 'off';
+    end
     handles.chrShiftFilter.Enable = 'on';
   else
     handles.minChrShiftSpotsText.Enable = 'off';
@@ -844,6 +908,10 @@ function ch1to2CB(hObj,event)
   handles.ch1to2.String = file;
   file = fullfile(path,file);
   jobset.options.chrShift.jobset{1,2} = file;
+  handles.ch1to2_ch1num.Enable = 'on';
+  handles.ch1to2_ch1num.String = jobset.options.chrShift.chanOrder{1,2}(1);
+  handles.ch1to2_ch2num.Enable = 'on';
+  handles.ch1to2_ch2num.String = jobset.options.chrShift.chanOrder{1,2}(2);
 end
 
 function ch1to3CB(hObj,event)
@@ -851,9 +919,13 @@ function ch1to3CB(hObj,event)
   if isequal(file,0)
     return
   end
-  handles.ch1toch2.String = file;
+  handles.ch1to3.String = file;
   file = fullfile(path,file);
   jobset.options.chrShift.jobset{1,3} = file;
+  handles.ch1to3_ch1num.Enable = 'on';
+  handles.ch1to3_ch1num.String = jobset.options.chrShift.chanOrder{1,3}(1);
+  handles.ch1to3_ch3num.Enable = 'on';
+  handles.ch1to3_ch3num.String = jobset.options.chrShift.chanOrder{1,3}(2);
 end
 
 function ch2to3CB(hObj,event)
@@ -861,9 +933,13 @@ function ch2to3CB(hObj,event)
   if isequal(file,0)
     return
   end
-  handles.ch1to2.String = file;
+  handles.ch2to3.String = file;
   file = fullfile(path,file);
   jobset.options.chrShift.jobset{2,3} = file;
+  handles.ch2to3_ch2num.Enable = 'on';
+  handles.ch2to3_ch2num.String = jobset.options.chrShift.chanOrder{2,3}(1);
+  handles.ch2to3_ch3num.Enable = 'on';
+  handles.ch2to3_ch3num.String = jobset.options.chrShift.chanOrder{2,3}(2);
 end
 
 function neighbourOptionsCB(hObj,event)
@@ -1054,12 +1130,20 @@ function updateJobset()
   opts = jobset.options;
   opts.jobProcess = mapStrings(handles.jobProc.Value,jobProcessValuesJS);
   opts.coordSystem = mapStrings(handles.coordSys.Value,coordSystemValuesJS);
-  opts.coordSystemChannel = str2double(handles.coordSysCh.String);
+  opts.coordSystemChannel = handles.coordSysChNum;
   for i=1:3
     opts.spotMode{i} = spotDetectValuesJS{handles.spotMode{i}.Value};
     opts.coordMode{i} = spotRefineValuesJS{handles.refineMode{i}.Value};
-    opts.neighbourSpots.timePoints{i} = str2double(handles.tPointsMin{i}.String):str2double(handles.tPointsMax{i}.String);
-    opts.neighbourSpots.zSlices{i} = str2double(handles.zStackMin{i}.String):str2double(handles.zStackMax{i}.String);
+    if isempty(handles.tPointsMin{i}.String) || isempty(handles.tPointsMax{i}.String)
+      opts.neighbourSpots.timePoints{i} = [];
+    else
+      opts.neighbourSpots.timePoints{i} = str2double(handles.tPointsMin{i}.String):str2double(handles.tPointsMax{i}.String);
+    end
+    if isempty(handles.zStackMin{i}.String) || isempty(handles.zStackMax{i}.String)
+      opts.neighbourSpots.zSlices{i} = [];
+    else
+      opts.neighbourSpots.zSlices{i} = str2double(handles.zStackMin{i}.String):str2double(handles.zStackMax{i}.String);
+    end
   end
   if handles.autoRadii.Value
     opts.autoRadiidt = str2double(handles.autoRadiidt.String);
@@ -1093,9 +1177,12 @@ function updateJobset()
     chrShift.chanOrder{2,3}(1) = str2double(handles.ch2to3_ch2num.String);
     chrShift.chanOrder{2,3}(2) = str2double(handles.ch2to3_ch3num.String);
     if handles.chrShiftFilter.Value
-      chrShift.amplitudeFilter = str2double(handles.chrShiftamplitude.String);
-      chrShift.nnDistFilter = str2double(handles.chrShiftnnDist.String);
+      chrShift.filtering = 1;
+      chrShift.intensityFilter = str2double(handles.chrShiftamplitude.String);
+      chrShift.neighbourFilter = str2double(handles.chrShiftnnDist.String);
     end
+    result = getChromaticShiftResults(chrShift);
+    chrShift.result = result;
     opts.chrShift = chrShift;
   end
   neighbourSpots = opts.neighbourSpots;
@@ -1122,6 +1209,30 @@ end
 function errorbox(msg)
     h=msgbox(msg,'Error','Error','modal');
     uiwait(h);
+end
+
+function cellResult = getChromaticShiftResults(chrShift)
+  cellResult = chrShift.result;
+  for i = 1:3
+    for j = 1:3
+      jS = chrShift.jobset{i,j};
+	  if i>=j || isempty(jS) || strcmp(jS,'Unknown source'); continue; end
+      jS = kitLoadJobset(jS);
+      neighFilt = chrShift.neighbourFilter;
+      intFilt = chrShift.intensityFilter/100;
+      mS = kitLoadAllJobs(jS);
+      if chrShift.filtering
+        for iMov = 1:length(mS)
+          mS{iMov} = chrsFilterSpots(mS{iMov}, ...
+              'neighbourFilter',neighFilt,'intensityFilter',intFilt, ...
+              'revert',1,'referenceChan',handles.coordSysChNum);
+        end
+      end
+      [result,~] = chrsCalculateChromaticShift(mS,[i j],...
+          'filtered',chrShift.filtering,'interphaseToMetaphase',chrShift.interphase);
+      cellResult{i,j} = result; cellResult{j,i} = result.*[-1 -1 -1 1 1 1];
+    end
+  end       
 end
 
 end % kitGUI
