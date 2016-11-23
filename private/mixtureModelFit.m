@@ -5,35 +5,11 @@ function [spots,spotID,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma
 % mixture models. F-test is used to determine appropriate number of
 % Gaussians.
 %
-% EDITS REQUIRED: Addition of job process, binning and tolfun into options,
-% plus editing of mmfAddSpot, alphaA and tolfun between job process.
-%
-% Copyright (c) 2014 J. W. Armond
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
 % Copyright (c) 2016 C. A. Smith
 
 verbose = options.debug.mmfVerbose;
-
-process = options.jobProcess;        %%% JOB PROCESS NEEDS INCORPORATING INTO OPTIONS
-% create default values before changing based on process
-                                    %%% BINNING NEEDS INCORPORATING INTO OPTIONS
-                                    %%% CONSIDER INCORPORATING ALPHA CALCULATION INTO OPTIONS PRODUCTION
-                                    %%% NEED TO INCORPORATE MMFADDSPOT CHANGES FOR CHRSHIFT AND STATIC
-% switch process
-%     case 'tracking'
-%         if nargin<5 || isempty(neighbour) || ~neighbour
-%             alphaA = 0.40/(options.binning^3);
-%         elseif neighbour
-%             tolfun = 1e-7;
-%             alphaA = 0.50/(options.binning^3);
-%         end
-%     case {'chrshift', 'static'}
-%         if nargin<5 || isempty(neighbour) || ~neighbour
-%             alphaA = 0.50/(options.binning^3);
-%         elseif neighbour
-%             tolfun = 1e-7;
-%             alphaA = 0.50/(options.binning^3);
-%         end
-% end
 
 % Set optimization options.
 optoptions = optimset('Jacobian','on','Display','off','Tolfun',options.mmfTol,'TolX',1e-6);
@@ -55,7 +31,6 @@ clusterSep = options.clusterSeparation*psfSigma;
 
 % Cluster spots.
 clusters = clusterSpots(cands(:,1:cols));
-% cands = [cands clusters]; %%% I'M NOT SURE THIS IS REQUIRED, DELETE IF POSSIBLE
 nClusters = max(clusters);
 if verbose
   kitLog('Mmf fitting on %d clusters',nClusters);

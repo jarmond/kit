@@ -14,6 +14,9 @@ dataStruct.failed = 0;
 % get pixel and chromatic shift information
 pixelSize = job.metadata.pixelSize;
 chrShift = job.options.chrShift.result{options.coordSystemChannel,channel};
+% calculate alphaA based on pixel size
+% (standards: 0.05 at 138.1nm; 0.6 at 69.4nm)
+options.alphaA = options.alphaA + (0.1381-pixelSize(1))*8;
 
 % get number of frames
 nFrames = job.metadata.nFrames;
@@ -39,12 +42,13 @@ end
 for iImage = frames
   %if there are no cands, register that this is an empty frame
   if isempty(localMaxima(iImage).cands)
-    emptyFrames = [emptyFrames; iImage]; %#ok<AGROW>
+    emptyFrames = [emptyFrames iImage]; %#ok<AGROW>
   end
 end
 
-%make a list of images that have local maxima
-goodImages = setxor(frames,emptyFrames,'legacy');
+%make a list of images that have local maxima, ensuring it is a row
+goodImages = setxor(frames,emptyFrames);
+goodImages = goodImages(:)';
 
 % get psf sigma from filterPrm
 if is3D
@@ -58,6 +62,20 @@ initCoord(frames) = struct('allCoord',[],'allCoordPix',[],'nSpots',0,'amp',[],'b
 
 kitLog('Refining particles using mixture-model fitting');
 prog = kitProgress(0);
+
+%if neighbour, firstly go over all empty images to give nan structures
+if neighbour
+  for iImage = emptyFrames
+    % Get number of spots in coordinate system channel
+    nSpotsOrig = job.dataStruct{options.coordSystemChannel}.initCoord(iImage).nSpots;
+    % Create an array of nans and insert neighbour coordinates per ID
+    initCoord(iImage).allCoord = nan(nSpotsOrig,2*ndims);
+    initCoord(iImage).allCoordPix = nan(nSpotsOrig,2*ndims);
+    initCoord(iImage).amp = nan(nSpotsOrig,3);
+    initCoord(iImage).bg = nan(nSpotsOrig,2);
+  end
+end
+
 %go over all non-empty images ...
 for iImage = goodImages
   % Get frame.
@@ -163,7 +181,7 @@ for iImage = goodImages
 
     %check whether frame is empty
     if initCoord(iImage).nSpots == 0
-      emptyFrames = [emptyFrames; iImage]; %#ok<AGROW>
+      emptyFrames = [emptyFrames iImage]; %#ok<AGROW>
       initCoord(iImage).allCoord = initCoord(iImage).allCoordPix;
     else
       % calc real space coordinates and correct for chromatic shift
