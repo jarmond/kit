@@ -5,7 +5,9 @@ function [metadata,reader]=kitOpenMovie(movieFileName)
 %    MOVIEFILENAME and extract METADATA from BioFormats metadata. Returns a
 %    READER Java object which can be used to extract image data.
 %
-% Copyright (c) 2013 Jonathan W. Armond
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 kitLog('Opening movie: %s', movieFileName);
 if ~exist(movieFileName,'file')
@@ -75,7 +77,7 @@ for i=1:nTimepoints
   defT = (i-1)*defDt;
   for j=1:nZPlanes
     try
-      md.frameTime(j,i) = metaTable.getPlaneDeltaT(0, idx).doubleValue;
+      md.frameTime(j,i) = metaTable.getPlaneDeltaT(0, idx).doubleValue();
     catch
       % Use default, if missing metadata.
       md.frameTime(j,i) = defT;
@@ -106,10 +108,17 @@ catch
 end
 
 % Physical pixel size
-md.pixelSize = [
-  metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
-  metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
-  metaTable.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROM).doubleValue()];
+if md.is3D
+    md.pixelSize = [
+      metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
+      metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
+      metaTable.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROM).doubleValue()];
+else
+    md.pixelSize = [
+      metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
+      metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
+      1];
+end
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
     md.pixelSize(3) > 5
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
