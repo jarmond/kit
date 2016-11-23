@@ -1,7 +1,9 @@
 function job=kitDiagnostics(job,channel,elapsed)
 % KITDIAGNOSTICS Compute some basic tracking diagnostics
 %
-% Copyright (c) 2013 Jonathan W. Armond
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 ds = job.dataStruct{channel};
 
@@ -11,12 +13,17 @@ diag.elapsedTime = elapsed;
 diag.nSpotsPerFrame = mean(vertcat(ds.initCoord.nSpots));
 
 % Track counts.
-diag.nSisters = length(ds.sisterList);
-if diag.nSisters == 1 && isempty(ds.sisterList(1).coords1)
+if isfield(ds,'sisterList')
+  diag.nSisters = length(ds.sisterList);
+  if diag.nSisters == 1 && isempty(ds.sisterList(1).coords1)
+    diag.nSisters = 0;
+  end
+  diag.nTracks = length(ds.trackList);
+  if diag.nTracks == 1 && isempty(ds.trackList(1).coords)
+    diag.nTracks = 0;
+  end
+else
   diag.nSisters = 0;
-end
-diag.nTracks = length(ds.trackList);
-if diag.nTracks == 1 && isempty(ds.trackList(1).coords)
   diag.nTracks = 0;
 end
 
