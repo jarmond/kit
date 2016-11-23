@@ -11,7 +11,14 @@ function job=kitTrackMovie(job,tasks)
 tstart = tic;
 
 if nargin<2
-  tasks = 1:8;
+  switch job.options.jobProcess
+    case 'zandt'
+      tasks = 1:8;
+    case 'zonly'
+      tasks = [1,2,6];
+    case 'chrshift'
+      tasks = [1,6];
+  end
 end
 % 1: finding spots
 % 2: fitting plane
@@ -133,17 +140,21 @@ if ismember(6,tasks)
   for c = neighChans
     kitLog('Finding particle coordinates in channel %d',c);
     job = kitFindCoords(job, reader, c);
-    % Transform coordinates into plane.
-    kitLog('Transforming coordinates in channel %d to plane from channel %d',c,planeChan);
-    job.dataStruct{c}.planeFit = job.dataStruct{planeChan}.planeFit;
-    job.dataStruct{c} = kitFitPlane(job,reader,job.dataStruct{c},c,1);
-    % Assemble tracks and sisterList from initCoord and planeFit structures
-    % in neighbour channel.
-    if strcmp(opts.jobProcess,{'tracking'})
-      job.dataStruct{c} = kitAssembleNeighbourStructs(job.dataStruct,c,opts);
-      % Extract tracks from tracks and sisterList.
-      kitLog('Extracting individual tracks in channel %d', c);
-      job = kitExtractTracks(job, c);
+    if ismember(2,tasks)
+      % Transform coordinates into plane.
+      kitLog('Transforming coordinates in channel %d to plane from channel %d',c,planeChan);
+      job.dataStruct{c}.planeFit = job.dataStruct{planeChan}.planeFit;
+      job.dataStruct{c} = kitFitPlane(job,reader,job.dataStruct{c},c,1);
+    end
+    if ismember(3,tasks)
+        % Assemble tracks and sisterList from initCoord and planeFit structures
+        % in neighbour channel.
+        if strcmp(opts.jobProcess,{'zandt'})
+          job.dataStruct{c} = kitAssembleNeighbourStructs(job.dataStruct,c,opts);
+          % Extract tracks from tracks and sisterList.
+          kitLog('Extracting individual tracks in channel %d', c);
+          job = kitExtractTracks(job, c);
+        end
     end
   end
   job = kitSaveJob(job);
@@ -178,14 +189,15 @@ end
 
 % Gather diagnostics.
 elapsed = toc(tstart);
-for c = [channels neighChans]
+for c = sort([channels neighChans])
   kitLog('Gather diagnostics in channel %d',c);
   job = kitDiagnostics(job,c,elapsed);
   fprintf('Diagnostics for channel %d\n', c);
   fprintf('-------------------------\n', c);
-  kitPrintDiagnostics(job.dataStruct{c});
-  fprintf('-------------------------\n\n', c);
+  kitPrintDiagnostics(job.dataStruct{c},opts.jobProcess);
+  fprintf('-------------------------\n', c);
 end
+fprintf('\n')
 job = kitSaveJob(job);
 
 if any(ismember(tasks,[1 2 9]))
