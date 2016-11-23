@@ -1,6 +1,6 @@
 function [spots,spotIDs] = neighbourSpots(movie,refDataStruct,channel,metadata,options)
-% Finds spots in 3D in neighbouring channels using Gaussian mixture model fitting
-%
+% NEIGHBOURSPOTS Finds spots in 3D in neighbouring channels using Gaussian
+% mixture model fitting
 %
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
@@ -46,18 +46,20 @@ end
 warningState = warning();
 
 %% Get frame with plane fits
+
+if ~strcmp(options.jobProcess,'chrshift')
+  % get plane fit information from reference channel
+  planeFit = refDataStruct.planeFit;
  
-% get plane fit information from reference channel
-planeFit = refDataStruct.planeFit;
- 
-% find frames with and without plane fit
-framesWiPlane = []; framesNoPlane = [];
-for iFrame = 1:nFrames;
+  % find frames with and without plane fit
+  framesNoPlane = [];
+  for iFrame = 1:nFrames;
     if isempty(planeFit(iFrame).plane);
-        framesNoPlane = [framesNoPlane iFrame];
-    else
-        framesWiPlane = [framesWiPlane iFrame];
+      framesNoPlane = [framesNoPlane iFrame];
     end
+  end
+else
+  framesNoPlane = 1;
 end
 
 %% Create Mask
@@ -68,7 +70,7 @@ if ~strcmp(options.neighbourSpots.maskShape, 'cone')
   asymMask = 0;
   mask = double(se.getnhood());
   mask(mask == 0) = nan;
-  if strcmp(options.neighbourSpots.maskShape, 'semicircle')
+  if strcmp(options.neighbourSpots.maskShape, 'semicirc')
     mask(r+2:end,:) = nan;
     asymMask = 1;
   end
@@ -105,7 +107,7 @@ maskWarning=0;
 
 switch options.jobProcess
     
-  case 'tracking'
+  case 'zandt'
       
     % get trackList and sisterList from reference channel
     refTrackList = refDataStruct.trackList;
@@ -223,15 +225,13 @@ switch options.jobProcess
 
     end %iSisPair
     
-  case {'static','chrshift'}
+  case {'zonly','chrshift'}
     
-    % create new initCoord with all original information
-    newInitCoord = refInitCoord;
     % get number of spots from reference initCoord
-    nSpots = newInitCoord.nSpots;
+    nSpots = refInitCoord.nSpots;
     % create spots and spotIDs structures
     spots = {[]};
-    spotIDs = {1:nSpots};
+    spotIDs = {[]};
 
     for iSpot = 1:nSpots;
 
@@ -283,6 +283,7 @@ switch options.jobProcess
 
         % compile coordinates for MMF
         spots{1} = [spots{1}; locMaxCrd];
+        spotIDs{1} = [spotIDs{1}; iSpot];
 
       end % if in z-range
 
