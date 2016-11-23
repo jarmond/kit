@@ -7,7 +7,7 @@ function kitRunJobs(jobset,varargin)
 %
 %    Options (default in {}):-
 %
-%    tasks: {1:7} or a vector. Specify tasks to perform on jobs:
+%    tasks: {1:8} or a vector. Specify tasks to perform on jobs:
 %                              1: finding spots
 %                              2: fitting plane
 %                              3: tracking spots
@@ -27,7 +27,9 @@ function kitRunJobs(jobset,varargin)
 %
 %    errorfail: {0} or 1. Crash out if error occurs if 1.
 %
-% Copyright (c) 2013 Jonathan W. Armond
+% Created by: J. W. Armond
+% Modified by: J. W. Armond
+% Copyright (c) 2016 C. A. Smith
 
 % Check minimum MATLAB version.
 % FIXME Check minimum toolbox versions also.
@@ -60,6 +62,12 @@ options = processOptions(options, varargin{:});
 % Check options.
 if ~all(ismember(options.subset,1:nROIs))
   error('Subset values must be in range 1 to %d',nROIs);
+end
+switch jobset.options.jobProcess
+    case 'zonly'
+        options.tasks = setdiff(options.tasks,[3,4,5,7,8]);
+    case 'chrshift'
+        options.tasks = setdiff(options.tasks,[2,3,4,5,7,8]);
 end
 
 % If using matlabpool for parallel computation, report workers.
