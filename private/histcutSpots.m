@@ -3,7 +3,9 @@ function spots=histcutSpots(img,options,dataProperties,verbose)
 %
 % Based on code from MaKi, by (mostly) K. Jaqaman and J. Dorn.
 %
-% Copyright (c) 2015 Jonathan W. Armond
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 if nargin<4
   verbose = 0;
@@ -81,12 +83,12 @@ if verbose
 end
 
 % Check if sufficient spots found in descending order of cutoff strictness.
-nn(3) = sum(poisson>cutoff(3))/options.minSpotsPerFrame;
-nn(2) = sum(dark>cutoff(2))/options.minSpotsPerFrame;
-nn(1) = sum(amp>cutoff(1))/options.minSpotsPerFrame;
-if nn(3) > 1
+nn(3,:) = sum(poisson>cutoff(3))./[options.minSpotsPerFrame options.maxSpotsPerFrame];
+nn(2,:) = sum(dark>cutoff(2))./[options.minSpotsPerFrame options.maxSpotsPerFrame];
+nn(1,:) = sum(amp>cutoff(1))./[options.minSpotsPerFrame options.maxSpotsPerFrame];
+if nn(3,1) > 1 && nn(3,2) < 1
   passIdx = poisson>cutoff(3);
-elseif nn(2) > 1
+elseif nn(2,1) > 1 && nn(2,2) < 1
   passIdx = dark>cutoff(2);
 else
   passIdx = amp>cutoff(1);
