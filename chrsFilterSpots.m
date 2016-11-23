@@ -218,4 +218,7 @@ for iChan = opts.appliedChans
   
 end
 
+% save job
+job = kitSaveJob(job);
+
 end
