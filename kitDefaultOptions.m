@@ -3,9 +3,9 @@ function job=kitDefaultOptions()
 %
 %    JOB = KITDEFAULTOPTIONS() Create job struct populated with default options.
 %
-% Copyright (c) 2013 Jonathan Armond
-
-maxWavelengths = 3;
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 job.kit = 1;
 job.version = kitVersion();
@@ -16,7 +16,7 @@ job.matlabVersion = version;
 job.movieDirectory = [];
 job.movieFiles = [];
 
-opts.jobProcess = 'tracking';
+opts.jobProcess = 'zandt';
 opts.coordMode{1} = 'gaussian'; % Possible values: centroid, gaussian, none
 opts.coordMode{2} = 'none';
 opts.coordMode{3} = 'none';
@@ -32,11 +32,9 @@ opts.disableSave = 0; % Don't save job at each step. For debugging.
 chrShift.result = repmat({zeros(1,6)},3,3);
 chrShift.jobset = repmat({[]},3,3);
 for i=1:3; for j=1:3; chrShift.chanOrder{i,j} = [i j]; end; end
-chrShift.maskRadius = 0.3; % um
-chrShift.maskShape = 'circle';
 chrShift.filtering = 0;
-chrShift.amplitudeFilter = 0;
-chrShift.nnDistFilter = 0;
+chrShift.intensityFilter = 0;
+chrShift.neighbourFilter = 0;
 chrShift.interphase = 1;
 chrShift.minSpots = 20;
 opts.chrShift = chrShift;
@@ -63,6 +61,7 @@ opts.debug = debug;
 
 % Maki options.
 opts.minSpotsPerFrame = 20;
+opts.maxSpotsPerFrame = 1000;
 opts.betterBackground = 0; % 1 == mask signal before taking background.
 opts.fitCloud = 0; % 1 == use max evector as normal axis.
 opts.robustStats = 0;
@@ -96,7 +95,7 @@ opts.momentPrctile = 99; % percentile to threshold image at before computing
 
 % Neighbouring spot localisation.
 neighbourSpots.maskRadius = 0.3; % um
-neighbourSpots.maskShape = 'semicircle';
+neighbourSpots.maskShape = 'semicirc';
 neighbourSpots.maskConeAngle = 10; % degrees, only used with maskShape=='cone'.
 neighbourSpots.channelOrientation = 1:3; % from inner to outer
 neighbourSpots.timePoints = repmat({[]},1,3);
