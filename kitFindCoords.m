@@ -91,7 +91,9 @@ for i=1:nFrames
   nSpots(i) = size(spots{i},1);
 
   % Round spots to nearest pixel and limit to image bounds.
-  spots{i} = bsxfun(@min,bsxfun(@max,round(spots{i}),1),[imageSizeX,imageSizeY,imageSizeZ]);
+  if nSpots(i) > 1
+    spots{i} = bsxfun(@min,bsxfun(@max,round(spots{i}),1),[imageSizeX,imageSizeY,imageSizeZ]);
+  end
 
   % Store the cands of the current image
   % TODO this is computed in both spot detectors, just return it.
@@ -105,7 +107,11 @@ for i=1:nFrames
   if strcmp(spotMode,'neighbour')
       localMaxima(i).spotID = spotIDs{i};
   end
-  spots1D = sub2ind(size(img),spots{i}(:,1),spots{i}(:,2),spots{i}(:,3));
+  if nSpots(i) > 1
+    spots1D = sub2ind(size(img),spots{i}(:,1),spots{i}(:,2),spots{i}(:,3));
+  else
+    spots1D = [];
+  end
   localMaxima(i).candsAmp = img(spots1D);
   localMaxima(i).candsBg = background(spots1D);
 
