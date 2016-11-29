@@ -1,11 +1,14 @@
-function kitMultiJobsetRun(jobsets,parallel)
+function kitMultiJobsetRun(jobsets,exec)
 % KITMULTIJOBSETRUN Runs all jobs from multiple jobsets in parallel or serially.
 %
 % Accepts cell array of filenames or cell array of jobset structs.
-% Copyright (c) 2013 Jonathan W. Armond
+%
+% Created by: J. W. Armond
+% Modified by: C. A. Smith
+% Copyright (c) 2016 C. A. Smith
 
 if nargin<2
-  parallel = 0;
+  exec = 'serial';
 end
 
 % Ensure input is cell array.
@@ -23,5 +26,5 @@ for i = 1:nJobsets
   kitLog('Running jobset: %s',jobset.filename);
 
   % Run it.
-  kitRunJobs(jobset,'parallel',parallel);
+  kitRunJobs(jobset,'exec',exec);
 end
