@@ -36,12 +36,13 @@ opts = processOptions(opts,varargin{:});
 
 %% Pre-processing input structure
 
-%find number of movies
-numExpts1 = length(movies);
+%check structure of movies
 if ~iscell(movies{1})
     movies = {movies};
     warning('Movie structure provided implies only one experiment. Assuming only one experiment.');
 end
+%find number of movies
+numExpts1 = length(movies);
 
 %process input so that all structs are in cell format
 if isempty(opts.sisterStructure)
@@ -363,7 +364,13 @@ for iExpt = 1:numExpts
         
           % start counter for storing data
           c=1;
-            
+          
+          % check whether movie was successfully tracked
+          refChan = theseMovies{iMov}.options.coordSystemChannel;
+          if theseMovies{iMov}.dataStruct{refChan}.failed
+            continue
+          end
+          
           % get dataStructs
           dSinner = theseMovies{iMov}.dataStruct{opts.chanVect(1)};
           dSouter = theseMovies{iMov}.dataStruct{opts.chanVect(2)};
