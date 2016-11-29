@@ -12,7 +12,7 @@ function [chrShift,nDataPoints] = chrsCalculateChromaticShift(jobs,chanVect,vara
 %
 %    filtered: 0 or {1}. Whether or not to use filtered data.
 %
-%    interphaseToMetaphase: 0 or {1}. Whether or not to impose a z-
+%    interphaseToMetaphase: {0} or 1. Whether or not to impose a z-
 %         directional adjustment (+78.2nm) when using interphase cells to
 %         calculate chromatic shift for use in metaphase cells.
 %         N.B. This is only required when using the dual camera system on
@@ -22,8 +22,8 @@ function [chrShift,nDataPoints] = chrsCalculateChromaticShift(jobs,chanVect,vara
 % Copyright (C) 2015 C. A. Smith
 
 % set default options
-opts.filtered = 0;
-opts.interphaseToMetaphase = 1;
+opts.filtered = 1;
+opts.interphaseToMetaphase = 0;
 % process options
 opts = processOptions(opts,varargin{:});
 
