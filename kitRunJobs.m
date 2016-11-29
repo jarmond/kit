@@ -28,7 +28,7 @@ function kitRunJobs(jobset,varargin)
 %    errorfail: {0} or 1. Crash out if error occurs if 1.
 %
 % Created by: J. W. Armond
-% Modified by: J. W. Armond
+% Modified by: C. A. Armond
 % Copyright (c) 2016 C. A. Smith
 
 % Check minimum MATLAB version.
