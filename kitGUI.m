@@ -652,8 +652,8 @@ function skipROICB(hObj,event)
     cropSize = md.frameSize(1:3);
     r = length(jobset.ROI) + 1;
     jobset.ROI(r).movie = handles.movies.String{v(i)};
-    jobset.ROI(r).crop = crop(i,:);
-    jobset.ROI(r).cropSize = cropSize(i,:);
+    jobset.ROI(r).crop = crop;
+    jobset.ROI(r).cropSize = cropSize;
   end
   populateROIBox();
 end
@@ -1105,7 +1105,7 @@ function populateROIBox()
                           num2str(round(jobset.ROI(i).crop),'%d ') ']'];
     end
   end
-  if (handles.ROIs.Value <= 0 && length(handles.ROIs.String)>0) || handles.ROIs.Value > length(jobset.ROI)
+  if (handles.ROIs.Value <= 0 && ~isempty(handles.ROIs.String)) || handles.ROIs.Value > length(jobset.ROI)
     handles.ROIs.Value = 1;
   end
 end
@@ -1229,7 +1229,7 @@ function cellResult = getChromaticShiftResults(chrShift)
         end
       end
       [result,~] = chrsCalculateChromaticShift(mS,[i j],...
-          'filtered',chrShift.filtering,'interphaseToMetaphase',chrShift.interphase);
+          'filtered',1,'interphaseToMetaphase',chrShift.interphase);
       cellResult{i,j} = result; cellResult{j,i} = result.*[-1 -1 -1 1 1 1];
     end
   end       
