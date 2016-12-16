@@ -49,7 +49,7 @@ for iJob = 1:nJobs
     end
     
     % get coordinates, calculate zeta
-    if isfield(jobs{iJob}.dataStruct{chanVect(2)},'initCoord')
+    if isfield(jobs{iJob}.dataStruct{chanVect(2)},'initCoord') && ~jobs{iJob}.dataStruct{chanVect(2)}.failed
       
       % get coordinates for each channel
       if opts.filtered
