@@ -15,6 +15,9 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %       represents the inner-most kinetochore marker, and the second the
 %       outer-most.
 %
+%    paired: 0 or {1}. Whether or not to take paired measurements, or raw
+%       spot-by-spot measurements.
+%
 %    prevMeas: {[]} or a structure previously generated. A structure of
 %       results from previous experiments to allow new experiment data to
 %       be appended.
@@ -29,6 +32,7 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 
 % default options
 opts.chanVect = [1 2];
+opts.paired = 1;
 opts.prevMeas = [];
 opts.sisterStructure = [];
 % user options
@@ -47,11 +51,14 @@ numExpts1 = length(movies);
 %process input so that all structs are in cell format
 if isempty(opts.sisterStructure)
   sisters = repmat({[]},numExpts1,1);
+  allocSis = 0;
 elseif ~iscell(opts.sisterStructure)
   sisters = {opts.sisterStructure};
   warning('Non-cell sister structure provided. Assuming only one experiment.');
+  allocSis = 1;
 else
   sisters = opts.sisterStructure;
+  allocSis = 1;
 end
 
 %find number of movies and sisters, and ensure they match
@@ -64,7 +71,7 @@ numExpts = numExpts1;
 %% Preprocessing output structure
 
 process = movies{1}{1}.options.jobProcess;
-if strcmp(process,'zandt') || isfield(movies{1}{1}.dataStruct{opts.chanVect(1)},'sisterList')
+if strcmp(process,'zandt') || isfield(movies{1}{1}.dataStruct{opts.chanVect(1)},'sisterList') && opts.paired
     paired = 1;
 else
     paired = 0;
@@ -96,8 +103,8 @@ for iExpt = 1:numExpts
       if paired
           
         % if no sisters given, go through all sisters in movie
-        if isempty(theseSisters)
-            theseSisters = 1:length(theseMovies{iMov}.dataStruct{1}.sisterList);
+        if ~allocSis
+            theseSisters = 1:length(theseMovies{iMov}.dataStruct{opts.chanVect(1)}.sisterList);
         else % otherwise, get the sister list
             theseSisters = sisters{iExpt}(sisters{iExpt}(:,1)==iMov,2)';
         end
@@ -114,7 +121,11 @@ for iExpt = 1:numExpts
             % get sisterLists
             sLinner = dSinner.sisterList(iSis);
             sLouter = dSouter.sisterList(iSis);
-
+            % check that there are sisters
+            if isempty(dSinner.sisterList(1).trackPairs)
+                continue
+            end
+            
             % get trackID and spotIDs
             trackIDs = dSinner.sisterList(1).trackPairs(iSis,1:2);
             for iTrack = 1:2
@@ -289,8 +300,11 @@ for iExpt = 1:numExpts
             %% Directional information
             
             % get direction of movement
+            direc = [];
             for iTrack = 1:2
-              direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+              if ~isempty(dSinner.trackList(trackIDs(iTrack)).direction)
+                direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+              end
             end
             direc(end+1,:) = NaN;
             
