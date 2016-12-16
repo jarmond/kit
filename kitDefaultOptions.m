@@ -35,7 +35,7 @@ for i=1:3; for j=1:3; chrShift.chanOrder{i,j} = [i j]; end; end
 chrShift.filtering = 0;
 chrShift.intensityFilter = 0;
 chrShift.neighbourFilter = 0;
-chrShift.interphase = 1;
+chrShift.interphase = 0;
 chrShift.minSpots = 20;
 opts.chrShift = chrShift;
 
