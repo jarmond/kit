@@ -57,7 +57,11 @@ warnWv = 0;
 for i=1:numWvs
   chWv = metaTable.getChannelEmissionWavelength(0,i-1);
   if ~isempty(chWv)
-    md.wavelength(i) = chWv.value(ome.units.UNITS.MICROM).doubleValue();
+    try
+      md.wavelength(i) = chWv.value(ome.units.UNITS.MICROM).doubleValue();
+    catch
+      md.wavelength(i) = chWv.getValue();
+    end
   else
     warnWv = 1;
   end
@@ -108,17 +112,32 @@ catch
 end
 
 % Physical pixel size
-if md.is3D
+try
+  if md.is3D
     md.pixelSize = [
       metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
       metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
       metaTable.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROM).doubleValue()];
-else
+  else
     md.pixelSize = [
       metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
       metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
       1];
+  end
+catch
+  if md.is3D
+    md.pixelSize = [
+      metaTable.getPixelsPhysicalSizeX(0).getValue(),...
+      metaTable.getPixelsPhysicalSizeY(0).getValue(),...
+      metaTable.getPixelsPhysicalSizeZ(0).getValue()];
+  else
+    md.pixelSize = [
+      metaTable.getPixelsPhysicalSizeX(0).getValue(),...
+      metaTable.getPixelsPhysicalSizeY(0).getValue(),...
+      1];
+  end
 end
+
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
     md.pixelSize(3) > 5
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
