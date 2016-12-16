@@ -62,10 +62,14 @@ refDataStruct = job.dataStruct{opts.referenceChan};
 for iChan = unique([opts.referenceChan opts.appliedChans])
   
   % get the raw initCoord structure if present, and revert is active
-  if opts.revert && isfield(job.dataStruct{iChan},'rawInitCoord')
-    origInitCoord{iChan} = job.dataStruct{iChan}.rawInitCoord;
+  if isfield(job.dataStruct{iChan},'failed') && ~job.dataStruct{iChan}.failed
+    if opts.revert && isfield(job.dataStruct{iChan},'rawInitCoord')
+      origInitCoord{iChan} = job.dataStruct{iChan}.rawInitCoord;
+    else
+      origInitCoord{iChan} = job.dataStruct{iChan}.initCoord(1);
+    end
   else
-    origInitCoord{iChan} = job.dataStruct{iChan}.initCoord(1);
+    return
   end
   % copy this information to a new structure for later
   newInitCoord{iChan} = origInitCoord{iChan};
