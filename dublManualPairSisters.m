@@ -46,6 +46,8 @@ function jobs = dublManualPairSisters(jobs,varargin)
 %                   plot spots as being previously allocated etc.
 %                   N.B. This doesn't work yet. Future plan.
 %
+%    subset: {[]} or list of movie numbers. Sub-list of movies to process.
+%
 %    verbose: {0} or 1. Whether or not to print progress to the command
 %                   line.
 %
@@ -107,6 +109,7 @@ for iMov = opts.subset
         [~,lastMovie] = find(opts.subset == iMov);
         if lastMovie == 1
             lastMovie = 0;
+            break
         else
             lastMovie = opts.subset(lastMovie-1);
             break
@@ -465,32 +468,50 @@ emptySisterList = struct('trackPairs',[],...
                         'coords2',[],...
                         'sisterVectors',[],...
                         'distances',[]);
+emptyTracks = struct('tracksFeatIndxCG',0,...
+               'tracksCoordAmpCG',[],...
+               'seqOfEvents', [1 1 1; 1 2 1],...
+               'coordAmp4Tracking',[]);
                     
 for iChan = opts.coordChans
     
+    % construct new sisterList
     sisterList = emptySisterList;
+    sisterList(1).trackPairs(:,1) = 1:size(sisterIdxArray,1);
+    sisterList(1).trackPairs(:,2) = sisterList(1).trackPairs(:,1)+size(sisterIdxArray,1);
     
-    sisterList(1).trackPairs = sisterIdxArray;
-    
-    % get full coordinates and standard deviations in both µm
+    % get microscope coordinates and standard deviations in both µm
     coords = job.dataStruct{iChan}.initCoord(1).allCoord;
+    % get plane coordinates if applicable
+    if isfield(job.dataStruct{iChan},'planeFit') && ~isempty(job.dataStruct{iChan}.planeFit(1).plane)
+      rotCoords = job.dataStruct{iChan}.planeFit(1).rotatedCoord;
+    else
+      rotCoords = coords;
+    end
     
     for iSis = 1:size(sisterIdxArray,1)
         
-        sisterList(iSis).coords1 = coords(sisterIdxArray(iSis,1),:);
-        sisterList(iSis).coords2 = coords(sisterIdxArray(iSis,2),:);
+        sisterList(iSis).coords1 = rotCoords(sisterIdxArray(iSis,1),:);
+        sisterList(iSis).coords2 = rotCoords(sisterIdxArray(iSis,2),:);
         sisterList(iSis).distances = sqrt(sum((sisterList(iSis).coords1 - sisterList(iSis).coords2).^2,2));
         
-        if iChan ~= job.options.coordSystemChannel
-            sisterList(iSis).coords1(:,1:3) = sisterList(iSis).coords1(:,1:3)...
-                - repmat(chrShift{job.options.coordSystemChannel,iChan}(1:3),size(sisterList(iSis).coords1,1),1);
-            sisterList(iSis).coords2(:,1:3) = sisterList(iSis).coords2(:,1:3)...
-                - repmat(chrShift{job.options.coordSystemChannel,iChan}(1:3),size(sisterList(iSis).coords2,1),1);
-        end
+    end
+    
+    % ensure tracks are re-allocated for new cell
+    tracks = emptyTracks;
+    % construct new tracks
+    for iTrack = 1:length(sisterIdxArray(:))
+        
+        tracks(iTrack) = emptyTracks;
+        tracks(iTrack).tracksFeatIndxCG = sisterIdxArray(iTrack);
+        tracks(iTrack).tracksCoordAmpCG = coords(sisterIdxArray(iTrack),:);
+        tracks(iTrack).coordAmp4Tracking = rotCoords(sisterIdxArray(iTrack),:);
         
     end
                  
+    job.dataStruct{iChan}.tracks = tracks;
     job.dataStruct{iChan}.sisterList = sisterList;
+    job = kitExtractTracks(job,iChan);
     job = kitSaveJob(job);
     
 end
@@ -499,7 +520,7 @@ end
 function distIdx = getNNdistIdx(coords,origIdx,otherIdx,maxSisSep)
 
     nnDists = createDistanceMatrix(coords(origIdx,:),coords(otherIdx,:));
-    nnCoords = find(nnDists < maxSisSep & nnDists > 0);
+    nnCoords = (nnDists < maxSisSep & nnDists > 0);
     distIdx = otherIdx(nnCoords);
     
 end
