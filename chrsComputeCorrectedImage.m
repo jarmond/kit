@@ -40,7 +40,7 @@ opts.coords = [1 2];
 opts.image = 0;
 opts.pixelSize = [0.069384 0.069384 0.2]; % maybe remove the requirement for this, make the user give
 opts.subpixelate = 9; % best to use an odd number here
-opts.transpose = 0; % need to rotate chromatic shift cell if tranposing for a 2D image
+opts.transpose = 0; % need to rotate chromatic shift cell if transposing for a 2D image
 
 % process options
 opts = processOptions(opts,varargin{:});
