@@ -37,7 +37,9 @@ if any(ismember(tasks,[1 2 9]))
 end
 
 opts = job.options;
-nChannels = job.metadata.nChannels;
+nChannels = min(job.metadata.nChannels,3); % enforce for now that there are
+                                           % only 3 channels, as KiT can
+                                           % only handle this many
 
 % Check which channels to analyze.
 for c = 1:nChannels
