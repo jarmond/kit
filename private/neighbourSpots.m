@@ -4,7 +4,7 @@ function [spots,spotIDs] = neighbourSpots(movie,refDataStruct,channel,metadata,o
 %
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
-% Copyright (c) 2016 C. A. Smith
+% Copyright (c) 2017 C. A. Smith
 
 %% Input + initialization
 
@@ -19,6 +19,10 @@ chrShift = chrShift./pixelSize; chrShift(1:2) = chrShift([2 1]);
 [imageSizeX,imageSizeY,imageSizeZ,~] = size(movie);
 nFrames = metadata.nFrames;
 nPlanes = imageSizeZ;
+% get channel orientation (1 if channel outside reference, 0 otherwise)
+refChanPos = find(options.neighbourSpots.channelOrientation==options.coordSystemChannel);
+chanPos = find(options.neighbourSpots.channelOrientation==channel);
+chanOrient = (chanPos>refChanPos);
 
 % get list of frames over which to look for neighbours
 if isempty(options.neighbourSpots.timePoints{channel});
@@ -117,8 +121,9 @@ switch options.jobProcess
     if ~isempty(refSisterList(1).trackPairs)
         nSisters = length(refSisterList);
     else
-        warning('No sisterList found for channel %d. Tracking failed.',trackChan)
-        dataStruct.failed = 1;
+        warning('No sisterList found for channel %d. Tracking failed.',options.coordSystemChannel)
+        spots = repmat({[]},nFrames,1);
+        spotIDs = repmat({[]},nFrames,1);
         return
     end
     
@@ -170,10 +175,17 @@ switch options.jobProcess
                   mask = noPlaneMask;
                 else
                   if refTrackList(trackID).attach > 0
-                    mask = rMask;
+                    if chanOrient
+                      mask = rMask;
+                    else
+                      mask = lMask;
+                    end
+                  elseif ~chanOrient
+                      mask = rMask;
                   else
-                    mask = lMask;
+                      mask = lMask;
                   end
+                  
                   if ~isempty(planeFit(iFrame).planeVectors)
                     % rotate mask into coordinate system
                     angle = acos(planeFit(iFrame).planeVectors(1,1))*180/pi;
