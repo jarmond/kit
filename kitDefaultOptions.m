@@ -80,9 +80,9 @@ opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in
 opts.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole
                             % plate, if too small we not account for
                             % overlapping PSFs.
-opts.alphaF = 0.05; % N vs N+1 F-test cutoff.
-opts.alphaA = 0.05; % amplitude t-test cutoff.
-opts.alphaD = 0.01; % distance t-test cutoff.
+opts.alphaF = [0.05 0.05 0.05]; % N vs N+1 F-test cutoff.
+opts.alphaA = [0.05 0.01 0.01]; % amplitude t-test cutoff.
+opts.alphaD = [0.01 0.01 0.01]; % distance t-test cutoff.
 opts.mmfTol = 1e-5; % accuracy to which MMF fits Gaussians.
 opts.oneBigCluster = 0; % fit all spots together as one big cluster
 opts.maxMmfTime = 300; % Maximum per-frame time (sec) to attempt mixture model fit

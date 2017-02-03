@@ -16,7 +16,7 @@ pixelSize = job.metadata.pixelSize;
 chrShift = job.options.chrShift.result{options.coordSystemChannel,channel};
 % calculate alphaA based on pixel size
 % (standards: 0.05 at 138.1nm; 0.5 at 69.4nm)
-options.alphaA = options.alphaA*(options.alphaA + (0.1381-pixelSize(1))*8)/0.05;
+options.alphaA = options.alphaA.*(options.alphaA + (0.1381-pixelSize(1))*8)/0.05;
 % NOTE TO SELF: Use scaling factor = 6.5 for 0.5, or 8 for 0.6
 
 % get number of frames
@@ -77,7 +77,7 @@ if neighbour
   end
 end
 
-%go over all non-empty images ...
+% Go over all non-empty images ...
 for iImage = goodImages
   % Get frame.
   imageRaw = movie(:,:,:,iImage);
@@ -96,11 +96,14 @@ for iImage = goodImages
   % Fit with mixture-models.
   startTime = clock;
   
-  % retain original argument for mmfAddSpots, but change to zero if neighbour
-  originalMmfAddSpots = options.mmfAddSpots;
-  options.mmfAddSpots = options.mmfAddSpots*~strcmp(options.spotMode{channel},'neighbour');
-  [coordList,spotID,ampList,bgList,rejects] = mixtureModelFit(cands,imageRaw,psfSigma,options);
-  options.mmfAddSpots = originalMmfAddSpots;
+  % Impose opts with channel-specific mmfAddSpots and alphas.
+  opts = options;
+  opts.mmfAddSpots = opts.mmfAddSpots*~strcmp(options.spotMode{channel},'neighbour');
+  opts.alphaA = opts.alphaA(channel);
+  opts.alphaD = opts.alphaD(channel);
+  opts.alphaF = opts.alphaF(channel);
+  % Run mixture model fitting.
+  [coordList,spotID,ampList,bgList,rejects] = mixtureModelFit(cands,imageRaw,psfSigma,opts);
   
   elapsedTime = etime(clock,startTime);
   if options.maxMmfTime > 0 && elapsedTime > options.maxMmfTime
