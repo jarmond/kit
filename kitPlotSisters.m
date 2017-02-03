@@ -19,7 +19,16 @@ t = job.metadata.frameTime;
 dt = t(1,2)-t(1,1);
 
 dataStruct = job.dataStruct{opts.channel};
+if dataStruct.failed || ~isfield(dataStruct,'sisterList')
+  fprintf('\nSpot finding failed for this movie.\n\n');
+  return
+end
 sisterList = dataStruct.sisterList;
+if isempty(sisterList(1).trackPairs)
+  fprintf('\nNo sisters found in this movie.\n\n');
+  return
+end
+
 trackList = dataStruct.trackList;
 trackPairs = sisterList(1).trackPairs;
 if opts.minLength > 0 && isempty(opts.sel)
