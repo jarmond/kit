@@ -3,7 +3,7 @@ function jobset=kitGUI(jobset)
 %
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
-% Copyright (c) 2016 C. A. Smith
+% Copyright (c) 2017 C. A. Smith
 
 % Download BioFormats, if required.
 kitDownloadBioFormats();
@@ -26,8 +26,8 @@ jobProcessValues = {'2D/3D and time','2D/3D only','Chromatic shift'}; % in GUI
 jobProcessValuesJS = {'zandt','zonly','chrshift'}; % in jobset
 coordSystemValues = {'Plate','Image moments','Centre of mass'};
 coordSystemValuesJS = {'plate','image','com'};
-spotDetectValues = {'Histogram','Adaptive','Wavelet','Neighbour','None'};
-spotDetectValuesJS = {'histcut','adaptive','wavelet','neighbour','none'};
+spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual','Neighbour','None'};
+spotDetectValuesJS = {'histcut','adaptive','wavelet','manual','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 neighbourMaskValues = {'Circle','Semi-circle','Cone'};
@@ -59,7 +59,7 @@ function hs = createControls()
   smallfont = 12;
 
   w=25; h=8;
-  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figpos(3)-w-3 1 w h]);
+  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figpos(3)-w-6 1 w h]);
   pos = getpixelposition(hs.logo);
   set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
 
@@ -216,13 +216,23 @@ function hs = createControls()
   hs.maxMmfTimeText = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
   hs.maxMmfTime = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
+  hs.alphaAText = label(hs.fig,'Weight for intensity restriction:',[x y labelw h],10);
+  hs.alphaAchText{1} = label(hs.fig,'Ch.1',[x+labelw-3 y-0.15 4 h],10);
+  hs.alphaA{1} = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
-  hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
-  
+  hs.alphaAchText{2} = label(hs.fig,'Ch.2',[x+labelw-3 y-0.15 4 h],10);
+  hs.alphaA{2} = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  hs.alphaAchText{3} = label(hs.fig,'Ch.3',[x+labelw-3 y-0.15 4 h],10);
+  hs.alphaA{3} = editbox(hs.fig,[],[editx y editw h],10);
+%   y = y-h;
+%   hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
+%   y = y-h;
+%   hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
+%   hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
+%   
   %% Execution
-  y = b+0.5*h;
+  y = b+h;
   labelw = 0.5*w;
   t = label(hs.fig,'Execution',[x y labelw 1.5],14);
   t.FontWeight = 'bold';
@@ -234,10 +244,11 @@ function hs = createControls()
   btnw = 0.5*w;
   bx = x + w - btnw;
   y = y-h;
+  hs.validateMetadata = button(hs.fig,'Validate metadata',[bx y btnw h],@validateCB);
+  y = y-h;
   hs.save = button(hs.fig,'Save',[bx y btnw h],@saveCB);
   y = y-h;
   hs.execute = button(hs.fig,'Execute',[bx y btnw h],@executeCB);
-  y = y-h;
   hs.parallel = checkbox(hs.fig,'Execute in parallel',[x y labelw h],'FontSize',10);
   if ~license('test','Distrib_Computing_Toolbox') || verLessThan('distcomp','6.5')
     hs.parallel.Enable = 'off';
@@ -321,9 +332,9 @@ function hs = createControls()
   hs.neighbourInnerText = label(p,'inner kchore',[1 edity-h*2/3 labelw/3 2*h],10);
   hs.neighbourOuterText = label(p,'outer kchore',[w-labelw*2/5 edity-h*2/3 labelw/3 2*h],10);
   hs.neighbourOuterText.HorizontalAlignment = 'right';
-  hs.neighbourOrientInner = editbox(p,[],[editxl edity editw/3 h],10);
-  hs.neighbourOrientMiddle = editbox(p,[],[editxc edity editw/3 h],10);
-  hs.neighbourOrientOuter = editbox(p,[],[editxr edity editw/3 h],10);
+  hs.neighbourOrient{1} = editbox(p,[],[editxl edity editw/3 h],10);
+  hs.neighbourOrient{2} = editbox(p,[],[editxc edity editw/3 h],10);
+  hs.neighbourOrient{3} = editbox(p,[],[editxr edity editw/3 h],10);
 
   movegui(hs.fig,'center');
   
@@ -384,18 +395,21 @@ function updateControls(jobset)
   hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
   hs.mmfAddSpots.Value = opts.mmfAddSpots;
   hs.maxMmfTime.String = num2str(opts.maxMmfTime);
+  for iChan=1:3;
+    hs.alphaA{iChan}.String = num2str(opts.alphaA(iChan));
+  end
   if isfield(jobset,'psfFile')
     hs.psfFile.String = jobset.psfFile;
   end
-  if opts.deconvolve
-    hs.deconvolve.Value = hs.deconvolve.Max; % On
-    hs.psfBtn.Enable = 'on';
-    hs.psfFile.Enable = 'on';
-  else
-    hs.deconvolve.Value = hs.deconvolve.Min; % Off.
-    hs.psfBtn.Enable = 'off';
-    hs.psfFile.Enable = 'off';
-  end
+%   if opts.deconvolve
+%     hs.deconvolve.Value = hs.deconvolve.Max; % On
+%     hs.psfBtn.Enable = 'on';
+%     hs.psfFile.Enable = 'on';
+%   else
+%     hs.deconvolve.Value = hs.deconvolve.Min; % Off.
+%     hs.psfBtn.Enable = 'off';
+%     hs.psfFile.Enable = 'off';
+%   end
   hs.chromaticShift.Value = any(~cellfun('isempty',opts.chrShift.jobset(:)));
   hs.minChrShiftSpots.String = num2str(opts.chrShift.minSpots);
   if ~isempty(opts.chrShift.jobset{1,2})
@@ -443,9 +457,9 @@ function updateControls(jobset)
   
   hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,neighbourMaskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
-  hs.neighbourOrientInner.String = num2str(opts.neighbourSpots.channelOrientation(1));
-  hs.neighbourOrientMiddle.String = num2str(opts.neighbourSpots.channelOrientation(2));
-  hs.neighbourOrientOuter.String = num2str(opts.neighbourSpots.channelOrientation(3));
+  for iChan=1:3
+    hs.neighbourOrient{iChan}.String = num2str(opts.neighbourSpots.channelOrientation(iChan));
+  end
 
   populateMovieBox();
   populateROIBox();
@@ -717,7 +731,7 @@ function coordSysChCB(hObj,event)
     handles.refineMode{chan}.Value = 2;
     for notChan = setdiff(1:3,chan)
       handles.coordSysCh{notChan}.Value = 0;
-      handles.spotMode{notChan}.Value = 5;
+      handles.spotMode{notChan}.Value = 6;
     end
   end
   spotModeCB();
@@ -763,6 +777,7 @@ function spotModeCB(hObj,event)
     handles.adaptiveLambdaText.Enable = 'off';
     handles.adaptiveLambda.Enable = 'off';
   end
+  refineModeCB();
   neighbourOptionsCB();
 end
 
@@ -771,10 +786,25 @@ function refineModeCB(hObj,event)
     handles.mmfAddSpots.Enable = 'on';
     handles.maxMmfTimeText.Enable = 'on';
     handles.maxMmfTime.Enable = 'on';
+    handles.alphaAText.Enable = 'on';
+    for iChan=1:3
+      if strcmp(mapStrings(handles.refineMode{iChan}.Value,spotRefineValues),'MMF');
+        handles.alphaAchText{iChan}.Enable = 'on';
+        handles.alphaA{iChan}.Enable = 'on';
+      else
+        handles.alphaAchText{iChan}.Enable = 'off';
+        handles.alphaA{iChan}.Enable = 'off';
+      end
+    end
   else
     handles.mmfAddSpots.Enable = 'off';
     handles.maxMmfTimeText.Enable = 'off';
     handles.maxMmfTime.Enable = 'off';
+    handles.alphaAText.Enable = 'off';
+    for iChan=1:3;
+      handles.alphaAchText{iChan}.Enable = 'off';
+      handles.alphaA{iChan}.Enable = 'off';
+    end
   end
 end
 
@@ -943,7 +973,8 @@ function ch2to3CB(hObj,event)
 end
 
 function neighbourOptionsCB(hObj,event)
-  switch sum(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Neighbour'),handles.spotMode))
+  neighChans = cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Neighbour'),handles.spotMode);
+  switch sum(neighChans)
     case 0
       handles.neighbourMaskShapeText.Enable = 'off';
       handles.neighbourMaskShape.Enable = 'off';
@@ -953,9 +984,9 @@ function neighbourOptionsCB(hObj,event)
       handles.neighbourChanVectText.Enable = 'off';
       handles.neighbourChanNumText.Enable = 'off';
       handles.neighbourInnerText.Enable = 'off';
-      handles.neighbourOrientInner.Enable = 'off';
-      handles.neighbourOrientMiddle.Enable = 'off';
-      handles.neighbourOrientOuter.Enable = 'off';
+      for iChan=1:3
+        handles.neighbourOrient{iChan}.Enable = 'off';
+      end
       handles.neighbourOuterText.Enable = 'off';
     case 1
       handles.neighbourMaskShapeText.Enable = 'on';
@@ -966,10 +997,14 @@ function neighbourOptionsCB(hObj,event)
       handles.neighbourChanVectText.Enable = 'on';
       handles.neighbourChanNumText.Enable = 'on';
       handles.neighbourInnerText.Enable = 'on';
-      handles.neighbourOrientInner.Enable = 'on';
-      handles.neighbourOrientMiddle.Enable = 'on';
-      handles.neighbourOrientOuter.Enable = 'off';
       handles.neighbourOuterText.Enable = 'on';
+      for iChan=1:3
+        if ismember(iChan,[handles.coordSysChNum find(neighChans)])
+          handles.neighbourOrient{iChan}.Enable = 'on';
+        else
+          handles.neighbourOrient{iChan}.Enable = 'off';
+        end
+      end
     case 2
       handles.neighbourMaskShapeText.Enable = 'on';
       handles.neighbourMaskShape.Enable = 'on';
@@ -979,22 +1014,24 @@ function neighbourOptionsCB(hObj,event)
       handles.neighbourChanVectText.Enable = 'on';
       handles.neighbourChanNumText.Enable = 'on';
       handles.neighbourInnerText.Enable = 'on';
-      handles.neighbourOrientInner.Enable = 'on';
-      handles.neighbourOrientMiddle.Enable = 'on';
-      handles.neighbourOrientOuter.Enable = 'on';
       handles.neighbourOuterText.Enable = 'on';
+      for iChan = 1:3
+        handles.neighbourOrient{iChan}.Enable = 'on';
+      end
   end
+
   if strcmp(mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValues),'Circle')
     handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
       handles.neighbourChanVectText.Enable = 'off';
       handles.neighbourChanNumText.Enable = 'off';
       handles.neighbourInnerText.Enable = 'off';
-      handles.neighbourOrientInner.Enable = 'off';
-      handles.neighbourOrientMiddle.Enable = 'off';
-      handles.neighbourOrientOuter.Enable = 'off';
       handles.neighbourOuterText.Enable = 'off';
+      for iChan=1:3
+        handles.neighbourOrient{iChan}.Enable = 'off';
+      end
   end
-  if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
+  if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift') || ...
+          strcmp(mapStrings(handles.coordSys.Value,coordSystemValues),'Centre of mass')
     handles.neighbourMaskShapeText.Enable = 'off';
     handles.neighbourMaskShape.Value = 1;
     handles.neighbourMaskShape.Enable = 'off';
@@ -1002,10 +1039,10 @@ function neighbourOptionsCB(hObj,event)
     handles.neighbourChanVectText.Enable = 'off';
     handles.neighbourChanNumText.Enable = 'off';
     handles.neighbourInnerText.Enable = 'off';
-    handles.neighbourOrientInner.Enable = 'off';
-    handles.neighbourOrientMiddle.Enable = 'off';
-    handles.neighbourOrientOuter.Enable = 'off';
     handles.neighbourOuterText.Enable = 'off';
+    for iChan=1:3
+        handles.neighbourOrient{iChan}.Enable = 'off';
+    end
   end
 end
 
@@ -1051,15 +1088,21 @@ function saveCB(hObj,event)
   uiresume(gcf);
 end
 
-function deconvolveCB(hObj,event)
-  if handles.deconvolve.Value
-    handles.psfBtn.Enable = 'on';
-    handles.psfFile.Enable = 'on';
-  else
-    handles.psfBtn.Enable = 'off';
-    handles.psfFile.Enable = 'off';
-  end
+function validateCB(hObj,event)
+  updateJobset();
+  jobset = kitValidateMetadata(jobset);
+  handles.validateMetadata.String = 'Re-validate...';
 end
+
+% function deconvolveCB(hObj,event)
+%   if handles.deconvolve.Value
+%     handles.psfBtn.Enable = 'on';
+%     handles.psfFile.Enable = 'on';
+%   else
+%     handles.psfBtn.Enable = 'off';
+%     handles.psfFile.Enable = 'off';
+%   end
+% end
 
 function psfBtnCB(hObj,event)
   [file,path] = uigetfile('*.mat','Select PSF file');
@@ -1164,9 +1207,13 @@ function updateJobset()
   opts.minSisterTrackOverlap = str2double(handles.minSisterTrackOverlap.String);
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
-  opts.mmfAddSpots = handles.mmfAddSpots.Value;
-  opts.maxMmfTime = str2double(handles.maxMmfTime.String);
-  opts.deconvolve = handles.deconvolve.Value;
+  mmf.mmfAddSpots = handles.mmfAddSpots.Value;
+  mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
+  for iChan=1:3;
+    mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
+  end
+  opts.mmf = mmf;
+%   opts.deconvolve = handles.deconvolve.Value;
   if handles.chromaticShift.Value
     chrShift = opts.chrShift;
     chrShift.minSpots = str2double(handles.minChrShiftSpots.String);
@@ -1188,9 +1235,9 @@ function updateJobset()
   neighbourSpots = opts.neighbourSpots;
   neighbourSpots.maskShape = mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValuesJS);
   neighbourSpots.maskRadius = str2double(handles.neighbourMaskRadius.String);
-  neighbourSpots.channelOrientation(1) = str2double(handles.neighbourOrientInner.String);
-  neighbourSpots.channelOrientation(2) = str2double(handles.neighbourOrientMiddle.String);
-  neighbourSpots.channelOrientation(3) = str2double(handles.neighbourOrientOuter.String);
+  for iChan=1:3
+    neighbourSpots.channelOrientation(iChan) = str2double(handles.neighbourOrient{iChan}.String);
+  end
   opts.neighbourSpots = neighbourSpots;
   jobset.options = opts;
 end
