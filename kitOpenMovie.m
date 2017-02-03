@@ -1,4 +1,4 @@
-function [metadata,reader]=kitOpenMovie(movieFileName)
+function [metadata,reader]=kitOpenMovie(movieFileName,metadata)
 % KITOPENMOVIE Open movie and extract metadata from BioFormats metadata
 %
 %    [METADATA,READER] = KITOPENMOVIE(MOVIEFILENAME) Open movie with filename
@@ -13,11 +13,21 @@ kitLog('Opening movie: %s', movieFileName);
 if ~exist(movieFileName,'file')
   error('Could not find file: %s',movieFileName);
 end
+if nargin<2 || isempty(metadata)
+  validated = 0;
+else
+  validated = 1;
+end
 
 addpath bfmatlab;
 bfCheckJavaPath(1);
 
 reader = bfGetReader(movieFileName);
+
+% if previously run, don't find movie-logged metadata
+if validated
+  return
+end
 
 % Read basic image metadata.
 md.nFrames = reader.getSizeT();
@@ -51,7 +61,7 @@ try
 
 % Wavelengths. Needed to estimate PSFs.
 numWvs = metaTable.getChannelCount(0);
-md.wavelength = [507 610 461]/1000; % Default assumes EGFP, mCherry,
+md.wavelength = [525 615 705]/1000; % Default assumes EGFP, mCherry,
                                     % DAPI. FIXME Ask user.
 warnWv = 0;
 for i=1:numWvs
@@ -143,6 +153,8 @@ if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
 end
 
+% Automatically-obtained means user has not manually validated.
+md.validated = 0;
 
 catch e
   reader.close();

@@ -95,11 +95,15 @@ if isempty(opts.jobsetMovie)
         job = job{1};
         warning('Job provided is in cell format. Please ensure that you have provided a single job and not a full experiment.');
     end
-    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie));
+    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
     crop = job.ROI.crop;
     cropSize = job.ROI.cropSize;
 else
-    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie));
+    if isfield(jobset,'metadata')
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie),jobset.metadata);
+    else
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie));
+    end
     crop = job.ROI(opts.jobsetMovie).crop;
     cropSize = job.ROI(opts.jobsetMovie).cropSize;
 end

@@ -134,7 +134,7 @@ end
 
 function [job,userStatus] = pairSisters(job,opts)
 %% GET REQUIRED IMAGE AND METADATA
-[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
 movieIdx = job.index;
 
 % get crop information, if any

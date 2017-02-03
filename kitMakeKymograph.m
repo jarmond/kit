@@ -79,7 +79,7 @@ if size(opts.saturate,1)<nChannels
 end
 
 % Open movie.
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
 
 ds = job.dataStruct{opts.trackChannel};
 if ~opts.trackIdx && (pairIdx > length(ds.sisterList) || pairIdx < 1)

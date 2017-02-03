@@ -8,7 +8,7 @@ end
 vFilename = strrep(job.output, '.mat', '_zxproj.mj2');
 
 % Open movie.
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
 
 vWriter = VideoWriter(vFilename, 'Motion JPEG 2000');
 vWriter.FrameRate = 5;

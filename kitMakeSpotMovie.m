@@ -115,7 +115,7 @@ pdfOut = strcmp(upper(opts.codec),'PDF');
 colors = presetColors();
 
 % Open movie.
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
 
 h = figure;
 clf;

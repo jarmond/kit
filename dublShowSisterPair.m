@@ -64,7 +64,7 @@ end
 %% Image and coordinate acquisition
 
 % open movie
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
 
 % get coordinate system and plot channels
 coordSysChan = job.options.coordSystemChannel;
