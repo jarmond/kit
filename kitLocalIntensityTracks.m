@@ -1,18 +1,7 @@
-function job=kitLocalIntensityTracks(job, reader, metadata, channel, varargin)
+function job=kitLocalIntensityTracks(job, reader, metadata, channel, opts)
 % KITLOCALINTENSITY Measure intensity local to kinetochores
 
-% Set defaults.
-opts.maskRadius = job.options.maskRadius;
-opts.maskShape = job.options.maskShape;
-opts.maskConeAngle = job.options.maskConeAngle;
-opts.otherSpotSearchRadius = job.options.otherSpotSearchRadius;
-opts.photobleachCorrect = job.options.photobleachCorrect;
-opts.poleShift = job.options.poleShift;
-opts.gaussFilterSpots = job.options.gaussFilterSpots;
-
-% Process options.
-opts = processOptions(opts, varargin{:});
-
+% get coordinate and plane information
 initCoord = job.dataStruct{channel}.initCoord;
 trackList = job.dataStruct{channel}.trackList;
 planeFit = job.dataStruct{channel}.planeFit;
