@@ -38,8 +38,7 @@ for j=1:nTracks
     end
 
     % Assign P or AP directions.
-    trackList(j).direction = kitAssignDirection(trackList(j).coords(:,1),...
-                                                'exp',job.options.dirAssignExpWeight);
+    trackList(j).direction = kitAssignDirection(trackList(j).coords(:,1),opts.direction);
 
     % Set sister to empty in case no sisters.
     trackList(j).sister = [];
