@@ -2,7 +2,7 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 % DUBLINTRAMEASUREMENTS Produces a structure of population-level
 % intra-kinetochore measurements over multiple experiments.
 %
-%    DUBLINTRAMEASUREMENETS(MOVIES,...) Provides all coordinates, inter-
+%    DUBLINTRAMEASUREMENTS(MOVIES,...) Provides all coordinates, inter-
 %    and intra-kinetochore measurements for all sisters within all cells
 %    across all experiments. The resulting structure provides the tools for
 %    deriving population-level analyses for an experiment. Options are
@@ -10,10 +10,10 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %
 %    Options, defaults in {}:-
 %
-%    chanVect: {[1 2]} or pair of numbers from 1 to 3. The direction of
-%       intra-kinetochore measurements by channel, so that the first number
-%       represents the inner-most kinetochore marker, and the second the
-%       outer-most.
+%    channels: {[1 2]} or pair of numbers from 1 to 3. The channels between
+%       which to make intra-kinetochore measurements. The direction of
+%       measurements will be defined by the channel orientation in the
+%       neighbourSpots section of options.
 %
 %    paired: 0 or {1}. Whether or not to take paired measurements, or raw
 %       spot-by-spot measurements.
@@ -31,7 +31,7 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 % Copyright (c) 2016 C. A. Smith
 
 % default options
-opts.chanVect = [1 2];
+opts.channels = [1 2];
 opts.paired = 1;
 opts.prevMeas = [];
 opts.sisterStructure = [];
@@ -43,7 +43,7 @@ opts = processOptions(opts,varargin{:});
 %check structure of movies
 if ~iscell(movies{1})
     movies = {movies};
-    warning('Movie structure provided implies only one experiment. Assuming only one experiment.');
+    kitLog('Movie structure provided implies only one experiment. Assuming only one experiment.');
 end
 %find number of movies
 numExpts1 = length(movies);
@@ -54,7 +54,7 @@ if isempty(opts.sisterStructure)
   allocSis = 0;
 elseif ~iscell(opts.sisterStructure)
   sisters = {opts.sisterStructure};
-  warning('Non-cell sister structure provided. Assuming only one experiment.');
+  kitLog('Non-cell sister structure provided. Assuming only one experiment.');
   allocSis = 1;
 else
   sisters = opts.sisterStructure;
@@ -71,10 +71,17 @@ numExpts = numExpts1;
 %% Preprocessing output structure
 
 process = movies{1}{1}.options.jobProcess;
-if strcmp(process,'zandt') || isfield(movies{1}{1}.dataStruct{opts.chanVect(1)},'sisterList') && opts.paired
-    paired = 1;
-else
-    paired = 0;
+
+% find whether any movies have paired spots
+paired = 0;
+if opts.paired
+  for iExpt = 1:numExpts;
+    for iMov = 1:length(movies{numExpts})
+      paired = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'sisterList');
+      if paired; break; end
+    end
+    if paired; break; end
+  end
 end
 
 if isempty(opts.prevMeas)
@@ -90,6 +97,11 @@ else
     
 end
 
+% predesignate error arrays
+noDS = [];
+noSpot = [];
+noSis = [];
+
 %% Compiling measurements
 
 for iExpt = 1:numExpts
@@ -98,13 +110,42 @@ for iExpt = 1:numExpts
     theseMovies = movies{iExpt};
     theseSisters = sisters{iExpt};
     
+    % find channel vector
+    chanVect = movies{iExpt}{1}.options.neighbourSpots.channelOrientation;
+    remChans = setdiff(chanVect,opts.channels);
+    chanVect(chanVect==remChans) = [];
+    
     for iMov = 1:length(theseMovies)
+      
+      % get the movie index
+      movNum = theseMovies{iMov}.index;
+      % check whether there is data in this movie
+      if ~isfield(theseMovies{iMov},'dataStruct')
+        noDS = [noDS; iExpt movNum];
+        continue
+      end
+      
+      % get dataStructs
+      dSinner = theseMovies{iMov}.dataStruct{chanVect(1)};
+      dSouter = theseMovies{iMov}.dataStruct{chanVect(2)};
+      
+      % check whether the movie failed
+      if ~isfield(dSinner,'failed') || dSinner.failed || ~isfield(dSouter,'failed') || dSouter.failed
+        noSpot = [noSpot; iExpt movNum];
+        continue
+      end
         
       if paired
-          
+        
+        % check whether a sisterList is present, and if it contains any sisters
+        if ~isfield(dSinner,'sisterList') || isempty(dSinner.sisterList(1).trackPairs) || ~isfield(dSouter,'sisterList') || isempty(dSouter.sisterList(1).trackPairs)
+          noSis = [noSis; iExpt movNum];
+          continue
+        end
+        
         % if no sisters given, go through all sisters in movie
         if ~allocSis
-            theseSisters = 1:length(theseMovies{iMov}.dataStruct{opts.chanVect(1)}.sisterList);
+            theseSisters = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
         else % otherwise, get the sister list
             theseSisters = sisters{iExpt}(sisters{iExpt}(:,1)==iMov,2)';
         end
@@ -113,10 +154,6 @@ for iExpt = 1:numExpts
             
             % start counter for storing data
             c=1;
-            
-            % get dataStructs
-            dSinner = theseMovies{iMov}.dataStruct{opts.chanVect(1)};
-            dSouter = theseMovies{iMov}.dataStruct{opts.chanVect(2)};
 
             % get sisterLists
             sLinner = dSinner.sisterList(iSis);
@@ -379,15 +416,9 @@ for iExpt = 1:numExpts
           % start counter for storing data
           c=1;
           
-          % check whether movie was successfully tracked
-          refChan = theseMovies{iMov}.options.coordSystemChannel;
-          if theseMovies{iMov}.dataStruct{refChan}.failed
-            continue
-          end
-          
           % get dataStructs
-          dSinner = theseMovies{iMov}.dataStruct{opts.chanVect(1)};
-          dSouter = theseMovies{iMov}.dataStruct{opts.chanVect(2)};
+          dSinner = theseMovies{iMov}.dataStruct{chanVect(1)};
+          dSouter = theseMovies{iMov}.dataStruct{chanVect(2)};
           % get initCoords
           iCinner = dSinner.initCoord;
           iCouter = dSouter.initCoord;
@@ -493,6 +524,27 @@ end % expts
 
 compiledIntra = strForm2struct(allData);
 
+%% Output any error information
+
+if ~isempty(noDS)
+  fprintf('\nThe following cells failed during spot detection:\n');
+  for iCell = 1:size(noDS,1)
+    fprintf('    Exp %i, Mov %i\n',noDS(iCell,1),noDS(iCell,2));
+  end
+end
+if ~isempty(noSpot)
+  fprintf('\nThe following cells found no spots:\n');
+  for iCell = 1:size(noSpot,1)
+    fprintf('    Exp %i, Mov %i\n',noSpot(iCell,1),noSpot(iCell,2));
+  end
+end
+if ~isempty(noSis)
+  fprintf('\nThe following cells contain no sisterList:\n');
+  for iCell = 1:size(noSis,1)
+    fprintf('    Exp %i, Mov %i\n',noSis(iCell,1),noSis(iCell,2));
+  end
+end
+fprintf('\n');
 
 function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
     
@@ -627,7 +679,7 @@ function measurements = soloMeasurements(coordsInner,coordsOuter)
     delta_2D = sqrt(sum(delta_xyz(:,1:2).^2,2));
     measurements.delta_2D = delta_2D;
 
-end %pairedMeasurements subfunction
+end %soloMeasurements subfunction
 
 end
 
