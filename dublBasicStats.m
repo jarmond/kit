@@ -185,9 +185,9 @@ switch opts.stat
         
         switch opts.coordSystem
             case 'plate'
-                sisSep3D = intraStructure.plate.sisSep.threeD.all(:);
+                sisSep3D = intraStructure.plate.sisSep.threeD(:);
             case 'microscope'
-                sisSep3D = intraStructure.microscope.sisSep.threeD.all(:);
+                sisSep3D = intraStructure.microscope.sisSep.threeD(:);
         end
         
         median = nanmedian(sisSep3D)*1000;
@@ -206,9 +206,9 @@ switch opts.stat
             
         switch opts.coordSystem
             case 'plate'
-                sisSep2D = intraStructure.plate.sisSep.twoD.all(:);
+                sisSep2D = intraStructure.plate.sisSep.twoD(:);
             case 'microscope'
-                sisSep2D = intraStructure.microscope.sisSep.twoD.all(:);
+                sisSep2D = intraStructure.microscope.sisSep.twoD(:);
         end
         
         median = nanmedian(sisSep2D)*1000;
@@ -227,13 +227,13 @@ switch opts.stat
         
         switch opts.coordSystem
             case 'plate'
-                sisSepXYZ(:,1) = intraStructure.plate.sisSep.x.all(:);
-                sisSepXYZ(:,2) = intraStructure.plate.sisSep.y.all(:);
-                sisSepXYZ(:,3) = intraStructure.plate.sisSep.z.all(:);
+                sisSepXYZ(:,1) = intraStructure.plate.sisSep.x(:);
+                sisSepXYZ(:,2) = intraStructure.plate.sisSep.y(:);
+                sisSepXYZ(:,3) = intraStructure.plate.sisSep.z(:);
             case 'microscope'
-                sisSepXYZ(:,1) = intraStructure.microscope.sisSep.x.all(:);
-                sisSepXYZ(:,2) = intraStructure.microscope.sisSep.y.all(:);
-                sisSepXYZ(:,3) = intraStructure.microscope.sisSep.z.all(:);
+                sisSepXYZ(:,1) = intraStructure.microscope.sisSep.x(:);
+                sisSepXYZ(:,2) = intraStructure.microscope.sisSep.y(:);
+                sisSepXYZ(:,3) = intraStructure.microscope.sisSep.z(:);
         end
 
         median = nanmedian(sisSepXYZ)*1000;
@@ -252,44 +252,44 @@ switch opts.stat
         
         switch opts.coordSystem
             case 'plate'
-                twist3D = intraStructure.plate.twist.threeD.all(:);
+                twist3D = intraStructure.plate.twist.threeD(:);
             case 'microscope'
                 error('Twist is not defined for a non-plate coordinate system.')
         end
         
-        median = nanmedian(twist3D)*1000;
-        mean   = nanmean(twist3D)*1000;
-        stdErr = nanserr(twist3D)*1000;
-        stdDev = nanstd(twist3D)*1000;
+        median = nanmedian(twist3D);
+        mean   = nanmean(twist3D);
+        stdErr = nanserr(twist3D);
+        stdDev = nanstd(twist3D);
         n      = min(sum(~isnan(twist3D)));
 
         fprintf('\n3D twist measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f nm\n',median)
-        fprintf('    mean    = %.2f nm\n',mean)
-        fprintf('    std err = %.2f nm\n',stdErr)
-        fprintf('    std dev = %.2f nm\n',stdDev)
+        fprintf('    median  = %.2f deg\n',median)
+        fprintf('    mean    = %.2f deg\n',mean)
+        fprintf('    std err = %.2f deg\n',stdErr)
+        fprintf('    std dev = %.2f deg\n',stdDev)
         
     case 'twistYZ'
         
         switch opts.coordSystem
             case 'plate'
-                twistYZ(:,1) = intraStructure.plate.twist.y.all(:);
-                twistYZ(:,2) = intraStructure.plate.twist.z.all(:);
+                twistYZ(:,1) = intraStructure.plate.twist.y(:);
+                twistYZ(:,2) = intraStructure.plate.twist.z(:);
             case 'microscope'
                 error('Twist is not defined for a non-plate coordinate system.')
         end
 
-        median = nanmedian(twistYZ)*1000;
-        mean   = nanmean(twistYZ)*1000;
-        stdErr = nanserr(twistYZ)*1000;
-        stdDev = nanstd(twistYZ)*1000;
+        median = nanmedian(twistYZ);
+        mean   = nanmean(twistYZ);
+        stdErr = nanserr(twistYZ);
+        stdDev = nanstd(twistYZ);
         n      = min(sum(~isnan(twistYZ)));
 
         fprintf('\nY and Z twist measurements (n = %i):\n\n',n)
-        fprintf('    median  = [%.2f, %.2f] nm\n',median(1),median(2))
-        fprintf('    mean    = [%.2f, %.2f] nm\n',mean(1),mean(2))
-        fprintf('    std err = [%.2f, %.2f] nm\n',stdErr(1),stdErr(2))
-        fprintf('    std dev = [%.2f, %.2f] nm\n',stdDev(1),stdDev(2))
+        fprintf('    median  = [%.2f, %.2f] deg\n',median(1),median(2))
+        fprintf('    mean    = [%.2f, %.2f] deg\n',mean(1),mean(2))
+        fprintf('    std err = [%.2f, %.2f] deg\n',stdErr(1),stdErr(2))
+        fprintf('    std dev = [%.2f, %.2f] deg\n',stdDev(1),stdDev(2))
 
     case 'swivel3D'
         
@@ -308,17 +308,17 @@ switch opts.stat
                 end
         end
         
-        median = nanmedian(swivel3D)*1000;
-        mean   = nanmean(swivel3D)*1000;
-        stdErr = nanserr(swivel3D)*1000;
-        stdDev = nanstd(swivel3D)*1000;
+        median = nanmedian(swivel3D);
+        mean   = nanmean(swivel3D);
+        stdErr = nanserr(swivel3D);
+        stdDev = nanstd(swivel3D);
         n      = min(sum(~isnan(swivel3D)));
 
         fprintf('\n3D swivel measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f nm\n',median)
-        fprintf('    mean    = %.2f nm\n',mean)
-        fprintf('    std err = %.2f nm\n',stdErr)
-        fprintf('    std dev = %.2f nm\n',stdDev)
+        fprintf('    median  = %.2f deg\n',median)
+        fprintf('    mean    = %.2f deg\n',mean)
+        fprintf('    std err = %.2f deg\n',stdErr)
+        fprintf('    std dev = %.2f deg\n',stdDev)
         
     case 'swivelKMT'
         
@@ -337,54 +337,50 @@ switch opts.stat
                 end
         end
 
-        median = nanmedian(swivelKMT)*1000;
-        mean   = nanmean(swivelKMT)*1000;
-        stdErr = nanserr(swivelKMT)*1000;
-        stdDev = nanstd(swivelKMT)*1000;
+        median = nanmedian(swivelKMT);
+        mean   = nanmean(swivelKMT);
+        stdErr = nanserr(swivelKMT);
+        stdDev = nanstd(swivelKMT);
         n      = min(sum(~isnan(swivelKMT)));
 
         fprintf('\nKinetochore-to-microtubule angle measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f nm\n',median)
-        fprintf('    mean    = %.2f nm\n',mean)
-        fprintf('    std err = %.2f nm\n',stdErr)
-        fprintf('    std dev = %.2f nm\n',stdDev)
+        fprintf('    median  = %.2f deg\n',median)
+        fprintf('    mean    = %.2f deg\n',mean)
+        fprintf('    std err = %.2f deg\n',stdErr)
+        fprintf('    std dev = %.2f deg\n',stdDev)
         
     case 'swivelYZ'
         
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.x.all(:);
-                    swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.y.all(:);
-                    swivelYZ(:,3) = intraStructure.plate.depthFilter.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.y.all(:);
+                    swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.z.all(:);
                 else
-                    swivelYZ(:,1) = intraStructure.plate.raw.swivel.x.all(:);
-                    swivelYZ(:,2) = intraStructure.plate.raw.swivel.y.all(:);
-                    swivelYZ(:,3) = intraStructure.plate.raw.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.plate.raw.swivel.y.all(:);
+                    swivelYZ(:,2) = intraStructure.plate.raw.swivel.z.all(:);
                 end
             case 'microscope'
                 if opts.depthFilter
-                    swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.x.all(:);
-                    swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.y.all(:);
-                    swivelYZ(:,3) = intraStructure.microscope.depthFilter.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.y.all(:);
+                    swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.z.all(:);
                 else
-                    swivelYZ(:,1) = intraStructure.microscope.raw.swivel.x.all(:);
-                    swivelYZ(:,2) = intraStructure.microscope.raw.swivel.y.all(:);
-                    swivelYZ(:,3) = intraStructure.microscope.raw.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.microscope.raw.swivel.y.all(:);
+                    swivelYZ(:,2) = intraStructure.microscope.raw.swivel.z.all(:);
                 end
         end
     
-        median = nanmedian(swivelYZ)*1000;
-        mean   = nanmean(swivelYZ)*1000;
-        stdErr = nanserr(swivelYZ)*1000;
-        stdDev = nanstd(swivelYZ)*1000;
+        median = nanmedian(swivelYZ);
+        mean   = nanmean(swivelYZ);
+        stdErr = nanserr(swivelYZ);
+        stdDev = nanstd(swivelYZ);
         n      = min(sum(~isnan(swivelYZ)));
 
         fprintf('\nY and Z swivel measurements (n = %i):\n\n',n)
-        fprintf('    median  = [%.2f, %.2f] nm\n',median(1),median(2))
-        fprintf('    mean    = [%.2f, %.2f] nm\n',mean(1),mean(2))
-        fprintf('    std err = [%.2f, %.2f] nm\n',stdErr(1),stdErr(2))
-        fprintf('    std dev = [%.2f, %.2f] nm\n',stdDev(1),stdDev(2))
+        fprintf('    median  = [%.2f, %.2f] deg\n',median(1),median(2))
+        fprintf('    mean    = [%.2f, %.2f] deg\n',mean(1),mean(2))
+        fprintf('    std err = [%.2f, %.2f] deg\n',stdErr(1),stdErr(2))
+        fprintf('    std dev = [%.2f, %.2f] deg\n',stdDev(1),stdDev(2))
         
     otherwise
         
