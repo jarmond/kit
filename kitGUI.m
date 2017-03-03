@@ -393,10 +393,10 @@ function updateControls(jobset)
   hs.minSisterTrackOverlap.String = num2str(opts.minSisterTrackOverlap);
   hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
   hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
-  hs.mmfAddSpots.Value = opts.mmfAddSpots;
-  hs.maxMmfTime.String = num2str(opts.maxMmfTime);
+  hs.mmfAddSpots.Value = opts.mmf.addSpots;
+  hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
   for iChan=1:3;
-    hs.alphaA{iChan}.String = num2str(opts.alphaA(iChan));
+    hs.alphaA{iChan}.String = num2str(opts.mmf.alphaA(iChan));
   end
   if isfield(jobset,'psfFile')
     hs.psfFile.String = jobset.psfFile;
@@ -471,6 +471,9 @@ function updateControls(jobset)
   chromaticShiftCB();
   chrShiftFilterCB();
   neighbourOptionsCB();
+  
+  handles = hs;
+  
 end
 
 % Check controls for consistent input.
@@ -1207,7 +1210,8 @@ function updateJobset()
   opts.minSisterTrackOverlap = str2double(handles.minSisterTrackOverlap.String);
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
-  mmf.mmfAddSpots = handles.mmfAddSpots.Value;
+  mmf = opts.mmf;
+  mmf.addSpots = handles.mmfAddSpots.Value;
   mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
   for iChan=1:3;
     mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
