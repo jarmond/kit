@@ -167,7 +167,7 @@ insetSz = 0.5;
 insetOff = [1 -0.1];
 
 % marker size.
-markerSize = ceil(job.options.maskRadius / job.metadata.pixelSize(1));
+markerSize = ceil(job.options.intensity.maskRadius / job.metadata.pixelSize(1));
 
 if opts.zoomTrack > 0
   track = trackList(opts.zoomTrack);

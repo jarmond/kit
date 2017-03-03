@@ -490,22 +490,22 @@ function updateControls(opts)
   end
   hs.maxSisterDist.String = num2str(opts.maxSisterSeparation);
   hs.minSisterTrackOverlap.String = num2str(opts.minSisterTrackOverlap);
-  hs.directionMethod.Value = mapStrings(opts.dirAssignMode,directionMethodValuesJS);
-  hs.directionWeight.String = num2str(opts.dirAssignExpWeight);
-  hs.directionMinSteps.String = num2str(opts.dirMinConsSteps);
-  hs.directionSwitchBuffer.String = num2str(opts.dirSwitchBuffer);
+  hs.directionMethod.Value = mapStrings(opts.direction.assignMode,directionMethodValuesJS);
+  hs.directionWeight.String = num2str(opts.direction.assignExpWeight);
+  hs.directionMinSteps.String = num2str(opts.direction.minConsSteps);
+  hs.directionSwitchBuffer.String = num2str(opts.direction.switchBuffer);
   
   % Spot detection, tab 2
-  hs.gaussFilterSpots.Value = opts.gaussFilterSpots;
+  hs.gaussFilterSpots.Value = opts.intensity.gaussFilterSpots;
   hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
   hs.maxSpotsPerFrame.String = num2str(opts.maxSpotsPerFrame);
   hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
-  hs.wletLevelThresh.String = num2str(opts.waveletLevelThresh);
-  hs.wletLevelAdapt.Value = opts.waveletLevelAdapt;
-  hs.wletNumLevels.String = num2str(opts.waveletNumLevels);
-  hs.wletLocalMAD.String = num2str(opts.waveletLocalMAD);
-  hs.wletBackSub.String = num2str(opts.waveletBackSub);
-  hs.wletMinLevel.String = num2str(opts.waveletMinLevel);
+  hs.wletLevelThresh.String = num2str(opts.wavelet.levelThresh);
+  hs.wletLevelAdapt.Value = opts.wavelet.levelAdapt;
+  hs.wletNumLevels.String = num2str(opts.wavelet.numLevels);
+  hs.wletLocalMAD.String = num2str(opts.wavelet.localMAD);
+  hs.wletBackSub.String = num2str(opts.wavelet.backSub);
+  hs.wletMinLevel.String = num2str(opts.wavelet.minLevel);
   hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,neighbourMaskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
   for iOrient = 1:3
@@ -515,16 +515,16 @@ function updateControls(opts)
 
   
   % Mixture model fitting, tab 3
-  hs.mmfAddSpots.Value = opts.mmfAddSpots;
-  hs.maxMmfTime.String = num2str(opts.maxMmfTime);
-  hs.clusterSeparation.String = num2str(opts.clusterSeparation);
-  hs.oneBigCluster.Value = ~opts.oneBigCluster;
+  hs.mmfAddSpots.Value = opts.mmf.addSpots;
+  hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
+  hs.clusterSeparation.String = num2str(opts.mmf.clusterSeparation);
+  hs.oneBigCluster.Value = ~opts.mmf.neBigCluster;
   for iChan=1:3;
-    hs.alphaA{iChan}.String = num2str(opts.alphaA(iChan));
-    hs.alphaD{iChan}.String = num2str(opts.alphaD(iChan));
-    hs.alphaF{iChan}.String = num2str(opts.alphaF(iChan));
+    hs.alphaA{iChan}.String = num2str(opts.mmf.alphaA(iChan));
+    hs.alphaD{iChan}.String = num2str(opts.mmf.alphaD(iChan));
+    hs.alphaF{iChan}.String = num2str(opts.mmf.alphaF(iChan));
   end
-  hs.mmfTol.String = num2str(opts.mmfTol);
+  hs.mmfTol.String = num2str(opts.mmf.mmfTol);
   
   % Chromatic shift, tab 1
   hs.chromaticShift.Value = any(~cellfun('isempty',opts.chrShift.jobset(:)));
@@ -616,7 +616,7 @@ function updateControls(opts)
     hs.chrShiftRegion.Value = 0;
   end
   
-  % general
+    % general
     hs.asserts.Value = opts.debug.asserts;
     if opts.debug.showPlaneFit == 2
       hs.showPlaneFit.Value = 1;
@@ -1026,6 +1026,7 @@ function ch1to2CB(hObj,event)
   handles.ch1to2.String = file;
   file = fullfile(path,file);
   jobset.options.chrShift.jobset{1,2} = file;
+  jobset.options.chrShift.jobset{2,1} = file;
   handles.ch1to2_ch1num.Enable = 'on';
   handles.ch1to2_ch1num.String = jobset.options.chrShift.chanOrder{1,2}(1);
   handles.ch1to2_ch2num.Enable = 'on';
@@ -1040,6 +1041,7 @@ function ch1to3CB(hObj,event)
   handles.ch1to3.String = file;
   file = fullfile(path,file);
   jobset.options.chrShift.jobset{1,3} = file;
+  jobset.options.chrShift.jobset{3,1} = file;
   handles.ch1to3_ch1num.Enable = 'on';
   handles.ch1to3_ch1num.String = jobset.options.chrShift.chanOrder{1,3}(1);
   handles.ch1to3_ch3num.Enable = 'on';
@@ -1054,6 +1056,7 @@ function ch2to3CB(hObj,event)
   handles.ch2to3.String = file;
   file = fullfile(path,file);
   jobset.options.chrShift.jobset{2,3} = file;
+  jobset.options.chrShift.jobset{3,2} = file;
   handles.ch2to3_ch2num.Enable = 'on';
   handles.ch2to3_ch2num.String = jobset.options.chrShift.chanOrder{2,3}(1);
   handles.ch2to3_ch3num.Enable = 'on';
@@ -1238,22 +1241,26 @@ function updateJobset()
   opts.maxSisterAlignmentAngle = str2double(handles.maxSisterAlignmentAngle.String);
   opts.maxSisterSeparation = str2double(handles.maxSisterDist.String);
   opts.minSisterTrackOverlap = str2double(handles.minSisterTrackOverlap.String);
-  opts.dirAssignMode = mapStrings(handles.directionMethod.Value,directionMethodValuesJS);
-  opts.dirAssignExpWeight = str2double(handles.directionWeight.String);
-  opts.dirMinConsSteps = str2double(handles.directionMinSteps.String);
-  opts.dirSwitchBuffer = str2double(handles.directionSwitchBuffer.String);
+  direction = opts.direction;
+  direction.assignMode = mapStrings(handles.directionMethod.Value,directionMethodValuesJS);
+  direction.assignExpWeight = str2double(handles.directionWeight.String);
+  direction.minConsSteps = str2double(handles.directionMinSteps.String);
+  direction.switchBuffer = str2double(handles.directionSwitchBuffer.String);
+  opts.direction = direction;
   
   % spot detection
-  opts.gaussFilterSpots = handles.gaussFilterSpots.Value;
+  opts.intensity.gaussFilterSpots = handles.gaussFilterSpots.Value;
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpotsPerFrame.String);
   opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
-  opts.waveletLevelThresh = str2double(handles.wletLevelThresh.String);
-  opts.waveletLevelAdapt = handles.wletLevelAdapt.Value;
-  opts.waveletNumLevels = str2double(handles.wletNumLevels.String);
-  opts.waveletLocalMAD = str2double(handles.wletLocalMAD.String);
-  opts.waveletBackSub = str2double(handles.wletBackSub.String);
-  opts.waveletMinLevel = str2double(handles.wletMinLevel.String);
+  wavelet = opts.wavelet;
+  wavelet.levelThresh = str2double(handles.wletLevelThresh.String);
+  wavelet.levelAdapt = handles.wletLevelAdapt.Value;
+  wavelet.numLevels = str2double(handles.wletNumLevels.String);
+  wavelet.localMAD = str2double(handles.wletLocalMAD.String);
+  wavelet.backSub = str2double(handles.wletBackSub.String);
+  wavelet.minLevel = str2double(handles.wletMinLevel.String);
+  opts.wavelet = wavelet;
   neighbourSpots = opts.neighbourSpots;
   neighbourSpots.maskShape = mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValuesJS);
   neighbourSpots.maskRadius = str2double(handles.neighbourMaskRadius.String);
@@ -1264,28 +1271,23 @@ function updateJobset()
   opts.neighbourSpots = neighbourSpots;
   
   % mmf
-  opts.mmfAddSpots = handles.mmfAddSpots.Value;
-  opts.maxMmfTime = str2double(handles.maxMmfTime.String);
-  opts.clusterSeparation = str2double(handles.clusterSeparation.String);
-  opts.oneBigCluster = ~handles.oneBigCluster.Value;
+  mmf  = opts.mmf;
+  mmf.addSpots = handles.mmfAddSpots.Value;
+  mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
+  mmf.clusterSeparation = str2double(handles.clusterSeparation.String);
+  mmf.oneBigCluster = ~handles.oneBigCluster.Value;
   for iChan = 1:3;
-    opts.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
-    opts.alphaD(iChan) = str2double(handles.alphaD{iChan}.String);
-    opts.alphaF(iChan) = str2double(handles.alphaF{iChan}.String);
+    mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
+    mmf.alphaD(iChan) = str2double(handles.alphaD{iChan}.String);
+    mmf.alphaF(iChan) = str2double(handles.alphaF{iChan}.String);
   end
-  opts.mmfTol = str2double(handles.mmfTol.String);
+  mmf.mmfTol = str2double(handles.mmfTol.String);
+  opts.mmf = mmf;
   
   % chromatic shift
   if handles.chromaticShift.Value
     chrShift = opts.chrShift;
     chrShift.minSpots = str2double(handles.minChrShiftSpots.String);
-    % jobsets
-    chrShift.jobset{1,2} = handles.ch1to2.String;
-    chrShift.jobset{2,1} = chrShift.jobset{1,2};
-    chrShift.jobset{1,3} = handles.ch1to3.String;
-    chrShift.jobset{3,1} = chrShift.jobset{1,3};
-    chrShift.jobset{2,3} = handles.ch2to3.String;
-    chrShift.jobset{3,2} = chrShift.jobset{2,3};
     % channel orders
     chrShift.chanOrder{1,2}(1) = str2double(handles.ch1to2_ch1num.String);
     chrShift.chanOrder{1,2}(2) = str2double(handles.ch1to2_ch2num.String);

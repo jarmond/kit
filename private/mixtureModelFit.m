@@ -10,12 +10,13 @@ function [spots,spotID,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma
 % Copyright (c) 2016 C. A. Smith
 
 verbose = options.debug.mmfVerbose;
+mmf = options.mmf;
 
 % Set optimization options.
-optoptions = optimset('Jacobian','on','Display','off','Tolfun',options.mmfTol,'TolX',1e-6);
-alphaA = options.alphaA; % amplitude t-test cutoff.
-alphaF = options.alphaF; % N vs N+1 F-test cutoff.
-alphaD = options.alphaD;
+optoptions = optimset('Jacobian','on','Display','off','Tolfun',mmf.mmfTol,'TolX',1e-6);
+alphaA = mmf.alphaA; % amplitude t-test cutoff.
+alphaF = mmf.alphaF; % N vs N+1 F-test cutoff.
+alphaD = mmf.alphaD;
 is3D = ndims(image) == 3;
 if is3D
   degFreePerSpot = 4;
@@ -27,7 +28,7 @@ else
   psfSigma = psfSigma([1 1]); % for XY
 end
 % Distance criterion for defining separate clusters
-clusterSep = options.clusterSeparation*psfSigma;
+clusterSep = mmf.clusterSeparation*psfSigma;
 
 % Cluster spots.
 clusters = clusterSpots(cands(:,1:cols));
@@ -84,7 +85,7 @@ startTime = clock;
     % Iterative fitting with N+1 Gaussians until F-test fails.
     first = 1; % Always accept first fit.
     failed = 0;
-    while (~failed && options.mmfAddSpots) || first
+    while (~failed && mmf.addSpots) || first
       % Estimate bounds.
       [x0,lb,ub] = guessBounds(clusterCandsT,clusterAmpT,clusterPix,bgAmpT);
 
@@ -128,7 +129,7 @@ startTime = clock;
         % Extract values from solution vector.
         [bgAmp,clusterCands,clusterAmp] = extractSolution(solution,numCands);
 
-        if options.mmfAddSpots
+        if mmf.addSpots
           % Add new kernel at pixel with maximum residual.
           numCandsT = numCandsT + 1;
           clusterAmpT = [clusterAmp; mean(clusterAmp);];
@@ -141,7 +142,7 @@ startTime = clock;
 
     end % while ~failed
 
-    if options.maxMmfTime > 0 && etime(clock,startTime) > options.maxMmfTime
+    if mmf.maxMmfTime > 0 && etime(clock,startTime) > mmf.maxMmfTime
       spots = []; amps = []; bgAmps = [];
       return % Abort
     end
@@ -339,7 +340,7 @@ for i=1:nClusters
   testStat = clusterAmp./sqrt(clusterAmpVar+residVar);
   pValue = 1-tcdf(testStat,numDegFree);
 
-  if options.maxMmfTime > 0 && etime(clock,startTime) > options.maxMmfTime
+  if mmf.maxMmfTime > 0 && etime(clock,startTime) > mmf.maxMmfTime
     spots = []; amps = []; bgAmps = [];
     return % Abort
   end
@@ -390,7 +391,7 @@ end
 function c=clusterSpots(pos)
 % pos: spot positions (nx3)
 
-  if options.oneBigCluster~=0
+  if mmf.oneBigCluster~=0
     c = ones(size(pos,1),1);
     return;
   end

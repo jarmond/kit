@@ -16,7 +16,7 @@ pixelSize = job.metadata.pixelSize;
 chrShift = job.options.chrShift.result{options.coordSystemChannel,channel};
 % calculate alphaA based on pixel size
 % (standards: 0.05 at 138.1nm; 0.5 at 69.4nm)
-options.alphaA = options.alphaA.*(options.alphaA + (0.1381-pixelSize(1))*8)/0.05;
+options.mmf.alphaA = options.mmf.alphaA.*(options.mmf.alphaA + (0.1381-pixelSize(1))*8)/0.05;
 % NOTE TO SELF: Use scaling factor = 6.5 for 0.5, or 8 for 0.6
 
 % get number of frames
@@ -98,15 +98,15 @@ for iImage = goodImages
   
   % Impose opts with channel-specific mmfAddSpots and alphas.
   opts = options;
-  opts.mmfAddSpots = opts.mmfAddSpots*~strcmp(options.spotMode{channel},'neighbour');
-  opts.alphaA = opts.alphaA(channel);
-  opts.alphaD = opts.alphaD(channel);
-  opts.alphaF = opts.alphaF(channel);
+  opts.mmf.addSpots = opts.mmf.addSpots*~strcmp(options.spotMode{channel},'neighbour');
+  opts.mmf.alphaA = opts.mmf.alphaA(channel);
+  opts.mmf.alphaD = opts.mmf.alphaD(channel);
+  opts.mmf.alphaF = opts.mmf.alphaF(channel);
   % Run mixture model fitting.
   [coordList,spotID,ampList,bgList,rejects] = mixtureModelFit(cands,imageRaw,psfSigma,opts);
   
   elapsedTime = etime(clock,startTime);
-  if options.maxMmfTime > 0 && elapsedTime > options.maxMmfTime
+  if options.mmf.maxMmfTime > 0 && elapsedTime > options.mmf.maxMmfTime
     warning('Mixture-model fitting taking excessive time (%g min per frame). Aborting.',elapsedTime/60);
     dataStruct.failed = 1;
     break;
