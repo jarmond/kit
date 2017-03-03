@@ -22,7 +22,7 @@ function jobs = dublManualPairSisters(jobs,varargin)
 %    imageChans: {[1 2]} or any subset of [1,2,3]. The channels which will
 %                   be plotted when inspecting spots for pairing.
 %
-%    maxSisSep: {2} or distance in µm. Maximum distance between the
+%    maxSisSep: {2.5} or distance in µm. Maximum distance between the
 %                   original spot and potential sisters.
 %
 %    metaphasePlate: {0} or 1. Whether or not to plot a metaphase plate.
@@ -38,13 +38,13 @@ function jobs = dublManualPairSisters(jobs,varargin)
 %                     a combination of the two.
 %
 %    plotChan: {1}, 2 or 3. The channel which will be used for plotting
-%                   spot centres when inspecting spots for pairing.
-%                   N.B. This only works for one channel so far, but will
+%                   spot centres when inspecting spots for pairing. This
+%                   will be stored in .options.
+%                   N.B. This only works for one channel so far, but may
 %                   be increased in future.
 %
 %    redo: {0} or 1. Whether to completely redo sister pairing, i.e. don't
 %                   plot spots as being previously allocated etc.
-%                   N.B. This doesn't work yet. Future plan.
 %
 %    subset: {[]} or list of movie numbers. Sub-list of movies to process.
 %
@@ -60,7 +60,6 @@ function jobs = dublManualPairSisters(jobs,varargin)
 %
 %    - Incorporate plotting of metaphase plate
 %    - Allow processing of movies as well as single z-stacks
-%       - Looking for previously discovered sisters before manual selection
 %       - Take three points per track to ensure faithful pairing
 %
 % Copyright (c) 2016 C. A. Smith
@@ -70,7 +69,7 @@ opts.chanOrder = [2 1 3]; % order of the channels in the movie
 opts.contrast = {[0.1 1] [0.1 1] [0.1 1]};
 opts.coordChans = [1 2]; % channels to process
 opts.imageChans = [1 2]; % imaging more channels may provide more information
-opts.maxSisSep = 2; % maximum distance in µm between potential sisters being plotted
+opts.maxSisSep = 2.5; % maximum distance in µm between potential sisters being plotted
 opts.mode = 'dual';
 opts.plotChan = 1; % channel coordinates to be plotted for allocation
 opts.redo = 0;
@@ -103,7 +102,6 @@ for iMov = opts.subset
     
     % perform the sister pairing
     [jobs{iMov},userStatus] = pairSisters(jobs{iMov},opts);
-    
     
     if strcmp(userStatus,'userPaused')
         [~,lastMovie] = find(opts.subset == iMov);
@@ -145,30 +143,6 @@ if isempty(crop)
 end
 % specify RGB channel order [R G B]
 chanOrder = opts.chanOrder;
-
-% produce image file
-fullImg = zeros([cropSize(1:2),3]);
-for iChan = opts.imageChans
-    img(:,:,:,iChan) = kitReadImageStack(reader, md, 1, iChan, crop, 0);
-    fullImg(:,:,chanOrder(iChan)) = max(img(:,:,:,iChan),[],3); % full z-project
-    irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
-    fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
-end
-
-% produce figure environment
-figure(1)
-clf
-
-plotTitle = sprintf('Check cell orientation\nPress: y to continue, n to skip, q to quit.');
-if length(opts.imageChans) == 1
-    imshow(fullImg(:,:,chanOrder(opts.imageChans)));
-    title(plotTitle,'FontSize',14)
-else
-    imshow(fullImg)
-    title(plotTitle,'FontSize',14)
-end
-[~,~,buttonPress] = ginput(1);
-
 % calculate size of cropped region in pixels based on maxSisSep
 pixelSize = job.metadata.pixelSize(1:3);
 cropRange = 1.25*repmat(opts.maxSisSep,1,3)./pixelSize;
@@ -177,43 +151,90 @@ chrShift = job.options.chrShift.result;
 % find chrShift rounded to nearest pixel
 pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},3),'UniformOutput',0);
 
-
-%% GET ALL COORDINATES
+%% GET IMAGE AND COORDINATE INFORMATION
 
 % get coordinates in both µm and pixels
-coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[2 1 3]);
-coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[2 1 3]);
-
+% check whether or not this movie has an initCoord
+if ~isfield(job.dataStruct{opts.plotChan},'initCoord')
+  kitLog('No initCoord present. Skipping movie.');
+  coords = [];
+  coordsPix = [];
+% check whether or not this movie has an initCoord
+elseif isfield(job.dataStruct{opts.plotChan},'failed') && job.dataStruct{opts.plotChan}.failed
+  kitLog('Tracking failed to produce an initCoord. Skipping movie.');
+  coords = [];
+  coordsPix = [];
+else
+  coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[2 1 3]);
+  coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[2 1 3]);
+end
 nCoords = size(coords,1);
 
+% check that redo hasn't been incorrectly provided here
+if ~isfield(job.dataStruct{opts.plotChan},'sisterList')
+  opts.redo = 1;
+end
+% pre-allocate index vectors
+if opts.redo
+  pairedIdx = [];
+  sisterIdxArray = [];
+  defaultIdx = 1:nCoords;
+else
+  % get list of featIdx from current sisterList
+  sisterIdxArray = job.dataStruct{opts.plotChan}.sisterList(1).trackPairs(:,1:2);
+  pairedIdx = sisterIdxArray(:)';
+  defaultIdx = setdiff(1:nCoords,pairedIdx(:));
+end
+unpairedIdx = [];
+doublePairingIdx = [];
 
 %% PLOT IMAGE, REQUEST INPUT
 
-% pre-allocate index vectors
-pairedIdx = [];
-unpairedIdx = [];
-if buttonPress == 110 %110 corresponds to user pressing n key
+if ~isempty(coords)
+  % produce image file
+  fullImg = zeros([cropSize(1:2),3]);
+  for iChan = opts.imageChans
+    img(:,:,:,iChan) = kitReadImageStack(reader, md, 1, iChan, crop, 0);
+    fullImg(:,:,chanOrder(iChan)) = max(img(:,:,:,iChan),[],3); % full z-project
+    irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
+    fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
+  end
+
+  % produce figure environment
+  figure(1)
+  clf
+  plotTitle = sprintf('Check cell orientation\nPress: y to continue, n to skip, q to quit.');
+  if length(opts.imageChans) == 1
+    imshow(fullImg(:,:,chanOrder(opts.imageChans)));
+    title(plotTitle,'FontSize',14)
+  else
+    imshow(fullImg)
+    title(plotTitle,'FontSize',14)
+  end
+  [~,~,buttonPress] = ginput(1);
+
+  if buttonPress == 110 %110 corresponds to user pressing n key
     unallocatedIdx = [];
-elseif buttonPress == 121 %121 corresponds to user pressing y key
-    unallocatedIdx = 1:nCoords;
-    if opts.verbose
-        fprintf('Cell accepted. Continuing with pairing of sisters.\n');
-    end
-elseif buttonPress == 113 %113 corresponds to user pressing q key
+  elseif buttonPress == 121 %121 corresponds to user pressing y key
+    unallocatedIdx = defaultIdx;
+    kitLog('Cell accepted. Continuing with pairing of sisters.');
+  elseif buttonPress == 113 %113 corresponds to user pressing q key
     userStatus = 'userPaused';
     return
+  else
+    unallocatedIdx = defaultIdx;
+    kitLog('Another key other than y, n or q pressed. Continuing with kinetochore pairing.');
+  end
+  % preconfigure progress information
+  prog = kitProgress(0);
+  
 else
-    unallocatedIdx = 1:nCoords;
-    fprintf('Another key other than y, n or q pressed. Continuing with kinetochore pairing.\n');
+  % if not coords, make unallocatedIdx empty to avoid running spot finding
+  unallocatedIdx = [];
+
 end
 
-doublePairingIdx = [];
-sisterIdxArray = [];
-
 plotTitle = sprintf('Locate the white cross'' sister.\nClick on an: unallocated (g), ignored (y) or pre-paired (r) cross.\nPress backspace if none applicable.');
-
-% preconfigure progress information
-prog = kitProgress(0);
 
 while ~isempty(unallocatedIdx)
     
@@ -231,6 +252,7 @@ while ~isempty(unallocatedIdx)
     
     % if spot has no nearest neighbour, remove and continue
     if isempty([unallNNidx pairedNNidx unpairedNNidx])
+        kitLog('No spots located within %.1fµm of spot %i. Spot not paired.',opts.maxSisSep,iCoord)
         unpairedIdx = [unpairedIdx iCoord];
         unallocatedIdx(1) = [];
         continue
@@ -400,7 +422,7 @@ while ~isempty(unallocatedIdx)
         
         % check user hasn't given the original cross
         if userIdx == iCoord
-            fprintf('White cross cannot be selected. Please try again.\n')
+            kitLog('White cross cannot be selected. Please try again.')
             continue
         end
             
@@ -441,17 +463,13 @@ while ~isempty(unallocatedIdx)
             
         end
         % save sister pair indices
-        if opts.verbose
-            fprintf('Sisters paired: %i and %i.\n',iCoord,userIdx)
-        end
+        kitLog('Sisters paired: %i and %i.',iCoord,userIdx)
         sisterIdxArray = [sisterIdxArray; iCoord userIdx];
     
     else % coordinate not paired with anything
         unpairedIdx = [unpairedIdx iCoord];
         unallocatedIdx = setdiff(unallocatedIdx,iCoord);
-        if opts.verbose
-            fprintf('No sister paired with %i.\n',iCoord)
-        end
+        kitLog('No sister paired with %i.',iCoord)
     end
     
 end
@@ -481,7 +499,11 @@ for iChan = opts.coordChans
     sisterList(1).trackPairs(:,2) = sisterList(1).trackPairs(:,1)+size(sisterIdxArray,1);
     
     % get microscope coordinates and standard deviations in both µm
-    coords = job.dataStruct{iChan}.initCoord(1).allCoord;
+    if isfield(job.dataStruct{iChan},'initCoord')
+      coords = job.dataStruct{iChan}.initCoord(1).allCoord;
+    else
+      coords = [];
+    end
     % get plane coordinates if applicable
     if isfield(job.dataStruct{iChan},'planeFit') && ~isempty(job.dataStruct{iChan}.planeFit(1).plane)
       rotCoords = job.dataStruct{iChan}.planeFit(1).rotatedCoord;
@@ -497,11 +519,14 @@ for iChan = opts.coordChans
         
     end
     
-    % ensure tracks are re-allocated for new cell
-    tracks = emptyTracks;
+    if size(sisterIdxArray,1)==0
+      % assign in the case no sisters found
+      tracks = emptyTracks;
+    end
     % construct new tracks
     for iTrack = 1:length(sisterIdxArray(:))
         
+        % ensure tracks are re-allocated for new cell
         tracks(iTrack) = emptyTracks;
         tracks(iTrack).tracksFeatIndxCG = sisterIdxArray(iTrack);
         tracks(iTrack).tracksCoordAmpCG = coords(sisterIdxArray(iTrack),:);
@@ -509,9 +534,14 @@ for iChan = opts.coordChans
         
     end
                  
+    job.options.manualPairChannel = opts.plotChan;
     job.dataStruct{iChan}.tracks = tracks;
     job.dataStruct{iChan}.sisterList = sisterList;
-    job = kitExtractTracks(job,iChan);
+    if isfield(job.dataStruct{iChan},'planeFit')
+      job = kitExtractTracks(job,iChan);
+    else
+      job.dataStruct{iChan}.trackList = [];
+    end
     job = kitSaveJob(job);
     
 end
