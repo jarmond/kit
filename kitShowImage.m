@@ -99,8 +99,8 @@ if isempty(opts.jobsetMovie)
     crop = job.ROI.crop;
     cropSize = job.ROI.cropSize;
 else
-    if isfield(jobset,'metadata')
-      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie),jobset.metadata);
+    if isfield(job,'metadata')
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie),job.metadata);
     else
       [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie));
     end
