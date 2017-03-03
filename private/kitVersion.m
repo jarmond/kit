@@ -11,7 +11,7 @@ switch mode
     version = '2.0.0';
   case 2
     % Jobset structure version.
-    version = 7;
+    version = 8;
   otherwise
     error('Unknown version mode');
 end

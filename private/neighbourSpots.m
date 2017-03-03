@@ -227,7 +227,7 @@ switch options.jobProcess
                   continue
                 end
 
-                % compile coordinates for MMF
+                % compile coordinates
                 spots{iFrame} = [spots{iFrame}; locMaxCrd];
                 spotIDs{iFrame} = [spotIDs{iFrame}; spotID];
 
