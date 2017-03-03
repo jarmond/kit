@@ -19,6 +19,9 @@ if nargin<2
     case 'chrshift'
       tasks = [1,6];
   end
+  if job.options.intensity.execute
+    tasks(end+1) = 9;
+  end
 end
 % 1: finding spots
 % 2: fitting plane
@@ -188,7 +191,7 @@ if ismember(9,tasks)
   % Read spot intensity.
   for c = [channels neighChans]
     kitLog('Measure particle intensity in channel %d',c);
-    job = kitLocalIntensityTracks(job, reader, job.metadata, c);
+    job = kitLocalIntensityTracks(job, reader, job.metadata, c, opts.intensity);
   end
   job = kitSaveJob(job);
 end
