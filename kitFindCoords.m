@@ -82,6 +82,10 @@ switch spotMode
     refDataStruct = job.dataStruct{options.coordSystemChannel};
     [spots,spotIDs] = neighbourSpots(movie,refDataStruct,channel,job.metadata,options);
     
+  case 'manual'
+    kitLog('Detecting particle candidates using manual detection');
+    spots = manualDetection(movie,job.metadata,options);
+    
   otherwise
     error('Unknown particle detector: %s',spotMode);
 end
