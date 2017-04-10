@@ -36,7 +36,7 @@ end
 if any(ismember(tasks,[1 2 9]))
   % Open movie and read metadata.
   if isfield(job,'metadata')
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
+    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata{job.index});
   else
     [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
   end

@@ -262,7 +262,7 @@ switch gapMethod
       if ~last
         
         % get list of frames to search
-        toCheck = iFrame+1:min(iFrame+floor(spacing/2),nFrames);
+        toCheck = iFrame+1:min(iFrame+ceil(spacing/2),nFrames);
         for jFrame = toCheck
             
           % get source coordinates and num of spots
@@ -324,7 +324,7 @@ switch gapMethod
       if ~first
         
         % get list of frames to search
-        toCheck = iFrame-1:-1:iFrame-floor(spacing/2);
+        toCheck = iFrame-1:-1:iFrame-ceil(spacing/2);
         for jFrame = toCheck
           
           % skip if this timepoint has been previously checked

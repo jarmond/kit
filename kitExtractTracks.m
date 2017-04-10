@@ -25,6 +25,9 @@ opts = job.options;
 % Extract track coordinates.
 for j=1:nTracks
     track = tracks(j);
+    if isempty(track.seqOfEvents)
+        continue
+    end
     featIndx = track.tracksFeatIndxCG;
     startTime = track.seqOfEvents(1,1);
     endTime = track.seqOfEvents(2,1);
