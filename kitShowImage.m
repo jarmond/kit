@@ -1,13 +1,13 @@
 function kitShowImage(job,varargin)
-% KITSHOWIMAGE Plots image of multi-channel movie.
+% KITSHOWIMAGE Plots image of a multi-channel movie.
 %
 %    KITSHOWIMAGE(JOB,...) Shows cropped image of movie from JOB.
 %
 %    Options, defaults in {}:-
 %
-%    coords: {'rgb'} or other permutation of r (red), g (green) and b (blue).
-%       Order in which channels provided in the job file are represented as
-%       colours in the rgb image.
+%    chanOrder: {'rgb'} or other permutation of r (red), g (green) and b
+%       (blue). Order in which channels provided in the job file are
+%       represented as colours in the rgb image.
 %
 %    contrast: {{[0.1 1],[0.1 1],[0.1 1]}}, 'help', or similar. Upper and
 %       lower contrast limits for each channel. Values must be in range
@@ -18,6 +18,10 @@ function kitShowImage(job,varargin)
 %
 %    coords: {'xy'}, 'xz' or 'yz'. Coordinate plane in which to show
 %       images.
+%
+%    crop: 0, {1} or -1. Whether or not to show cropped images, as defined
+%       by ROI.crop. -1 shows a full image with the cropped region
+%       annotated.
 %
 %    jobsetMovie: {[]} or positive integer. The number movie to use when
 %       providing a jobset rather than job structure.
@@ -30,8 +34,20 @@ function kitShowImage(job,varargin)
 %       coordinate not given by 'coords'. 'help' outputs the possible
 %       values the range can take, then requests a range from the user.
 %
+%    scaleBarLabel: {0} or 1. Whether or not to label the scale bar's
+%       length.
+%
+%    scaleBarSize: {3} or distance in µm. Length of the scale bar. Scale
+%       bars are overlaid at the south west (bottom right) of the image.
+%
 %    subpixelate: {9} or positive integer. The number by which to divide
 %       pixels in order to allow accurate chromatic shift of images.
+%
+%    textNorthWest, textNorthEast and textSouthEast: {[]} or a string.
+%       String labels to be overlaid on the image in the designated corner
+%       of the image. To separate text into multiple lines in a given
+%       corner, provide each line as a string in a different element of a
+%       cell, e.g. {'mNeonGreen-','CENP-A'}.
 %
 %    timePoint: {1} or positive integer. The time point of the movie at
 %       which to show images.
@@ -41,17 +57,22 @@ function kitShowImage(job,varargin)
 %    withinFig: {0} or 1. Whether or not to show images within the current
 %       figure environment.
 %
-% Copyright (c) 2016 C. A. Smith
+% Copyright (c) 2017 C. A. Smith
 
 % define default options
-opts.chrShift = repmat({[0 0 0]},3,3);
 opts.chanOrder = 'grb';
 opts.contrast = repmat({[0.1 1]},1,3);
 opts.coords = 'xy';
+opts.crop = 1; % use -1 to show crop on a full image
 opts.jobsetMovie = [];
 opts.imageChans = [1 2];
 opts.projectionRange = [];
+opts.scaleBarLabel = 0;
+opts.scaleBarSize = 3; % in µm, length of scale bar
 opts.subpixelate = 9;
+opts.textNorthWest = [];
+opts.textNorthEast = [];
+opts.textSouthEast = [];
 opts.timePoint = 1;
 opts.transpose = 0;
 opts.withinFig = 0;
@@ -95,23 +116,40 @@ if isempty(opts.jobsetMovie)
         job = job{1};
         warning('Job provided is in cell format. Please ensure that you have provided a single job and not a full experiment.');
     end
-    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
-    crop = job.ROI.crop;
-    cropSize = job.ROI.cropSize;
-else
-    if isfield(job,'metadata')
-      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie),job.metadata);
+    jobID = job.index;
+    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(jobID).movie),job.metadata);
+    if opts.crop==1
+      crop = job.ROI(jobID).crop;
+      cropSize = job.ROI(jobID).cropSize;
     else
-      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(opts.jobsetMovie).movie));
+      crop = [];
+      cropSize = md.frameSize;
     end
-    crop = job.ROI(opts.jobsetMovie).crop;
-    cropSize = job.ROI(opts.jobsetMovie).cropSize;
+else
+    jobID = opts.jobsetMovie;
+    if isfield(job,'metadata')
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(jobID).movie),job.metadata{jobID});
+    else
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(jobID).movie));
+    end
+    if opts.crop==1
+      crop = job.ROI(jobID).crop;
+      cropSize = job.ROI(jobID).cropSize;
+    else
+      crop = [];
+      cropSize = md.frameSize;
+    end
 end
 
 % get required metadata
 coordSysChan = job.options.coordSystemChannel;
 pixelSize = md.pixelSize(1:3);
 chrShift = job.options.chrShift.result;
+
+% subpixelate value
+if length(opts.imageChans)==1
+    opts.subpixelate = 1;
+end
 
 % provide guidance on projection range if requested
 projectCoord = setdiff(1:3,opts.coords);
@@ -213,6 +251,63 @@ if length(opts.imageChans) == 1
     imshow(rgbImg(:,:,chanOrder(opts.imageChans)));
 else
     imshow(rgbImgShift)
+end
+if opts.crop == -1
+    hold on
+    rectangle('Position',job.ROI(jobID).crop*opts.subpixelate,'EdgeColor','w')
+end
+
+%% Overlays
+indent = 10;
+
+% scalebar
+barLength = opts.scaleBarSize/pixelSize(1);
+labelGap = 6;
+barLength = barLength*opts.subpixelate;
+indent = indent*opts.subpixelate;
+labelGap = labelGap*opts.subpixelate;
+imageSize = cropSize*opts.subpixelate;
+
+if barLength > 0
+    line([indent indent+barLength], [imageSize(1)-indent imageSize(1)-indent],...
+      'Color','w','LineWidth',5);
+    if opts.scaleBarLabel
+        scaleLabel = [num2str(opts.scaleBarSize) ' µm'];
+        text(indent+(barLength/2),imageSize(1)-indent-labelGap,scaleLabel,...
+          'Color','w','HorizontalAlignment','center','FontSize',20);
+    end
+end
+
+% text in each other corner
+if ~isempty(opts.textNorthWest)
+    % print label requested in top right
+    if iscell(opts.textNorthWest)
+        vertIndent = indent+((length(opts.textNorthWest)-1)*5);
+    else
+        vertIndent = indent;
+    end
+    text(indent,vertIndent,opts.textNorthWest,...
+        'Color','w','FontSize',25,'HorizontalAlignment','left');
+end
+if ~isempty(opts.textNorthEast)
+    % print label requested in top right
+    if iscell(opts.textNorthEast)
+        vertIndent = indent+((length(opts.textNorthEast)-1)*5);
+    else
+        vertIndent = indent;
+    end
+    text(imageSize(2)-indent,vertIndent,opts.textNorthEast,...
+        'Color','w','FontSize',25,'HorizontalAlignment','right');
+end
+if ~isempty(opts.textSouthEast)
+    % print label requested in top right
+    if iscell(opts.textSouthEast)
+        vertIndent = imageSize(1)-indent-((length(opts.textSouthEast)-1)*5);
+    else
+        vertIndent = imageSize(1)-indent;
+    end
+    text(imageSize(2)-indent,vertIndent,opts.textSouthEast,...
+        'Color','w','FontSize',25,'HorizontalAlignment','right');
 end
 
 end
