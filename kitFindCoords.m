@@ -120,7 +120,7 @@ switch method
     job = kitCentroid(job,movie,localMaxima,channel);
   case 'gaussian'
     job = kitMixtureModel(job,movie,localMaxima,channel);
-  case 'norefine'
+  case 'none'
     % No refinement. Copy localMaxima to initCoords.
     initCoord(1:nFrames) = struct('allCoord',[],'allCoordPix',[],'nSpots',0, ...
                                   'amp',[],'bg',[]);
@@ -137,6 +137,6 @@ switch method
     job.dataStruct{channel}.initCoord = initCoord;
     job.dataStruct{channel}.failed = 0;
   otherwise
-    error(['Unknown coordinate finding mode: ' job.coordMode]);
+    error(['Unknown coordinate finding mode: ' method]);
 end
 

@@ -31,7 +31,7 @@ nChannels = job.metadata.nChannels;
 
 % Check which channels to analyze.
 for c = 1:nChannels
-  if strcmp(opts.coordMode{c}, 'none')
+  if strcmp(opts.spotMode{c}, 'none')
     ci(c) = 0;
   else
     ci(c) = 1;
@@ -67,7 +67,7 @@ if ismember(2,tasks)
   % Fit plane in chosen channel.
   planeChan = job.options.coordSystemChannel;
   kitLog('Fitting plane in channel %d', planeChan);
-  if strcmp(opts.coordMode{planeChan}, 'none')
+  if strcmp(opts.spotMode{planeChan}, 'none')
     % No spot tracking in plane channel so populate dataStruct.
     job.dataStruct{planeChan} = kitMakeMakiDatastruct(job, planeChan);
   end
