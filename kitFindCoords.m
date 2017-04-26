@@ -75,6 +75,10 @@ switch spotMode
       spots{i} = waveletSpots(img,options);
     end
 
+  case 'bwregion'
+    kitLog('Detecting particle candidates using black-white regions');
+    spots = bwregionSpots(movie,options);
+
   otherwise
     error('Unknown particle detector: %s',spotMode);
 end
