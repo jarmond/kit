@@ -21,6 +21,8 @@ function kitPlotTracks(job,varargin)
 %
 %    minLength: {0.25} or number. Minimum number of tracked frames. Overridden by subset option.
 %
+%    labels: {0} or 1. Print track number at beginning of track.
+%
 % Created by: Jonathan W. Armond 2013
 % Edited by:  Chris Smith 10/2013
 
@@ -37,6 +39,7 @@ opts.subset = [];
 opts.plotPole = 0;
 opts.nLongest = 0;
 opts.minLength = 0.25;
+opts.labels = 0;
 % Process options
 opts = processOptions(opts, varargin{:});
 
@@ -77,6 +80,7 @@ fig_m=ceil(n/fig_n);
 clf;
 hold on
 axName = ['x','y','z'];
+ax(1:3)=0;
 
 for j=1:length(opts.subset)
 
@@ -95,16 +99,26 @@ for j=1:length(opts.subset)
       xlim([0 max(t)])
       xlabel('time, s'); ylabel('x-distance, µm');
       set(gca,'FontSize',8)
+      nna = find(~isnan(x1),1);
+      if opts.labels
+         text(t(1),x1(nna),num2str(i));
+      end
   else
       for h=opts.plotAx
-          subplot(length(opts.plotAx),1,h)
-          hold on
-          title(axName(h))
+          if ax(h)==0
+              ax(h) = subplot(length(opts.plotAx),1,h);
+              hold(ax(h),'on');
+              title(axName(h))
+          end
           x1=trackList(i).coords(:,h);
           plot(t,x1);
           xlabel('time, s'); ylabel('x-distance, µm');
           ylim([-12 12])
           set(gca,'FontSize',20)
+          nna = find(~isnan(x1),1);
+          if opts.labels
+              text(t(1),x1(nna),num2str(i));
+          end
       end
   end
 
