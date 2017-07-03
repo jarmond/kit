@@ -1,4 +1,4 @@
-function intraStruct = chrsMakeZetaStructure()
+function zetaStruct = chrsMakeZetaStructure()
 % CHRSMAKEZETASTRUCTURE Produces an empty structure into which
 % inter-marker measurements are compiled using chrsZetaMeasurements.
 %
@@ -9,14 +9,15 @@ function intraStruct = chrsMakeZetaStructure()
 %
 % Copyright (c) 2017 C. A. Smith
 
-intraStruct.dublVersion = 'ChrS 1.0.0';
-intraStruct.channelVector = [1 2];
+zetaStruct.chrsVersion = 'ChrS 1.0.0';
+zetaStruct.channelVector = [1 2];
 
 coords = struct('x',[],'y',[],'z',[]);
 zeta  = struct('x',[],'y',[],'z',[],'twoD',[],'threeD',[]);
 
-intraStruct.coords = coords;
-intraStruct.zeta = zeta;
+zetaStruct.coords = coords;
+zetaStruct.raw.zeta = zeta;
+zetaStruct.filtered.zeta = zeta;
     
     
     
