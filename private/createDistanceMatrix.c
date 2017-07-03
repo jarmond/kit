@@ -16,7 +16,7 @@
 /* ------------------------------------------------------- */
 
 #include "mex.h"
-#include "distmat.h"
+#include "distmat.c"
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
 {
@@ -25,8 +25,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
 	double *D;
 
 	/* Initialize int variables to store matrix dimensions */
-	int Mrows,Mcols;
-	int Nrows,Ncols;
+	mwSize Mrows,Mcols;
+	mwSize Nrows,Ncols;
 
     /* Check that the number of input and output parameters is valid */
 	if(nrhs != 2)
@@ -55,9 +55,9 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
 	N=mxGetPr(prhs[1]);
 	D=mxGetPr(plhs[0]);
 
-   	/* Call the correcponding C function */
-	if (Mcols==1) { calcDistMatrix1D(D,M,N,Mrows,Nrows); }
-	if (Mcols==2) { calcDistMatrix2D(D,M,N,Mrows,Nrows); }
-	if (Mcols==3) { calcDistMatrix3D(D,M,N,Mrows,Nrows); }
+   	/* Call the corresponding C function */
+	if (Mcols==1) {calcDistMatrix1D(D,M,N,Mrows,Nrows);}
+	if (Mcols==2) {calcDistMatrix2D(D,M,N,Mrows,Nrows);}
+	if (Mcols==3) {calcDistMatrix3D(D,M,N,Mrows,Nrows);}
 	
 }
