@@ -30,8 +30,8 @@ spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual','Neighbour','None'
 spotDetectValuesJS = {'histcut','adaptive','wavelet','manual','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
-neighbourMaskValues = {'Circle','Semi-circle','Cone'};
-neighbourMaskValuesJS = {'circle','semicirc','cone'};
+maskValues = {'Circle','Semi-circle','Cone'};
+maskValuesJS = {'circle','semicirc','cone'};
 
 % Setup GUI.
 handles = createControls();
@@ -43,7 +43,8 @@ close(gcf);
 %% NESTED FUNCTIONS
 function hs = createControls()
   colwidth = [55 42 35 35];
-  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 sum(colwidth)+19 44]);
+  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 sum(colwidth)+19 47]);
+  set(0,'DefaultFigureWindowStyle','normal');
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
   hs.fig.Name = ['KiT ' kitVersion(1)];
@@ -68,7 +69,7 @@ function hs = createControls()
   w = colwidth(1);
   toplabely = figh-2;
   % Movies
-  hs.openBtn = button(hs.fig,'Open existing...',[x toplabely 20 2],@openExistingCB);
+  hs.openBtn = button(hs.fig,'Open existing...',[x toplabely-0.5 20 2],@openExistingCB);
   hs.movies = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 0.52*figh w 0.34*figh],'Max',inf,'Min',0,'FontSize',smallfont);
   hs.movies.String = jobset.movieFiles;
   % undocumentedmatlab.com hack to add horizontal scrollbars
@@ -79,16 +80,16 @@ function hs = createControls()
   hs.movieDirectory.Enable = 'inactive';
   hs.movieDirectory.String = jobset.movieDirectory;
   hs.selectDirectory = button(hs.fig,'Select directory',[w-15 0.865*figh 17.5 2],@selectDirectoryCB);
-  hs.labelAvail = label(hs.fig,'Available movies:',[x 0.871*figh 20 1.5]);
+  hs.labelAvail = label(hs.fig,'Available movies:',[x 0.865*figh 20 1.5]);
 
   % ROIs
-  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 3 w 18.15],'Callback',@roisCB);
+  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 3 w 0.415*figh],'Callback',@roisCB);
   hs.ROIs.Min = 1;
   % undocumentedmatlab.com hack to add horizontal scrollbars
   jScrollPane = findjobj(hs.ROIs);
   jScrollPane.setHorizontalScrollBarPolicy(32);
 
-  label(hs.fig,'ROIs:',[x 21.2 20 1.5]);
+  label(hs.fig,'ROIs:',[x 0.48*figh 20 1.5]);
   hs.cropROI = button(hs.fig,'Add crop',[x 1 13.5 2],@addROICB);
   hs.fullROI = button(hs.fig,'Add full',[x+13.9 1 13.5 2],@skipROICB);
   hs.deleteROI = button(hs.fig,'Delete',[x+13.9*2 1 13.5 2],@deleteROICB);
@@ -97,23 +98,27 @@ function hs = createControls()
   %% Process setup
   x = colwidth(1) + 5;
   w = colwidth(2);
+  h = 2;
   t = label(hs.fig,'Process setup',[x toplabely 20 1.5],14);
   t.FontWeight = 'bold';
+  y = toplabely-2;
   % Job process
-  label(hs.fig,'Job process',[x 40 14 1.5]);
-  hs.jobProc = popup(hs.fig,jobProcessValues,[x+21 40.1 22 1.5],@jobProcessCB);
+  label(hs.fig,'Job process',[x y 14 1.5]);
+  hs.jobProc = popup(hs.fig,jobProcessValues,[x+21 y 22 1.5],@jobProcessCB);
+  y = y-h;
   % Coordinate system
-  hs.coordSysText = label(hs.fig,'Coordinate system',[x 38 20 1.5]);
-  hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 38.1 22 1.5]);
-  label(hs.fig,'Coordinate system channel',[x 36 30 1.5]);
+  hs.coordSysText = label(hs.fig,'Coordinate system',[x y 20 1.5]);
+  hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 y 22 1.5]);
+  y = y-h;
+  label(hs.fig,'Coordinate system channel',[x y 30 1.5]);
   for i=1:3
-    hs.coordSysCh{i} = uicontrol('Parent',hs.fig,'Units','characters','Style','radio','String',num2str(i),'Position',[x+21+5.3*i 36 6 1.5],'Callback',@coordSysChCB);
+    hs.coordSysCh{i} = uicontrol('Parent',hs.fig,'Units','characters','Style','radio','String',num2str(i),'Position',[x+21+5.3*i y 6 1.5],'Callback',@coordSysChCB);
   end
   hs.coordSysCh{1}.Value = 1;
   hs.coordSysChNum = 1;
   % Channel modes
-  b = 26.5;
   h = 9;
+  b = y-h-0.5;
   for i=1:3
     p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
     hs.spotMode{i} = popup(p,spotDetectValues,[22 6 0.45*w 1.5],@spotModeCB);
@@ -208,6 +213,12 @@ function hs = createControls()
   t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
+  t = label(hs.fig,'Max spots per frame',[x y labelw h],10);
+  hs.maxSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  hs.manualFrameSpaceText = label(hs.fig,'Manual detection frame spacing',[x y labelw h],10);
+  hs.manualFrameSpace = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
   hs.adaptiveLambdaText = label(hs.fig,'Weight for spot count',[x y labelw h],10);
   hs.adaptiveLambda = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
@@ -232,11 +243,11 @@ function hs = createControls()
 %   hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
 %   
   %% Execution
-  y = b+h;
+  h = 2;
+  y = 1+4.5*h;
   labelw = 0.5*w;
   t = label(hs.fig,'Execution',[x y labelw 1.5],14);
   t.FontWeight = 'bold';
-  h = 2;
   lh = 1.5*h;
   y = y-lh;
   label(hs.fig,'Jobset name',[x y labelw h],12);
@@ -266,9 +277,9 @@ function hs = createControls()
   editw = 0.2*w;
   editx = x+w-editw;
   hs.chromaticShift = checkbox(hs.fig,'Provide chromatic shift correction',[x y w h],@chromaticShiftCB,10);
-  y = y-h;
-  hs.minChrShiftSpotsText = label(hs.fig,'Min spots per jobset',[x y labelw h],10);
-  hs.minChrShiftSpots = editbox(hs.fig,[],[editx y editw h],10);
+%   y = y-h;
+%   hs.minChrShiftSpotsText = label(hs.fig,'Min spots per jobset',[x y labelw h],10);
+%   hs.minChrShiftSpots = editbox(hs.fig,[],[editx y editw h],10);
   hs.chrShiftPanel = uipanel(hs.fig,'Units','characters','Position',[x y-5.75*h w 5.75*h],'FontSize',10,'Title','Chromatic shift jobsets');
   p = hs.chrShiftPanel;
   y = y-lh;
@@ -317,7 +328,7 @@ function hs = createControls()
   t.FontWeight = 'bold';
   y = y-h;
   hs.neighbourMaskShapeText = label(hs.fig,'Mask shape',[x y labelw h],10);
-  hs.neighbourMaskShape = popup(hs.fig,neighbourMaskValues,[editx-10 y editw+11 h],@neighbourOptionsCB,10);
+  hs.neighbourMaskShape = popup(hs.fig,maskValues,[editx-10 y editw+11 h],@neighbourOptionsCB,10);
   y = y-h;
   hs.neighbourMaskRadiusText = label(hs.fig,'Mask radius (um)',[x y labelw h],10);
   hs.neighbourMaskRadius = editbox(hs.fig,[],[editx y editw h],10);
@@ -335,6 +346,22 @@ function hs = createControls()
   hs.neighbourOrient{1} = editbox(p,[],[editxl edity editw/3 h],10);
   hs.neighbourOrient{2} = editbox(p,[],[editxc edity editw/3 h],10);
   hs.neighbourOrient{3} = editbox(p,[],[editxr edity editw/3 h],10);
+  y = y-3*h-lh;
+  
+  %% Options - Intensity options, column 2
+  t = label(hs.fig,'Intensity measurement options',[x y w 1.5],12);
+  t.FontWeight = 'bold';
+  y = y-h;
+  t = label(hs.fig,'Measure in channels...',[x y labelw h],10);
+  for i=1:3
+    hs.intensityExecute{i} = checkbox(hs.fig,num2str(i),[x+w-(4-i)*5 y w h],@intensityOptionsCB,10);
+  end
+  y = y-h;
+  hs.intensityMaskShapeText = label(hs.fig,'Mask shape',[x y labelw h],10);
+  hs.intensityMaskShape = popup(hs.fig,maskValues,[editx-10 y editw+11 h],[],10);
+  y = y-h;
+  hs.intensityMaskRadiusText = label(hs.fig,'Mask radius (um)',[x y labelw h],10);
+  hs.intensityMaskRadius = editbox(hs.fig,[],[editx y editw h],10);
 
   movegui(hs.fig,'center');
   
@@ -392,10 +419,12 @@ function updateControls(jobset)
   hs.maxSisterDist.String = num2str(opts.maxSisterSeparation);
   hs.minSisterTrackOverlap.String = num2str(opts.minSisterTrackOverlap);
   hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
+  hs.maxSpotsPerFrame.String = num2str(opts.maxSpotsPerFrame);
+  hs.manualFrameSpace.String = num2str(opts.manualDetect.frameSpacing);
   hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
   hs.mmfAddSpots.Value = opts.mmf.addSpots;
   hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
-  for iChan=1:3;
+  for iChan=1:3
     hs.alphaA{iChan}.String = num2str(opts.mmf.alphaA(iChan));
   end
   if isfield(jobset,'psfFile')
@@ -455,11 +484,17 @@ function updateControls(jobset)
   hs.chrShiftamplitude.String = num2str(opts.chrShift.intensityFilter);
   hs.chrShiftnnDist.String = num2str(opts.chrShift.neighbourFilter);
   
-  hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,neighbourMaskValuesJS);
+  hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,maskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
   for iChan=1:3
     hs.neighbourOrient{iChan}.String = num2str(opts.neighbourSpots.channelOrientation(iChan));
   end
+  
+  for iChan=1:3
+    hs.intensityExecute{iChan}.Value = opts.intensity.execute(iChan);
+  end
+  hs.intensityMaskShape.Value = mapStrings(opts.intensity.maskShape,maskValuesJS);
+  hs.intensityMaskRadius.String = num2str(opts.intensity.maskRadius);
 
   populateMovieBox();
   populateROIBox();
@@ -471,6 +506,7 @@ function updateControls(jobset)
   chromaticShiftCB();
   chrShiftFilterCB();
   neighbourOptionsCB();
+  intensityOptionsCB();
   
   handles = hs;
   
@@ -537,6 +573,16 @@ function tf=checkControls()
   v = str2double(hs.minSpotsPerFrame.String);
   if ~isfinite(v) || v < 0
     errorbox('Invalid value for min spots per frame. Should be a positive number.')
+    tf = false;
+    return
+  end
+  v(2) = str2double(hs.maxSpotsPerFrame.String);
+  if ~isfinite(v(2)) || v(2) < 0
+    errorbox('Invalid value for maximum spots per frame. Should be a positive number.')
+    tf = false;
+    return
+  elseif diff(v)<=0
+    errorbox('Invalid values for spots per frame. Maximum number should be larger than the minimum.')
     tf = false;
     return
   end
@@ -779,6 +825,13 @@ function spotModeCB(hObj,event)
   else
     handles.adaptiveLambdaText.Enable = 'off';
     handles.adaptiveLambda.Enable = 'off';
+  end
+  if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Manual'),handles.spotMode))
+    handles.manualFrameSpaceText.Enable = 'on';
+    handles.manualFrameSpace.Enable = 'on';
+  else
+    handles.manualFrameSpaceText.Enable = 'off';
+    handles.manualFrameSpace.Enable = 'off';
   end
   refineModeCB();
   neighbourOptionsCB();
@@ -1023,7 +1076,7 @@ function neighbourOptionsCB(hObj,event)
       end
   end
 
-  if strcmp(mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValues),'Circle')
+  if strcmp(mapStrings(handles.neighbourMaskShape.Value,maskValues),'Circle')
     handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
       handles.neighbourChanVectText.Enable = 'off';
       handles.neighbourChanNumText.Enable = 'off';
@@ -1047,6 +1100,22 @@ function neighbourOptionsCB(hObj,event)
         handles.neighbourOrient{iChan}.Enable = 'off';
     end
   end
+end
+
+function intensityOptionsCB(hObj,event)
+  
+  if any(cellfun(@(x) x.Value,handles.intensityExecute))
+      handles.intensityMaskShapeText.Enable = 'on';
+      handles.intensityMaskShape.Enable = 'on';
+      handles.intensityMaskRadiusText.Enable = 'on';
+      handles.intensityMaskRadius.Enable = 'on';
+  else
+      handles.intensityMaskShapeText.Enable = 'off';
+      handles.intensityMaskShape.Enable = 'off';
+      handles.intensityMaskRadiusText.Enable = 'off';
+      handles.intensityMaskRadius.Enable = 'off';
+  end
+    
 end
 
 function executeCB(hObj,event)
@@ -1093,8 +1162,27 @@ end
 
 function validateCB(hObj,event)
   updateJobset();
-  jobset = kitValidateMetadata(jobset);
+  % check that ROIs are already provided
+  if ~isfield(jobset,'ROI')
+    errorbox('Must provide ROIs prior to validating their metadata.')
+  else
+    % loop over each movie
+    for iMov = 1:length(jobset.ROI)
+      [jobset,applyAll] = kitValidateMetadata(jobset,iMov);
+      % skip showing remaining movies, just save metadata for all
+      if applyAll
+        for jMov = iMov+1:length(jobset.ROI)
+          jobset.metadata{jMov} = jobset.metadata{iMov};
+        end
+        handles.validateMetadata.String = 'Re-validate...';
+        break
+      end
+    end
+    
+  end
+  % show that movies have been validated
   handles.validateMetadata.String = 'Re-validate...';
+  
 end
 
 % function deconvolveCB(hObj,event)
@@ -1131,7 +1219,7 @@ function populateMovieBox()
     handles.movies.String = [];
   else
     % Find movie files.
-    movieFiles = kitFindFiles(movieDir, kitSupportedFormats(),0,1);
+    movieFiles = kitFindFiles(movieDir, kitSupportedFormats(),1,0,1);
     % Strip search directory from filenames.
     for i=1:length(movieFiles)
       movieFiles{i} = strrep(movieFiles{i},[movieDir filesep],'');
@@ -1209,6 +1297,8 @@ function updateJobset()
   opts.maxSisterSeparation = str2double(handles.maxSisterDist.String);
   opts.minSisterTrackOverlap = str2double(handles.minSisterTrackOverlap.String);
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
+  opts.maxSpotsPerFrame = str2double(handles.maxSpotsPerFrame.String);
+  opts.manualFrameSpace = str2double(handles.manualFrameSpace.String);
   opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
   mmf = opts.mmf;
   mmf.addSpots = handles.mmfAddSpots.Value;
@@ -1237,12 +1327,20 @@ function updateJobset()
     opts.chrShift = chrShift;
   end
   neighbourSpots = opts.neighbourSpots;
-  neighbourSpots.maskShape = mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValuesJS);
+  neighbourSpots.maskShape = mapStrings(handles.neighbourMaskShape.Value,maskValuesJS);
   neighbourSpots.maskRadius = str2double(handles.neighbourMaskRadius.String);
   for iChan=1:3
     neighbourSpots.channelOrientation(iChan) = str2double(handles.neighbourOrient{iChan}.String);
   end
   opts.neighbourSpots = neighbourSpots;
+  intensity = opts.intensity;
+  for iChan=1:3
+    intensity.execute(iChan) = handles.intensityExecute{iChan}.Value;
+  end
+  intensity.maskShape = mapStrings(handles.intensityMaskShape.Value,maskValuesJS);
+  intensity.maskRadius = str2double(handles.intensityMaskRadius.String);
+  opts.intensity = intensity;
+  
   jobset.options = opts;
 end
 
@@ -1280,7 +1378,7 @@ function cellResult = getChromaticShiftResults(chrShift)
         end
       end
       [result,~] = chrsCalculateChromaticShift(mS,[i j],...
-          'filtered',1,'interphaseToMetaphase',chrShift.interphase);
+          'filtered',1);
       cellResult{i,j} = result; cellResult{j,i} = result.*[-1 -1 -1 1 1 1];
     end
   end       
