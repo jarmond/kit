@@ -10,15 +10,15 @@ function [chan1out,chan2out,removed] = chrsComputeCorrectedImage(chan1in,chan2in
 %    Options, defaults in {}:-
 %
 %    coords: {[1 2]} or two numbers from 1 to 3. Coordinates in which the
-%         image will be orientated.
+%         printed image will be orientated.
 %
-%    image: {0} or 1. Whether or not to push the resulting image to a
+%    image: {0} or 1. Whether or not to print the resulting image to a
 %         figure.
 %
 %    pixelSize: {[0.0694 0.0694 0.2]}, or 3-coordinate vector. Size of each
 %         pixel in the provided images, in microns.
 %
-%    subpixelate: {9} or other number. Factor by which to sub-pixelate
+%    subpixelate: {9} or other odd number. Factor by which to sub-pixelate
 %         images. It is recommended that this number be odd.
 %
 %    transpose: {0} or 1. Whether or not to transpose the images provided.
@@ -28,9 +28,9 @@ function [chan1out,chan2out,removed] = chrsComputeCorrectedImage(chan1in,chan2in
 
 % check input
 if isempty(chan1in) || isempty(chan2in)
-    error('Need image data to align.')
+    error('Need image data to correct.')
 elseif size(chan1in) ~= size(chan2in)
-    error('Image data structure needs to be consistent within each channel.')
+    error('Image data structure needs to be consistent between channels.')
 elseif isempty(chrShift1to2)
     error('Need a chromatic shift vector from channel 1 to channel 2.')
 end
@@ -60,17 +60,18 @@ chan2out = subPixelateImg(chan2in,opts.subpixelate);
 % convert chrShift to pixels
 chrShift1to2 = chrShift1to2(1:3)./opts.pixelSize;
 % if transposing required, transpose chrShift
-if opts.transpose
+if ~opts.transpose
     chrShift1to2(opts.coords) = fliplr(chrShift1to2(opts.coords));
 end
 
 % adjust chrShift to sub-pixelated image coordinates, and round to nearest
-% pixel
+% sub-pixel
 chrShift1to2 = chrShift1to2*opts.subpixelate;
 chrShift1to2 = round(chrShift1to2);
 
 % find direction of shift
-cSstat = chrShift1to2./abs(chrShift1to2);
+cSstat = sign(chrShift1to2);
+chrShift1to2 = abs(chrShift1to2);
 
 % produce removed structure - (coord,[start end],channel)
 removed = zeros(3,2,2);
@@ -81,15 +82,13 @@ iCoord = 1;
 if iCoord <= length(opts.coords)
     actualCoord = opts.coords(iCoord);
     switch cSstat(actualCoord)
-        case 1  % positive shift means add pixels to start of channel 2
+        case +1  % positive shift means correcting channel 2 in the negative direction, i.e. remove pixels from start of channel 2
+            chan2out(1:chrShift1to2(actualCoord),:,:) = [];
+            chan2out(end+1:end+chrShift1to2(actualCoord),:,:) = 0;
+            removed(iCoord,1,2) = chrShift1to2(actualCoord);
+        case -1 % negative shift means add pixels to start of channel 2
             chan2out(chrShift1to2(actualCoord)+1:end,:,:) = chan2out(1:end-chrShift1to2(actualCoord),:,:);
             chan2out(1:chrShift1to2(actualCoord),:,:) = 0;
-            removed(iCoord,1,2) = chrShift1to2(actualCoord);
-            removed(iCoord,2,2) = -chrShift1to2(actualCoord);
-        case -1 % negative shift means remove pixels from start of channel 2
-            chan2out(1:abs(chrShift1to2(actualCoord)),:,:) = [];
-            chan2out(end+1:end+abs(chrShift1to2(actualCoord)),:,:) = 0;
-            removed(iCoord,1,2) = -chrShift1to2(actualCoord);
             removed(iCoord,2,2) = chrShift1to2(actualCoord);
     end
 end
@@ -99,15 +98,13 @@ iCoord = 2;
 if iCoord <= length(opts.coords)
     actualCoord = opts.coords(iCoord);
     switch cSstat(actualCoord)
-        case 1  % positive shift means add pixels to start of channel 2
+        case +1  % positive shift means correcting channel 2 in the negative direction, i.e. remove pixels from start of channel 2
+            chan2out(:,1:chrShift1to2(actualCoord),:) = [];
+            chan2out(:,end+1:end+chrShift1to2(actualCoord),:) = 0;
+            removed(iCoord,1,2) = chrShift1to2(actualCoord);
+        case -1 % negative shift means add pixels to start of channel 2
             chan2out(:,chrShift1to2(actualCoord)+1:end,:) = chan2out(:,1:end-chrShift1to2(actualCoord),:);
             chan2out(:,1:chrShift1to2(actualCoord),:) = 0;
-            removed(iCoord,1,2) = chrShift1to2(actualCoord);
-            removed(iCoord,2,2) = -chrShift1to2(actualCoord);
-        case -1 % negative shift means remove pixels from start of channel 2
-            chan2out(:,1:abs(chrShift1to2(actualCoord)),:) = [];
-            chan2out(:,end+1:end+abs(chrShift1to2(actualCoord)),:) = 0;
-            removed(iCoord,1,2) = -chrShift1to2(actualCoord);
             removed(iCoord,2,2) = chrShift1to2(actualCoord);
     end
 end
@@ -117,15 +114,13 @@ iCoord = 3;
 if iCoord <= length(opts.coords)
     actualCoord = opts.coords(iCoord);
     switch cSstat(actualCoord)
-        case 1  % positive shift means add pixels to start of channel 2
+        case +1  % positive shift means correcting channel 2 in the negative direction, i.e. remove pixels from start of channel 2
+            chan2out(:,:,1:chrShift1to2(actualCoord)) = [];
+            chan2out(:,:,end+1:end+chrShift1to2(actualCoord)) = 0;
+            removed(iCoord,1,2) = chrShift1to2(actualCoord);
+        case -1 % negative shift means add pixels to start of channel 2
             chan2out(:,:,chrShift1to2(actualCoord)+1:end) = chan2out(:,:,1:end-chrShift1to2(actualCoord));
             chan2out(:,:,1:chrShift1to2(actualCoord)) = 0;
-            removed(iCoord,1,2) = chrShift1to2(actualCoord);
-            removed(iCoord,2,2) = -chrShift1to2(actualCoord);
-        case -1 % negative shift means remove pixels from start of channel 2
-            chan2out(:,:,1:abs(chrShift1to2(actualCoord))) = [];
-            chan2out(:,:,end+1:end+abs(chrShift1to2(actualCoord))) = 0;
-            removed(iCoord,1,2) = -chrShift1to2(actualCoord);
             removed(iCoord,2,2) = chrShift1to2(actualCoord);
     end
 end
