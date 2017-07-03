@@ -1,4 +1,4 @@
-function [metadata,reader]=kitOpenMovie(movieFileName,metadata)
+function [metadata,reader]=kitOpenMovie(movieFileName,metadata,verbose)
 % KITOPENMOVIE Open movie and extract metadata from BioFormats metadata
 %
 %    [METADATA,READER] = KITOPENMOVIE(MOVIEFILENAME) Open movie with filename
@@ -9,7 +9,6 @@ function [metadata,reader]=kitOpenMovie(movieFileName,metadata)
 % Modified by: C. A. Smith
 % Copyright (c) 2016 C. A. Smith
 
-kitLog('Opening movie: %s', movieFileName);
 if ~exist(movieFileName,'file')
   error('Could not find file: %s',movieFileName);
 end
@@ -18,7 +17,13 @@ if nargin<2 || isempty(metadata)
 else
   validated = 1;
 end
+if nargin<3 || isempty(verbose)
+  verbose = 1;
+end
 
+if verbose
+  kitLog('Opening movie: %s', movieFileName);
+end
 addpath bfmatlab;
 bfCheckJavaPath(1);
 
@@ -76,7 +81,7 @@ for i=1:numWvs
     warnWv = 1;
   end
 end
-if warnWv
+if warnWv && verbose
   warning('Missing metadata: Assuming wavelengths %d, %d, %d nm',...
           1000*md.wavelength);
 end
@@ -100,13 +105,14 @@ for i=1:nTimepoints
     idx = idx+1;
   end
 end
-if warnT
+if warnT && verbose
   warning('Missing metadata: Assuming %d s per frame.', ...
           defDt);
 end
 dT = diff(md.frameTime(1,:));
+if isempty(dT); dT=0; end
 warndT = 0.5;
-if max(dT)-min(dT) > warndT;
+if (max(dT)-min(dT) > warndT) && verbose
   warning('Frame time deviates by more than %f',warndT);
 end
 
@@ -117,7 +123,9 @@ md.is3D = nZPlanes > 1;
 try
   md.na = metaTable.getObjectiveLensNA(0,0).doubleValue;
 catch
-  warning('Missing metadata: Assuming NA = 1.4');
+  if verbose
+    warning('Missing metadata: Assuming NA = 1.4');
+  end
   md.na = 1.4; % Assume default.
 end
 
@@ -149,7 +157,7 @@ catch
 end
 
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
-    md.pixelSize(3) > 5
+    md.pixelSize(3) > 5 && verbose
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
 end
 
