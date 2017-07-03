@@ -30,9 +30,9 @@ end
 
 % Set defaults
 opts.channel = 1;
-opts.cutoff = 6;
+opts.cutoff = 1000;
 opts.overlay = 1;
-opts.plotAx = 1:3;
+opts.plotAx = 1;
 opts.subset = [];
 opts.plotPole = 0;
 opts.nLongest = 0;
