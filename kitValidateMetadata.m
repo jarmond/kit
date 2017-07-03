@@ -1,4 +1,4 @@
-function jobset=kitValidateMetadata(jobset)
+function [jobset,applyAll] = kitValidateMetadata(jobset,iMov)
 % KITVALIDATEMETADATA Allows user to check and correct automatically-obtained
 % metadata.
 %
@@ -6,15 +6,15 @@ function jobset=kitValidateMetadata(jobset)
 
 % get movie filepath
 movieDirectory = jobset.movieDirectory;
-movie = jobset.ROI(1).movie;
+movie = jobset.ROI(iMov).movie;
 movieFilePath = [movieDirectory '/' movie];
 
 %% GET METADATA FROM MOVIE
 
-if isfield(jobset,'metadata') && jobset.metadata.validated
+if isfield(jobset,'metadata') && length(jobset.metadata)>=iMov && jobset.metadata{iMov}.validated
     
     % if there is already validated metadata, get it
-    md = jobset.metadata;
+    md = jobset.metadata{iMov};
     
 else
     % otherwise, get metadata from the movie
@@ -135,7 +135,7 @@ else
 end
 
 % back up metadata in case
-jobset.metadata = md;
+jobset.metadata{iMov} = md;
 
 %% GUI
 
@@ -173,7 +173,7 @@ function hs = createControls()
   toplabely = figh-x; %top-most point
   
   % Editable jobset name at top of the screen
-  hs.movieNameText = label(hs.fig,'Representative movie',[x toplabely figw-x h],medfont);
+  hs.movieNameText = label(hs.fig,'Movie file name',[x toplabely figw-x h],medfont);
   hs.movieNameText.FontWeight = 'bold';
   y = toplabely-lh;
   hs.movieName = label(hs.fig,[],[x+1.25 y figw-2*x lh],smallfont);
@@ -204,7 +204,7 @@ function hs = createControls()
   y = y-lh;
   labelw = 0.75*w;
   edity = 4.25*h;
-  colw = 4/5*editw;
+  colw = editw;
   colx = [editx+1.5-2*(colw-0.5);
           editx+1.5-(colw-0.5);
           editx+1.5];
@@ -256,6 +256,8 @@ function hs = createControls()
   y = y-h;
   hs.numAperText = label(hs.fig,'Numerical aperture',[x y labelw h],tinyfont);
   hs.numAper = editbox(hs.fig,[],[editx y editw h],tinyfont);
+  y = y-h;
+  hs.applyAll = checkbox(hs.fig,'Apply to all movies?',[x y labelw h],[],tinyfont);
   
   movegui(hs.fig,'center');
   
@@ -269,7 +271,7 @@ function updateControls(md)
   if isempty(idx)
     idx=0;
   end
-  hs.movieName.String = jobset.ROI(1).movie(idx+1:end);
+  hs.movieName.String = jobset.ROI(iMov).movie(idx+1:end);
   hs.nXYpixels.String = [num2str(md.frameSize(1)) ' x ' num2str(md.frameSize(1))];
   hs.is3D.Value = md.is3D;
   hs.nPlanes.String = num2str(md.nPlanes/(md.nChannels*md.nFrames));
@@ -414,7 +416,7 @@ end
 
 function updateMetadata()
 
-  md = jobset.metadata;
+  md = jobset.metadata{iMov};
   
   md.nFrames = str2double(handles.nFrames.String);
   md.nChannels = handles.nChannels;
@@ -442,7 +444,9 @@ function updateMetadata()
     md.pixelSize(iCoord) = str2double(handles.pixelSize{iCoord}.String)/1000;
   end
   md.validated = 1;
-  jobset.metadata = md;
+  jobset.metadata{iMov} = md;
+  
+  applyAll = handles.applyAll.Value;
   
 end
 
