@@ -19,7 +19,7 @@ if nargin<2
     case 'chrshift'
       tasks = [1,6];
   end
-  if job.options.intensity.execute
+  if any(job.options.intensity.execute)
     tasks(end+1) = 9;
   end
 end
@@ -36,7 +36,10 @@ end
 if any(ismember(tasks,[1 2 9]))
   % Open movie and read metadata.
   if isfield(job,'metadata')
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata{job.index});
+    if iscell(job.metadata)
+      job.metadata = job.metadata{job.index};
+    end
+    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
   else
     [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
   end
@@ -189,9 +192,10 @@ end
 
 if ismember(9,tasks)
   % Read spot intensity.
-  for c = [channels neighChans]
+  intChans = find(job.options.intensity.execute);
+  for c = intChans
     kitLog('Measure particle intensity in channel %d',c);
-    job = kitLocalIntensityTracks(job, reader, job.metadata, c, opts.intensity);
+    job = kitLocalIntensity(job, reader, job.metadata, c, opts.intensity);
   end
   job = kitSaveJob(job);
 end
