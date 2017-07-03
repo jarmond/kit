@@ -10,6 +10,10 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %
 %    Options, defaults in {}:-
 %
+%    centralise: {0} or 1. Whether or not to adjust the outer kinetochore
+%       components' position so that average delta-x, delta-y and delta-z
+%       measurements are zero.
+%
 %    channels: {[1 2]} or pair of numbers from 1 to 3. The channels between
 %       which to make intra-kinetochore measurements. The direction of
 %       measurements will be defined by the channel orientation in the
@@ -22,19 +26,20 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %       results from previous experiments to allow new experiment data to
 %       be appended.
 %
-%    sisterStructure: {[]} or cell of arrays. A cell containing lists of
-%       sister pair IDs, accompanied by its movie number, for each
-%       experiment. Allows for only specific sisters to be included in the
-%       data collection.
+%    spotSelection: {[]} or output from kitSelectData. A structure
+%       containing a selection of either sister pair or track IDs per
+%       movie, for each experiment. Allows for only specific sisters or
+%       spots to be included in the data collection.
 %
 %
-% Copyright (c) 2016 C. A. Smith
+% Copyright (c) 2017 C. A. Smith
 
 % default options
+opts.centralise = 0;
 opts.channels = [1 2];
 opts.paired = 1;
 opts.prevMeas = [];
-opts.sisterStructure = [];
+opts.spotSelection = [];
 % user options
 opts = processOptions(opts,varargin{:});
 
@@ -49,34 +54,37 @@ end
 numExpts1 = length(movies);
 
 %process input so that all structs are in cell format
-if isempty(opts.sisterStructure)
-  sisters = repmat({[]},numExpts1,1);
-  allocSis = 0;
-elseif ~iscell(opts.sisterStructure)
-  sisters = {opts.sisterStructure};
-  kitLog('Non-cell sister structure provided. Assuming only one experiment.');
-  allocSis = 1;
+if isempty(opts.spotSelection)
+  subset = repmat({[]},numExpts1,1);
+  selType = 0;
+elseif isstruct(opts.spotSelection) && isfield(opts.spotSelection,'dataType')
+  subset = opts.spotSelection.selection;
+  switch opts.spotSelection.dataType
+    case 'spots'
+      selType = 1;
+    case 'sisters'
+      selType = 2;
+  end
 else
-  sisters = opts.sisterStructure;
-  allocSis = 1;
+  kitLog('Provided spotSelection structure was not derived from kitSelectData. No selection will be imposed.');
+  subset = repmat({[]},numExpts1,1);
+  selType = 0;
 end
 
 %find number of movies and sisters, and ensure they match
-numExpts2 = length(sisters);
+numExpts2 = length(subset);
 if numExpts1 ~= numExpts2
-  error('Have %i sister lists for %i experiments. Please provide a sister list for each experiments.',numExpts2,numExpts1)
+  error('Have %i spot selections for %i experiments. Please provide spot selection for each experiment.',numExpts2,numExpts1)
 end
 numExpts = numExpts1;
 
-%% Preprocessing output structure
-
-process = movies{1}{1}.options.jobProcess;
+%% Pre-processing output structure
 
 % find whether any movies have paired spots
 paired = 0;
 if opts.paired
-  for iExpt = 1:numExpts;
-    for iMov = 1:length(movies{numExpts})
+  for iExpt = 1:numExpts
+    for iMov = 1:length(movies{iExpt})
       paired = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'sisterList');
       if paired; break; end
     end
@@ -108,7 +116,7 @@ for iExpt = 1:numExpts
     
     % get movie and sister list
     theseMovies = movies{iExpt};
-    theseSisters = sisters{iExpt};
+    iSubset = subset{iExpt};
     
     % find channel vector
     chanVect = movies{iExpt}{1}.options.neighbourSpots.channelOrientation;
@@ -144,13 +152,17 @@ for iExpt = 1:numExpts
         end
         
         % if no sisters given, go through all sisters in movie
-        if ~allocSis
-            theseSisters = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
-        else % otherwise, get the sister list
-            theseSisters = sisters{iExpt}(sisters{iExpt}(:,1)==iMov,2)';
+        switch selType
+            case 0
+                iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
+            case 1
+                iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
+                theseTracks = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+            case 2 % otherwise, get the sister list
+                iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
         end
 
-        for iSis = theseSisters
+        for iSis = iSubset
             
             % start counter for storing data
             c=1;
@@ -163,15 +175,19 @@ for iExpt = 1:numExpts
                 continue
             end
             
-            % get trackID and spotIDs
+            % get basic metadata
+            nFrames = theseMovies{iMov}.metadata.nFrames;
+            pixelSize = theseMovies{iMov}.metadata.pixelSize;
+            
+            % get trackID and spotIDs, make spotIDs nan if deselected
             trackIDs = dSinner.sisterList(1).trackPairs(iSis,1:2);
             for iTrack = 1:2
-                spotIDs(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).featIndx;
+                if selType==1 && ~ismember(trackIDs(iTrack),theseTracks)
+                    spotIDs(:,iTrack) = nan(nFrames,1);
+                else
+                    spotIDs(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).featIndx;
+                end
             end
-            
-            % get basic metadata
-            nFrames = size(spotIDs,1);
-            pixelSize = theseMovies{iMov}.metadata.pixelSize;
 
             % get initCoords for these tracks
             for iTime = 1:nFrames
@@ -230,7 +246,7 @@ for iExpt = 1:numExpts
             
             %% Inter- and intra-kinetochore measurements
             
-            micrData = pairedMeasurements(micrCoordsInner,micrCoordsOuter);
+            micrData = pairedMeasurements(micrCoordsInner,micrCoordsOuter,0,opts.centralise);
             % put data into string format
             newData(c,:) = {'microscope.sisSep.x',micrData.sisSep_x}; c=c+1;
             newData(c,:) = {'microscope.sisSep.y',micrData.sisSep_y}; c=c+1;
@@ -253,7 +269,7 @@ for iExpt = 1:numExpts
             end
             
             if plate
-              plateData = pairedMeasurements(plateCoordsInner,plateCoordsOuter,1);
+              plateData = pairedMeasurements(plateCoordsInner,plateCoordsOuter,1,opts.centralise);
               % put data into string format
               newData(c,:) = {'plate.sisSep.x',plateData.sisSep_x}; c=c+1;
               newData(c,:) = {'plate.sisSep.y',plateData.sisSep_y}; c=c+1;
@@ -340,7 +356,11 @@ for iExpt = 1:numExpts
             direc = [];
             for iTrack = 1:2
               if ~isempty(dSinner.trackList(trackIDs(iTrack)).direction)
-                direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+                  if selType==1 && ~ismember(trackIDs(iTrack),theseTracks)
+                    direc(:,iTrack) = nan(nFrames,1);
+                  else
+                    direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+                  end
               end
             end
             direc(end+1,:) = NaN;
@@ -475,7 +495,7 @@ for iExpt = 1:numExpts
           
           %% Inter- and intra-kinetochore measurements
             
-          micrData = soloMeasurements(micrCoordsInner,micrCoordsOuter);
+          micrData = soloMeasurements(micrCoordsInner,micrCoordsOuter,opts.centralise);
           % put data into string format
           newData(c,:) = {'microscope.raw.delta.x.all',micrData.delta_x}; c=c+1;
           newData(c,:) = {'microscope.raw.delta.y.all',micrData.delta_y}; c=c+1;
@@ -484,7 +504,7 @@ for iExpt = 1:numExpts
           newData(c,:) = {'microscope.raw.delta.threeD.all',micrData.delta_3D}; c=c+1;
           
           if plate
-            plateData = soloMeasurements(plateCoordsInner,plateCoordsOuter);
+            plateData = soloMeasurements(plateCoordsInner,plateCoordsOuter,opts.centralise);
             % put data into string format
             newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
             newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
@@ -546,10 +566,13 @@ if ~isempty(noSis)
 end
 fprintf('\n');
 
-function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
+function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,centralise)
     
     if nargin<3 || isempty(plate)
         plate = 0;
+    end
+    if nargin<4 || isempty(centralise)
+        centralise = 0;
     end
         
     %% Inter-kinetochore: separation, twist, and velocities
@@ -598,6 +621,16 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
     % coordinate-specific delta
     delta1_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
     delta2_xyz = coordsOuter(:,4:6) - coordsInner(:,4:6);
+    if centralise
+        medVal = nanmedian([delta1_xyz;delta2_xyz]);
+        for iCoord=1:3
+            coordsOuter(:,iCoord) = coordsOuter(:,iCoord) - medVal(iCoord);
+            coordsOuter(:,iCoord+3) = coordsOuter(:,iCoord+3) - medVal(iCoord);
+        end
+        delta1_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
+        delta2_xyz = coordsOuter(:,4:6) - coordsInner(:,4:6);
+    end
+    
     measurements.delta_x = [delta1_xyz(:,1) delta2_xyz(:,1)];
     measurements.delta_y = [delta1_xyz(:,2) delta2_xyz(:,2)];
     measurements.delta_z = [delta1_xyz(:,3) delta2_xyz(:,3)];
@@ -663,10 +696,22 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
 
 end %pairedMeasurements subfunction
 
-function measurements = soloMeasurements(coordsInner,coordsOuter)
+function measurements = soloMeasurements(coordsInner,coordsOuter,centralise)
+    
+    if nargin<3 || isempty(centralise)
+        centralise = 0;
+    end
     
     % coordinate-specific delta
     delta_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
+    if centralise
+        medVal = nanmedian(delta_xyz);
+        for iCoord=1:3
+            coordsOuter(:,iCoord) = coordsOuter(:,iCoord) - medVal(iCoord);
+        end
+        delta_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
+    end
+    
     measurements.delta_x = delta_xyz(:,1);
     measurements.delta_y = delta_xyz(:,2);
     measurements.delta_z = delta_xyz(:,3);
