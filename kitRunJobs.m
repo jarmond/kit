@@ -69,6 +69,9 @@ switch jobset.options.jobProcess
     case 'chrshift'
         options.tasks = setdiff(options.tasks,[2,3,4,5,7,8]);
 end
+if any(jobset.options.intensity.execute)
+  options.tasks(end+1) = 9;
+end
 
 % If using matlabpool for parallel computation, report workers.
 [~,name] = fileparts(jobset.filename);
