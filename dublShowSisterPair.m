@@ -11,29 +11,38 @@ function dublShowSisterPair(job,varargin)
 %    channels are presented in the figure, where typically:
 %    1=red, 2=green, 3=blue.
 %
-%    plotChannels: {[1 2]} or some subset of [1 2 3]. Vector of channels
-%    for plotting, where typically:
-%    1=red, 2=green, 3=blue.
+%    contrast: {[0.1 1]} or similar structure. A 1x3 cell of pairs of
+%           numbers for use in image contrast.
 %
-%    plotTitles: {'eGFP','tagRFP','mCate'} or similar. Titles of each plot
-%    denoting which channel is which.
+%    newFig: {0} or 1. Whether or not to show the sister pair in a new
+%           figure.
+%
+%    plotChannels: {[1 2]} or some subset of [1 2 3]. Vector of channels
+%           for plotting, where typically:
+%               1=red, 2=green, 3=blue.
+%
+%    plotTitles: {'mNeonGreen','tagRFP','JF-646'} or similar. Titles of
+%           each plot denoting which channel is which.
 %
 %    sisterPair: {1} or number. Sister pair within JOB being plotted.
+%
+%    subpixelate: {9} or odd number. Number of pixels of accuracy within
+%           which to correct for chromatic shift.
 %
 %    timePoint: {1} or number. Timepoint at which to plot the sister pair.
 %
 %    transpose: {0} or 1. Whether to tranpose the image.
 %
 %    zoomScale: {1} or number. Magnification of a zoomed image as a
-%    proportion of the default, so that 0.5 will zoom out, and 1.5 will
-%    zoom in.
+%           proportion of the default, so that 0.5 will zoom out, and 1.5
+%           will zoom in.
 %
-%    zoomTrack: 0 or {1}. Whether or not to zoom into the specific sister
-%    pair. A value of 0 plots the whole cell, with just the coordinates of
-%    the sister pair plotted.
+%    zoom: 0 or {1}. Whether or not to zoom into the specific sister
+%           pair. A value of 0 plots the whole cell, with just the
+%           coordinates of the sister pair plotted.
 %
-%    zProject: {0}, 1 or -1. Whether or not to project in the z-direction.
-%    -1 will project in the 3 z-slices surrounding the sister pair.
+%    zProject: 0, 1 or {-1}. Whether or not to project in the z-direction.
+%           -1 will project in the 5 z-slices surrounding the sister pair.
 %
 % Copyright (c) 2014 C. A. Smith
 
@@ -43,21 +52,21 @@ end
 
 % set default options
 opts.channelMap = [2 1 3]; % green, red, blue
-opts.subpixelate = 9;
-opts.contrast = repmat({[0.1 1]},1,2);
+opts.contrast = repmat({[0.1 1]},1,3);
 opts.newFig = 0;
 opts.plotChannels = 1:2;
-opts.plotTitles = {'eGFP','tagRFP','mCate'};
+opts.plotTitles = {'mNeonGreen','tagRFP','JF-646'};
 opts.sisterPair = 1;
+opts.subpixelate = 9;
 opts.timePoint = 1;
 opts.transpose = 0;
 opts.zoomScale = 1;
-opts.zoomTrack = 1;
-opts.zProject = 0;
+opts.zoom = 1;
+opts.zProject = -1;
 
 % process options
 opts = processOptions(opts, varargin{:});
-while length(opts.plotTitles) < 3;
+while length(opts.plotTitles) < 3
     opts.plotTitles = [opts.plotTitles,''];
 end
 
@@ -79,168 +88,172 @@ sisterList = job.dataStruct{coordSysChan}.sisterList;
 trackIDs = sisterList(1).trackPairs(sisPair,1:2);
 timePoint = opts.timePoint;
 
+% if only one channel, run the single channel version
+if nChans == 1
+    kitLog('Only one channel being shown. Running kitShowSisterPair instead.');
+    kitShowSisterPair(job,'channel',plotChans,'contrast',opts.contrast,'newFig',opts.newFig,...
+        'sisterPair',sisPair,'timePoint',timePoint,'title',opts.plotTitles{1},'transpose',opts.transpose,...
+        'withinFig',0,'zoomScale',opts.zoomScale,'zoom',opts.zoom,'zProject',opts.zProject);
+    return
+end
+
 % get pixel resolution
 pixelSize = job.metadata.pixelSize;
 
-trackCoord = nan(nChans,3,2);
-
 % accumulate track information by channel and sister
+trackCoord = nan(nChans,3,2);
 for c = plotChans
-    for i = 1:2
-        tk = trackIDs(i);
-        track{c,tk} = job.dataStruct{c}.tracks(tk);
-        trackList{c,tk} = job.dataStruct{c}.trackList(tk);
+    for iSis = 1:2
+        tk = trackIDs(iSis);
+        track = job.dataStruct{c}.tracks(tk);
         
-        startTime = track{c,tk}.seqOfEvents(1,1);
+        startTime = track.seqOfEvents(1,1);
         if timePoint < startTime
-            trackCoord(c,:,i) = nan(1,3);
+            trackCoord(c,:,iSis) = nan(1,3);
         else
-            trackCoord(c,:,i) = ...
-                track{c,tk}.tracksCoordAmpCG(8*(timePoint-(startTime-1))-7:8*(timePoint-(startTime-1))-5);
+            trackCoord(c,:,iSis) = ...
+                track.tracksCoordAmpCG(8*(timePoint-(startTime-1))-7:8*(timePoint-(startTime-1))-5);
         end
     end
 end
 
 % calculate pair centre - check whether coordinate system is reference
-if sum(plotChans == coordSysChan) > 0
-    
-    centrePoint{coordSysChan} = nanmean(trackCoord(coordSysChan,:,:),3);
-    
-    for c = plotChans(plotChans ~= coordSysChan)
-        centrePoint{c} = centrePoint{coordSysChan} + job.options.chrShift.result{coordSysChan,c}(:,1:3);
-    end
-
-% if not, then use first available channel
+if ismember(coordSysChan,plotChans)
+    centrePoint = nanmean(trackCoord(coordSysChan,:,:),3);
 else
-    
-    newRefChan = min(plotChans);
-    centrePoint{newRefChan} = nanmean(trackCoord(newRefChan,:,:),3);
-    
-    for c = plotChans(plotChans ~= newRefChan)
-        centrePoint{c} = centrePoint{newRefChan} + job.options.chrShift.result{coordSysChan,c}(:,1:3);
-    end
-    
+    % if not, then use first available channel
+    coordSysChan = min(plotChans);
+    centrePoint = nanmean(trackCoord(coordSysChan,:,:),3);
 end
-% convert each centre coordinate to pixels
-for c = plotChans
-    centrePxl{c} = round(centrePoint{c}./pixelSize);
-end
+% convert to pixels
+centrePoint = centrePoint./pixelSize;
+centrePxl = round(centrePoint);
 
 mapChans = opts.channelMap;
 if opts.transpose
-    dims = [1 2];
-else
     dims = [2 1];
+else
+    dims = [1 2];
 end
 
 %% RGB image production
 
-% produce image
+% predesignation of images
 rgbImg = zeros([job.cropSize(dims), 3]);
-rgbCrpd= zeros([2*ceil(opts.zoomScale*(2/pixelSize(1)))+1 ...
-                2*ceil(opts.zoomScale*(2/pixelSize(1)))+1 ...
-                3]);
 rgbImgCS = zeros([job.cropSize(dims)*opts.subpixelate, 3]);
-rgbCrpdCS= zeros([opts.subpixelate*2*ceil(opts.zoomScale*(2/pixelSize(1)))+1 ...
-                opts.subpixelate*2*ceil(opts.zoomScale*(2/pixelSize(1)))+1 ...
+            
+if opts.zoom
+    % calculate spread about the centre pixels
+    cropSpread = opts.zoomScale*(2./pixelSize);
+	cropSpread = ceil(cropSpread);
+    rgbCrpd= zeros([2*cropSpread(1)+1  2*cropSpread(2)+1  3]);
+    rgbCrpdCS= zeros([opts.subpixelate*(2*cropSpread(1)+1) ...
+                opts.subpixelate*(2*cropSpread(2)+1) ...
                 3]);
+end
 
 % produce raw image
 for c = plotChans
+    
     % read stack
     img = kitReadImageStack(reader,md,timePoint,c,job.crop,0);
-%     img([1 2]) = img(dims);
-    % max project over three z-slices around point
+    
+    % max project over 5 z-slices around point
     if opts.zProject == 1
         img = max(img, [], 3);
     elseif opts.zProject == -1
-        img = max(img(:,:,centrePxl{c}(3)-1:centrePxl{c}(3)+1), [], 3);
+        img = max(img(:,:,centrePxl(3)-2:centrePxl(3)+2), [], 3);
     else
-        img = img(:,:,centrePxl{c}(3));
+        img = img(:,:,centrePxl(3));
     end
     if opts.transpose
         img = img';
     end
-    
-    % define contrast stretch
-    irange(c,:)=stretchlim(img,opts.contrast{c});
-    % contrast stretch
-    rgbImg(:,:,mapChans(c)) = imadjust(img', irange(c,:), []);
+    rgbImg(:,:,mapChans(c)) = img;
     
 end
 
-% produce chromatic shifted image
-first = 1;
-removed = zeros(3,2,2);
-for c = plotChans
-    if c ~= coordSysChan && first
+% produce cropped image around pair centre
+if opts.zoom
+    
+    % non-chromatic shifted regions
+    xReg = [centrePxl(1)-cropSpread(1) centrePxl(1)+cropSpread(1)];
+    yReg = [centrePxl(2)-cropSpread(2) centrePxl(2)+cropSpread(2)];
+    
+    for c = plotChans
+        if opts.transpose
+            rgbCrpd(:,:,mapChans(c)) = rgbImg(xReg(1):xReg(2),yReg(1):yReg(2),mapChans(c));
+        else
+            rgbCrpd(:,:,mapChans(c)) = rgbImg(yReg(1):yReg(2),xReg(1):xReg(2),mapChans(c));
+        end
+    end
+    
+    % produce chromatic shifted image
+    first = 1;
+    for c = setdiff(plotChans,coordSysChan) 
+      if first
+
+        [img1,img2] = ... 
+            chrsComputeCorrectedImage(rgbCrpd(:,:,mapChans(coordSysChan)),rgbCrpd(:,:,mapChans(c)),job.options.chrShift.result{coordSysChan,c}, ...
+            'subpixelate',opts.subpixelate);
+
+        % give the subpixelated images to the image structure
+        rgbCrpdCS(:,:,mapChans(coordSysChan)) = img1;
+        rgbCrpdCS(:,:,mapChans(c)) = img2;
+
+        first = 0;
+
+      else
+        [~,img2] = ...
+            chrsComputeCorrectedImage(rgbCrpd(:,:,mapChans(coordSysChan)),rgbCrpd(:,:,mapChans(c)),job.options.chrShift.result{coordSysChan,c}, ...
+            'subpixelate',opts.subpixelate);
+
+        % give the new subpixelated images to the image structure
+        rgbCrpdCS(:,:,mapChans(c)) = img2;
+
+      end
+    end
+    
+    % define contrast stretch for shifted cropped, and apply
+    for c = plotChans
+        irange = stretchlim(rgbCrpdCS(:,:,mapChans(c)),opts.contrast{c});
+        rgbCrpdCS(:,:,mapChans(c)) = imadjust(rgbCrpdCS(:,:,mapChans(c)), irange, []);
+    end
+    
+else
+    
+    % produce chromatic shifted image
+    first = 1;
+    for c = setdiff(plotChans,coordSysChan) 
+      if first
         
-        [img1,img2,tempRem] = ... 
+        [img1,img2] = ... 
             chrsComputeCorrectedImage(rgbImg(:,:,mapChans(coordSysChan)),rgbImg(:,:,mapChans(c)),job.options.chrShift.result{coordSysChan,c}, ...
             'subpixelate',opts.subpixelate);
         
-        irange(coordSysChan,:) = stretchlim(img1,opts.contrast{coordSysChan});
-        irange(c,:) = stretchlim(img2,opts.contrast{c});
-        img1 = imadjust(img1, irange(coordSysChan,:), []);
-        img2 = imadjust(img2, irange(c,:), []);
-        
+        % give the subpixelated images to the image structure
         rgbImgCS(:,:,mapChans(coordSysChan)) = img1;
         rgbImgCS(:,:,mapChans(c)) = img2;
         
-        % removed in form (coords,[start,end],channel)
-        removed(1:2,:,coordSysChan) = tempRem(1:2,:,1);
-        removed(1:2,:,c) = tempRem(1:2,:,2);
-        
         first = 0;
     
-    elseif c ~= coordSysChan
-        [~,img2,tempRem] = ...
+      else
+        [~,img2] = ...
             chrsComputeCorrectedImage(rgbImg(:,:,mapChans(coordSysChan)),rgbImg(:,:,mapChans(c)),job.options.chrShift.result{coordSysChan,c}, ...
-            'interpol',opts.subpixelate);
+            'subpixelate',opts.subpixelate);
         
-        irange(c,:) = stretchlim(img2,[0.1 1]);
-        img2 = imadjust(img2, irange(c,:), []);
-        
+        % give the new subpixelated images to the image structure
         rgbImgCS(:,:,mapChans(c)) = img2;
         
-        % removed in form (coords,[start,end],channel)
-        removed(1:2,:,c) = tempRem(1:2,:,2);
-        
+      end
     end
-end
-
-% produce cropped image around track centre
-if opts.zoomTrack
     
-    xReg = zeros(2,nChans); xRegCS = zeros(2,nChans);
-    yReg = zeros(2,nChans); yRegCS = zeros(2,nChans);
-    
+    % define contrast stretch for cropped images, and apply
     for c = plotChans
-        
-        xReg(:,c) = [centrePxl{c}(1)-ceil(opts.zoomScale*(2/pixelSize(1)))+1 ...
-                   centrePxl{c}(1)+ceil(opts.zoomScale*(2/pixelSize(1)))+1];
-        yReg(:,c) = [centrePxl{c}(2)-ceil(opts.zoomScale*(2/pixelSize(2)))+1 ...
-                   centrePxl{c}(2)+ceil(opts.zoomScale*(2/pixelSize(2)))+1];
-        
-        % adjust chrShift regions for the amount of image removed during
-        % chrShifting of the image itself
-        xRegCS(:,c) = xReg(:,c)*opts.subpixelate - removed(1,1,c);
-        yRegCS(:,c) = yReg(:,c)*opts.subpixelate - removed(2,1,c);
-            
-        if opts.transpose
-            rgbCrpd(:,:,mapChans(c)) = rgbImg(yReg(1,c):yReg(2,c),xReg(1,c):xReg(2,c),mapChans(c));
-            rgbCrpdCS(:,:,mapChans(c)) = rgbImgCS(yRegCS(1,c):yRegCS(2,c),xRegCS(1,c):xRegCS(2,c),mapChans(c));
-        else
-            rgbCrpd(:,:,mapChans(c)) = rgbImg(xReg(1,c):xReg(2,c),yReg(1,c):yReg(2,c),mapChans(c));
-            rgbCrpdCS(:,:,mapChans(c)) = rgbImgCS(xRegCS(1,c):xRegCS(2,c),yRegCS(1,c):yRegCS(2,c),mapChans(c));
-        end
-        
-        % adjust back the regions for plotting of the coordinates in the
-        % next step
-        xRegCS(:,c) = xRegCS(:,c) + removed(1,1,c);
-        yRegCS(:,c) = yRegCS(:,c) + removed(2,1,c);
-        
+        irange = stretchlim(rgbImgCS(:,:,mapChans(c)),opts.contrast{c});
+        rgbImgCS(:,:,mapChans(c)) = imadjust(rgbImgCS(:,:,mapChans(c)), irange, []);
     end
+    
 end
 
 
@@ -253,39 +266,25 @@ coord = trackCoord(plotChans,:,:);
 for i = 1:2
     coord(:,:,i) = coord(:,:,i)./repmat(pixelSize,nChans,1);
 end
-coordCS = coord*opts.subpixelate;
-for c = 1:nChans
+coordCS = coord*opts.subpixelate;    
 
-    if plotChans(c) ~= coordSysChan
-        chrShift = job.options.chrShift.result{coordSysChan,plotChans(c)}(:,1:3)./pixelSize;
-    else
-        chrShift = zeros(1,3);
-    end
-
-    if opts.zoomTrack
-        coord(c,1,:) = coord(c,1,:) - (xReg(1,plotChans(c))+1) + chrShift(1);
-        coord(c,2,:) = coord(c,2,:) - (yReg(1,plotChans(c))+1) + chrShift(2);
-        coordCS(c,1,:) = coordCS(c,1,:) - (xRegCS(1,plotChans(c))+1) + chrShift(1)*opts.subpixelate;
-        coordCS(c,2,:) = coordCS(c,2,:) - (yRegCS(1,plotChans(c))+1) + chrShift(2)*opts.subpixelate;
-    else
-        coord(c,1,:) = coord(c,1,:) + chrShift(1);
-        coord(c,2,:) = coord(c,2,:) + chrShift(2);
-        coordCS(c,1,:) = coordCS(c,1,:) + chrShift(1)*opts.subpixelate;
-        coordCS(c,2,:) = coordCS(c,2,:) + chrShift(2)*opts.subpixelate;
-    end
-
+% correct coordinates for region position
+if opts.zoom
+    coord(:,1,:) = coord(:,1,:) - (xReg(1)+1);
+    coord(:,2,:) = coord(:,2,:) - (yReg(1)-1);
+    coordCS(:,1,:) = coordCS(:,1,:) - xReg(1)*opts.subpixelate + (opts.subpixelate+1)/2; % for subpix=9, +5; subpix=3, +2; subpix=5, +3 
+    coordCS(:,2,:) = coordCS(:,2,:) - yReg(1)*opts.subpixelate + (opts.subpixelate+1)/2;
 end
-
 
 %% Producing the figure
 
 if nChans == 1
     plotImg = rgb2gray(rgbImg);
-    plotImgCrpd = rgb2gray(rgbCrpd);
+    if opts.zoom; plotImgCrpd = rgb2gray(rgbCrpd); end
     plotCoord = coord;
 else
     plotImg = rgbImgCS;
-    plotImgCrpd = rgbCrpdCS;
+    if opts.zoom; plotImgCrpd = rgbCrpdCS; end
     plotCoord = coordCS;
 end 
 
@@ -302,7 +301,7 @@ C = [ 0  1  0;
       0  0  1];
 plotStyle = ['x' '+' 'o'];
 
-if opts.zoomTrack
+if opts.zoom
     
     % plot individual channels
     bigImgInd = [];
@@ -329,19 +328,19 @@ if opts.zoomTrack
         for i = 1:2
             subplot(nChans,nChans+1,bigImgInd)
             if opts.transpose
-                plot(plotCoord(c,1,i),plotCoord(c,2,i),...
+                plot(plotCoord(c,2,i),plotCoord(c,1,i),...
                     'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
             else
-                plot(plotCoord(c,2,i),plotCoord(c,1,i),...
+                plot(plotCoord(c,1,i),plotCoord(c,2,i),...
                     'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
             end
             if nChans > 1
                 subplot(nChans,nChans+1,c*(nChans+1))
                 if opts.transpose
-                    plot(plotCoord(c,1,i),plotCoord(c,2,i),...
+                    plot(plotCoord(c,2,i),plotCoord(c,1,i),...
                         'Color','k','Marker',plotStyle(plotChans(c)),'MarkerSize',15)
                 else
-                    plot(plotCoord(c,2,i),plotCoord(c,1,i),...
+                    plot(plotCoord(c,1,i),plotCoord(c,2,i),...
                         'Color','k','Marker',plotStyle(plotChans(c)),'MarkerSize',15)
                 end
             end
@@ -353,16 +352,18 @@ else
     imshow(plotImg)
     
     hold on
-    % plot tracked channel's coordinates (points too close together on
-    % full image)
-    for i = 1:2
-        if opts.transpose
-            plot(plotCoord(coordSysChan,1,i),plotCoord(coordSysChan,2,i),'wo','MarkerSize',15)
-        else
-            plot(plotCoord(coordSysChan,2,i),plotCoord(coordSysChan,1,i),'w','Marker',plotStyle(i),'MarkerSize',15)
+    % plot tracked channel's coordinates (points too close together on full image)
+    for c = 1:nChans
+        for i = 1:2
+            if opts.transpose
+                plot(plotCoord(c,2,i),plotCoord(c,1,i),...
+                    'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+            else
+                plot(plotCoord(c,1,i),plotCoord(c,2,i),...
+                    'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+            end
         end
     end
-    
 end
 
 hold off
