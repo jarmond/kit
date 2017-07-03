@@ -14,6 +14,9 @@ if nargin<2
   zPlane=[];
 end
 
+% Suppress warnings.
+warning('off','all');
+
 try
   [f,rgbImg,zPlanes] = kitMovieProj(movieFileName,zPlane,[],1);
 catch me
@@ -64,5 +67,8 @@ function addROI_cb(hObj,eventdata,handles)
   set(finBtn,'Enable','on');
   uiresume(f);
 end
+
+% Reactivate warnings.
+warning('on','all');
 
 end
