@@ -112,7 +112,7 @@ neighbourSpots.zSlices = repmat({[]},1,3);
 opts.neighbourSpots = neighbourSpots;
 
 % Local spot intensity.
-intensity.do = 0; % whether or not to run intensity measurements
+intensity.execute = zeros(1,3); % whether or not to run intensity measurements per channel
 intensity.maskRadius = 0.3; % um
 intensity.photobleachCorrect = 1;
 intensity.attachmentCorrect = 1;
@@ -140,8 +140,8 @@ opts.wavelet = wavelet;
 
 % Manual spot detection options.
 manualDetect.warningDist = 0.2; % in um, distance between spots below which to warn user
-manualDetect.numFrames = 4; % minimum number of frames to manually select spots
-manualDetect.gapMethod = 'framewise'; % only current option, frame-wise coming
+manualDetect.frameSpacing = 8; % number of frames between adjacent manual detection frame
+manualDetect.gapMethod = 'framewise'; % can also be 'linear'
 opts.manualDetect = manualDetect;
 
 job.options = opts;
