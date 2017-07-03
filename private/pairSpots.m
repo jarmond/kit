@@ -372,11 +372,13 @@ for iChan = opts.coordChans
     sisterList(1).trackPairs(:,1) = 1:size(sisterIdxArray,1);
     sisterList(1).trackPairs(:,2) = sisterList(1).trackPairs(:,1)+size(sisterIdxArray,1);
     
-    % get microscope coordinates and standard deviations in both µm
+    % get microscope coordinates and standard deviations in µm
     if isfield(job.dataStruct{iChan},'initCoord')
       coords = job.dataStruct{iChan}.initCoord(1).allCoord;
+      amps = job.dataStruct{iChan}.initCoord(1).amp;
     else
       coords = [];
+      amps = [];
     end
     % get plane coordinates if applicable
     if isfield(job.dataStruct{iChan},'planeFit') && ~isempty(job.dataStruct{iChan}.planeFit(1).plane)
@@ -385,30 +387,52 @@ for iChan = opts.coordChans
       rotCoords = coords;
     end
     
-    for iSis = 1:size(sisterIdxArray,1)
-        
+    if ~isempty(rotCoords)
+      for iSis = 1:size(sisterIdxArray,1)
         sisterList(iSis).coords1 = rotCoords(sisterIdxArray(iSis,1),:);
         sisterList(iSis).coords2 = rotCoords(sisterIdxArray(iSis,2),:);
         sisterList(iSis).distances = sqrt(sum((sisterList(iSis).coords1 - sisterList(iSis).coords2).^2,2));
-        
+      end
+    else
+      for iSis = 1:size(sisterIdxArray,1)
+        sisterList(iSis).coords1 = NaN(1,6);
+        sisterList(iSis).coords2 = NaN(1,6);
+        sisterList(iSis).distances = NaN(1,2);
+      end
     end
     
     if size(sisterIdxArray,1)==0
       % assign in the case no sisters found
       tracks = emptyTracks;
     end
+    
     % construct new tracks
-    for iTrack = 1:length(sisterIdxArray(:))
+    if ~isempty(rotCoords)
+      for iTrack = 1:length(sisterIdxArray(:))
         
         % ensure tracks are re-allocated for new cell
         tracks(iTrack) = emptyTracks;
         tracks(iTrack).tracksFeatIndxCG = sisterIdxArray(iTrack);
-        tracks(iTrack).tracksCoordAmpCG = coords(sisterIdxArray(iTrack),:);
-        tracks(iTrack).coordAmp4Tracking = rotCoords(sisterIdxArray(iTrack),:);
+        tracks(iTrack).tracksCoordAmpCG(:,1:3) = coords(sisterIdxArray(iTrack),1:3);
+        tracks(iTrack).tracksCoordAmpCG(:,[4 8]) = amps(sisterIdxArray(iTrack),1:2);
+        tracks(iTrack).tracksCoordAmpCG(:,5:7) = coords(sisterIdxArray(iTrack),4:6);
+        tracks(iTrack).coordAmp4Tracking(:,1:3) = rotCoords(sisterIdxArray(iTrack),1:3);
+        tracks(iTrack).coordAmp4Tracking(:,[4 8]) = amps(sisterIdxArray(iTrack),1:2);
+        tracks(iTrack).coordAmp4Tracking(:,5:7) = rotCoords(sisterIdxArray(iTrack),4:6);
         
+      end
+    else
+      for iTrack = 1:length(sisterIdxArray(:))
+        
+        % ensure tracks are re-allocated for new cell
+        tracks(iTrack) = emptyTracks;
+        tracks(iTrack).tracksFeatIndxCG = sisterIdxArray(iTrack);
+        tracks(iTrack).tracksCoordAmpCG = NaN(1,8);
+        tracks(iTrack).coordAmp4Tracking = NaN(1,8);
+        
+      end
     end
                  
-    job.options.manualPairChannel = opts.plotChan;
     job.dataStruct{iChan}.tracks = tracks;
     job.dataStruct{iChan}.sisterList = sisterList;
     if isfield(job.dataStruct{iChan},'planeFit')
@@ -416,9 +440,13 @@ for iChan = opts.coordChans
     else
       job.dataStruct{iChan}.trackList = [];
     end
-    job = kitSaveJob(job);
     
 end
+
+% store information of which channel was used for pairing
+job.options.manualPairChannel = opts.plotChan;
+job = kitSaveJob(job);
+
 end
    
 function distIdx = getNNdistIdx(coords,origIdx,otherIdx,maxSisSep)
