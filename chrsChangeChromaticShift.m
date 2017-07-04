@@ -2,9 +2,9 @@ function [jobset,jobs] = chrsChangeChromaticShift(jobset,newShift,varargin)
 %CHRSCHANGECHROMATICSHIFT Changes the chromatic shift measurements given to
 %    a certain jobset.
 %
-%    CHRSCHANGECHROMATICSHIFT(JOBSET,NEWSHIFT,...) Gives a new JOBSET, and
-%    JOBS if requested by the user, containing the chromatic shift
-%    measurements given in NEWSHIFT.
+%    [JOBSET,JOBS] = CHRSCHANGECHROMATICSHIFT(JOBSET,NEWSHIFT,...) Gives a
+%    new JOBSET, and JOBS if requested by the user, containing the
+%    chromatic shift measurements given in NEWSHIFT.
 %
 %    Options, defaults in {}:-
 %
@@ -91,7 +91,7 @@ end
 % change chromatic shift information in the jobset and save
 jobset.options.chrShift.result = chrShift;
 jobset.options.chrShift.jobset = source;
-% kitSaveJobset(jobset);
+kitSaveJobset(jobset);
 
 %% Change jobs information if required
 
@@ -170,7 +170,7 @@ if opts.andJobs
             
         end
         
-%         kitSaveJob(jobs{iMov});
+        kitSaveJob(jobs{iMov});
         
     end
 else
