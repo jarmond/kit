@@ -33,15 +33,24 @@ opts.timePoint = 1;
 opts.zProject = 0;
 opts = processOptions(opts,varargin{:});
 
+% suppress warnings
+w = warning;
+warning('off','all');
+
 % get important information
 dataStruct = job.dataStruct{opts.channel};
 if isempty(opts.subset)
-  nSpots = length(dataStruct.trackList);
-  opts.subset = 1:nSpots;
+  if isfield(dataStruct,'tracks')
+    nSpots = length(dataStruct.tracks);
+    opts.subset = 1:nSpots;
+  else
+    nSpots = size(dataStruct.initCoord(opts.timePoint).allCoord,1);
+    opts.subset = 1:nSpots;
+  end
 else
   nSpots = length(opts.subset);
 end
-opts.imageSize = job.ROI.cropSize;
+opts.imageSize = job.ROI(job.index).cropSize;
 
 % set up figure
 figure(1); clf
@@ -69,6 +78,8 @@ for iSpot=opts.subset
     end
 end
 
+warning(w);
+
 end
    
 %% SUB-FUNCTIONS
@@ -86,18 +97,27 @@ tp = opts.timePoint;
 
 % get pixel resolution
 pixelSize = job.metadata.pixelSize;
+imageSize = size(img);
 
-% accumulate track information
-track = job.dataStruct{chan}.tracks(tk);
-startTime = track.seqOfEvents(1,1);
-endTime   = track.seqOfEvents(2,1);
-if tp < startTime || tp > endTime
-    coords = nan(1,3);
+if isfield(job.dataStruct{chan},'tracks')
+    % accumulate track information
+    track = job.dataStruct{chan}.tracks(tk);
+    startTime = track.seqOfEvents(1,1);
+    endTime   = track.seqOfEvents(2,1);
+    if tp < startTime || tp > endTime
+        coords = nan(1,3);
+    else
+        coords = ...
+            track.tracksCoordAmpCG(8*(tp-(startTime-1))-7:8*(tp-(startTime-1))-5);
+        coords = coords + chrShift;
+        coords = coords./pixelSize;
+    end
 else
-    coords = ...
-        track.tracksCoordAmpCG(8*(tp-(startTime-1))-7:8*(tp-(startTime-1))-5);
+    % accumulate initCoord information
+    initCoord = job.dataStruct{chan}.initCoord(tp);
+    coords = initCoord.allCoordPix(tk,1:3);
+    chrShift = chrShift./pixelSize;
     coords = coords + chrShift;
-    coords = coords./pixelSize;
 end
 
 % check whether any coordinates have been found, plot nothing if so
@@ -125,6 +145,8 @@ xReg = [centrePxl(1)-ceil(0.5/pixelSize(1))+1 ...
            centrePxl(1)+ceil(0.5/pixelSize(1))+1];
 yReg = [centrePxl(2)-ceil(0.5/pixelSize(2))+1 ...
            centrePxl(2)+ceil(0.5/pixelSize(2))+1];
+xReg(1) = max(xReg(1),1); xReg(2) = min(xReg(2),imageSize(2));
+yReg(1) = max(yReg(1),1); yReg(2) = min(yReg(2),imageSize(1));
 imgCrpd = img(yReg(1):yReg(2),xReg(1):xReg(2));
 
 % define contrast stretch and apply
