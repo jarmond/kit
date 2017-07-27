@@ -78,6 +78,7 @@ if numExpts1 ~= numExpts2
 end
 numExpts = numExpts1;
 
+
 %% Pre-processing output structure
 
 % find whether any movies have paired spots
@@ -90,6 +91,15 @@ if opts.paired
     end
     if paired; break; end
   end
+end
+%check whether or not there is intensity information
+ints = 0;
+for iExpt = 1:numExpts
+  for iMov = 1:length(movies{iExpt})
+    ints = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'spotInt');
+    if ints; break; end
+  end
+  if ints; break; end  
 end
 
 if isempty(opts.prevMeas)
@@ -153,12 +163,12 @@ for iExpt = 1:numExpts
         
         % if no sisters given, go through all sisters in movie
         switch selType
-            case 0
+            case 0 % no spot selection
                 iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
-            case 1
+            case 1 % using spots/tracks
                 iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
                 theseTracks = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
-            case 2 % otherwise, get the sister list
+            case 2 % using sisters
                 iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
         end
 
@@ -181,12 +191,18 @@ for iExpt = 1:numExpts
             
             % get trackID and spotIDs, make spotIDs nan if deselected
             trackIDs = dSinner.sisterList(1).trackPairs(iSis,1:2);
+            spotIDs = nan(nFrames,2);
             for iTrack = 1:2
-                if selType==1 && ~ismember(trackIDs(iTrack),theseTracks)
-                    spotIDs(:,iTrack) = nan(nFrames,1);
-                else
+                if selType~=1 || ismember(trackIDs(iTrack),theseTracks)
                     spotIDs(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).featIndx;
                 end
+            end
+            % get spotInts
+            if ints
+              sIinner = dSinner.spotInt;
+              innerBg = dSinner.cellInt.back;
+              sIouter = dSouter.spotInt;
+              outerBg = dSouter.cellInt.back;
             end
 
             % get initCoords for these tracks
@@ -350,6 +366,22 @@ for iExpt = 1:numExpts
               newData(c,:) = {'plate.depthFilter.twist.threeD',plateData.twist_3D.*nanmax(satisfies,[],2)}; c=c+1;
             end
             
+            % get intensities if required
+            if ints
+              %intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
+              intsInnerMean = [sIinner(trackIDs(1)).intensity(:)-innerBg sIinner(trackIDs(2)).intensity(:)-innerBg];
+              intsInnerMax  = [sIinner(trackIDs(1)).intensity_max(:)-innerBg sIinner(trackIDs(2)).intensity_max(:)-innerBg];
+              intsOuterMean = [sIouter(trackIDs(1)).intensity(:)-innerBg sIouter(trackIDs(2)).intensity(:)-innerBg];
+              intsOuterMax  = [sIouter(trackIDs(1)).intensity_max(:)-innerBg sIouter(trackIDs(2)).intensity_max(:)-innerBg];
+              % put data into string format
+              newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+              newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+              newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+              newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+              newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
+              newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
+            end
+            
             %% Directional information
             
             % get direction of movement
@@ -442,6 +474,14 @@ for iExpt = 1:numExpts
           % get initCoords
           iCinner = dSinner.initCoord;
           iCouter = dSouter.initCoord;
+          % get spotInts
+          if ints
+              sIinner = dSinner.spotInt;
+              innerBg = dSinner.cellInt.back;
+              sIouter = dSouter.spotInt;
+              outerBg = dSouter.cellInt.back;
+              nSpots = length(sIinner);
+          end
           
           % get basic metadata
           nFrames = theseMovies{iMov}.metadata.nFrames;
@@ -461,7 +501,6 @@ for iExpt = 1:numExpts
             micrCoord_y = [micrCoord_y; [iCinner(iFrame).allCoord(:,2) iCouter(iFrame).allCoord(:,2)]];
             micrCoord_z = [micrCoord_z; [iCinner(iFrame).allCoord(:,3) iCouter(iFrame).allCoord(:,3)]];
           end
-           
           % put data into string format
           newData(c,:) = {'microscope.coords.x',micrCoord_x}; c=c+1;
           newData(c,:) = {'microscope.coords.y',micrCoord_y}; c=c+1;
@@ -491,6 +530,22 @@ for iExpt = 1:numExpts
               newData(c,:) = {'plate.coords.y',plateCoord_y}; c=c+1;
               newData(c,:) = {'plate.coords.z',plateCoord_z}; c=c+1;
             end
+          end
+          
+          % get intensities if required
+          if ints
+            intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
+            for iSpot = 1:nSpots
+              intsInnerMean = [intsInnerMean; sIinner(iSpot).intensity(:)-innerBg];
+              intsInnerMax = [intsInnerMax; sIinner(iSpot).intensity_max(:)-innerBg];
+              intsOuterMean = [intsOuterMean; sIouter(iSpot).intensity(:)-outerBg];
+              intsOuterMax = [intsOuterMax; sIouter(iSpot).intensity_max(:)-outerBg];
+            end
+            % put data into string format
+            newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+            newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+            newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+            newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
           end
           
           %% Inter- and intra-kinetochore measurements

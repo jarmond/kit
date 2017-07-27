@@ -33,6 +33,8 @@ function dublBasicPlots(intraStructures,varargin)
 %           - 'swivel3D'
 %           - 'swivelYZ'
 %           - 'swivelKMT'
+%           - 'rawInts'
+%           - 'normInts'
 %       The statistic to be printed to screen. If no statistic is provided,
 %       the user will be prompted.
 %
@@ -59,7 +61,8 @@ end
 statsList = {'delta3D' ,'delta2D' ,'delta1D'  ,'deltaXYZ',...
              'sisSep3D','sisSep2D','sisSepXYZ',...
              'twist3D' ,'twistYZ' ,...
-             'swivel3D','swivelYZ','swivelKMT'};
+             'swivel3D','swivelYZ','swivelKMT',...
+             'rawInts','normInts'};
 if ~strcmp(opts.coordSystem,'plate')
     statsList(8:9) = [];
 end
@@ -431,6 +434,70 @@ switch opts.stat
         end
         compareRoses(swivelY,'nBins',18,...
             'title',title,'xLabel','swivel_{kMT} (deg)','withinFig',1);
+        
+    case 'rawInts'
+        
+        for iExpt = 1:nExpts
+          intsInner{iExpt} = intraStructures{iExpt}.intensity.mean.inner(:);
+          intsOuter{iExpt} = intraStructures{iExpt}.intensity.mean.outer(:);
+          if opts.depthFilter
+            filt = ~isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD.all(:));
+            intsInner{iExpt}(filt) = NaN;
+            intsOuter{iExpt}(filt) = NaN;
+          end
+        end
+        
+        figure; clf
+        subplot(1,2,1);
+        title = sprintf('raw intensity_{inner}: %s',opts.legend{1});
+        for iExpt = 2:nExpts
+          title = [title ' vs. ' opts.legend{iExpt}];
+        end
+        compareBoxWhiskers(intsInner,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','raw intensity',...
+            'withinFig',1,'legend',opts.legend);
+        subplot(1,2,2);
+        title = sprintf('raw intensity_{outer}: %s',opts.legend{1});
+        for iExpt = 2:nExpts
+          title = [title ' vs. ' opts.legend{iExpt}];
+        end
+        compareBoxWhiskers(intsOuter,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','raw intensity',...
+            'withinFig',1,'legend',opts.legend);
+        
+    case 'normInts'
+        
+        for iExpt = 1:nExpts
+            intsInner{iExpt} = intraStructures{iExpt}.intensity.mean.inner(:);
+            intsOuter{iExpt} = intraStructures{iExpt}.intensity.mean.outer(:);
+            if opts.depthFilter
+                filt = ~isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD.all(:));
+                intsInner{iExpt}(filt) = NaN;
+                intsOuter{iExpt}(filt) = NaN;
+            end
+            normIntsInner{iExpt} = intsInner{iExpt};
+            normIntsOuter{iExpt} = intsOuter{iExpt};
+            normIntsInner{iExpt} = normIntsInner{iExpt}./intsOuter{iExpt};
+            normIntsOuter{iExpt} = normIntsOuter{iExpt}./intsInner{iExpt};
+        end
+        
+        figure; clf
+        subplot(1,2,1);
+        title = sprintf('inner-normalised intensity_{outer}: %s',opts.legend{1});
+        for iExpt = 2:nExpts
+          title = [title ' vs. ' opts.legend{iExpt}];
+        end
+        compareBoxWhiskers(normIntsOuter,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','normalised intensity',...
+            'withinFig',1,'legend',opts.legend);
+        subplot(1,2,2);
+        title = sprintf('outer-normalised intensity_{inner}: %s',opts.legend{1});
+        for iExpt = 2:nExpts
+          title = [title ' vs. ' opts.legend{iExpt}];
+        end
+        compareBoxWhiskers(normIntsInner,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','normalised intensity',...
+            'withinFig',1,'legend',opts.legend);
         
     otherwise
         

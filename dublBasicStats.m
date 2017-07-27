@@ -28,10 +28,12 @@ function dublBasicStats(intraStructure,varargin)
 %           - 'swivel3D'
 %           - 'swivelYZ'
 %           - 'swivelKMT'
+%           - 'rawInts'
+%           - 'normInts'
 %       The statistic to be printed to screen. If no statistic is provided,
 %       the user will be prompted.
 %
-% Copyright (c) 2016 C. A. Smith
+% Copyright (c) 2017 C. A. Smith
 
 
 % default options
@@ -44,7 +46,8 @@ opts = processOptions(opts,varargin{:});
 statsList = {'delta3D' ,'delta2D' ,'delta1D'  ,'deltaXYZ',...
              'sisSep3D','sisSep2D','sisSepXYZ',...
              'twist3D' ,'twistYZ' ,...
-             'swivel3D','swivelYZ','swivelKMT'};
+             'swivel3D','swivelYZ','swivelKMT',...
+             'rawInts','normInts'};
 if ~ismember(opts.stat,statsList)
     fprintf('Output statistics options:\n')
     for iStat=1:length(statsList)
@@ -381,6 +384,57 @@ switch opts.stat
         fprintf('    mean    = [%.2f, %.2f] deg\n',mean(1),mean(2))
         fprintf('    std err = [%.2f, %.2f] deg\n',stdErr(1),stdErr(2))
         fprintf('    std dev = [%.2f, %.2f] deg\n',stdDev(1),stdDev(2))
+        
+    case 'rawInts'
+        
+        ints(:,1) = intraStructure.intensity.mean.inner(:);
+        ints(:,2) = intraStructure.intensity.mean.outer(:);
+        if opts.depthFilter
+            filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            ints(repmat(filt,1,2)) = NaN;
+        end
+        
+        median = nanmedian(ints)*1000;
+        mean   = nanmean(ints)*1000;
+        stdErr = nanserr(ints)*1000;
+        stdDev = nanstd(ints)*1000;
+        n      = min(sum(~isnan(ints)));
+
+        fprintf('\nRaw inner- and outer-marker intensity measurements (n = %i):\n\n',n)
+        fprintf('    median  = [%.2f, %.2f] au\n',median(1),median(2))
+        fprintf('    mean    = [%.2f, %.2f] au\n',mean(1),mean(2))
+        fprintf('    std err = [%.2f, %.2f] au\n',stdErr(1),stdErr(2))
+        fprintf('    std dev = [%.2f, %.2f] au\n',stdDev(1),stdDev(2))
+        
+    case 'normInts'
+        
+        ints(:,1) = intraStructure.intensity.mean.inner(:);
+        ints(:,2) = intraStructure.intensity.mean.outer(:);
+        if opts.depthFilter
+            filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            ints(repmat(filt,1,2)) = NaN;
+        end
+        normInts = ints;
+        normInts(:,2) = normInts(:,2)./ints(:,1);
+        normInts(:,1) = normInts(:,1)./ints(:,2);
+        
+        median = nanmedian(normInts);
+        mean   = nanmean(normInts);
+        stdErr = nanserr(normInts);
+        stdDev = nanstd(normInts);
+        n      = min(sum(~isnan(normInts)));
+
+        fprintf('\nInner-normalised outer-marker intensity measurements (n = %i):\n\n',n)
+        fprintf('    median  = %.2f au\n',median(2))
+        fprintf('    mean    = %.2f au\n',mean(2))
+        fprintf('    std err = %.2f au\n',stdErr(2))
+        fprintf('    std dev = %.2f au\n',stdDev(2))
+        fprintf('\n');
+        fprintf('\nOuter-normalised inner-marker intensity measurements (n = %i):\n\n',n)
+        fprintf('    median  = %.2f au\n',median(1))
+        fprintf('    mean    = %.2f au\n',mean(1))
+        fprintf('    std err = %.2f au\n',stdErr(1))
+        fprintf('    std dev = %.2f au\n',stdDev(1))
         
     otherwise
         

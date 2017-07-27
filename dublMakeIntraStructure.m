@@ -19,6 +19,8 @@ intraStruct.dublVersion = 'DubL 1.0.0';
 direction = struct('P',[],'AP',[],'N',[],'S',[]);
 sisSep = struct('x',[],'y',[],'z',[],...
                'twoD',[],'threeD',[]);
+subint = struct('inner',[],'outer',[]);
+intensity = struct('mean',subint,'max',subint,'bg',subint);
 
 % make substructure for each microscope and plate coordinate systems
 meas = struct('all',[],'P',[],'AP',[],'N',[],'S',[]);
@@ -55,6 +57,9 @@ if paired
 end
     intraStruct.microscope = microscope;
     intraStruct.plate = plate;
+    intraStruct.intensity = intensity;
+    
+end
     
     
     
