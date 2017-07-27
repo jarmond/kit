@@ -43,7 +43,10 @@ close(gcf);
 %% NESTED FUNCTIONS
 function hs = createControls()
   colwidth = [55 42 35 35];
-  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 sum(colwidth)+19 47]);
+  figw = sum(colwidth)+19;
+  figh = 47;
+  figpos = [100 35 figw figh];
+  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',figpos);
   set(0,'DefaultFigureWindowStyle','normal');
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
@@ -52,15 +55,13 @@ function hs = createControls()
   hs.fig.IntegerHandle = 'off';
   hs.fig.ToolBar = 'none';
 
-  figpos = hs.fig.Position;
-  figw = figpos(3);
-  figh = figpos(4);
+  % define some font sizes
   headfont = 16;
   medfont = 14;
   smallfont = 12;
 
   w=25; h=8;
-  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figpos(3)-w-6 1 w h]);
+  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figw-w-6 1 w h]);
   pos = getpixelposition(hs.logo);
   set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
 
@@ -108,7 +109,7 @@ function hs = createControls()
   y = y-h;
   % Coordinate system
   hs.coordSysText = label(hs.fig,'Coordinate system',[x y 20 1.5]);
-  hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 y 22 1.5]);
+  hs.coordSys = popup(hs.fig,coordSystemValues,[x+21 y 22 1.5],@neighbourOptionsCB);
   y = y-h;
   label(hs.fig,'Coordinate system channel',[x y 30 1.5]);
   for i=1:3
@@ -151,7 +152,7 @@ function hs = createControls()
     
   end
 
-  b = b-2*h;
+  % b = b-2*h;
   % Tasks
   % tasks = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
   % h = 1.75;
@@ -210,10 +211,10 @@ function hs = createControls()
   t = label(hs.fig,'General options',[x y 20 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
-  t = label(hs.fig,'Min spots per frame',[x y labelw h],10);
+  label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  t = label(hs.fig,'Max spots per frame',[x y labelw h],10);
+  label(hs.fig,'Max spots per frame',[x y labelw h],10);
   hs.maxSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
   hs.manualFrameSpaceText = label(hs.fig,'Manual detection frame spacing',[x y labelw h],10);
@@ -277,9 +278,6 @@ function hs = createControls()
   editw = 0.2*w;
   editx = x+w-editw;
   hs.chromaticShift = checkbox(hs.fig,'Provide chromatic shift correction',[x y w h],@chromaticShiftCB,10);
-%   y = y-h;
-%   hs.minChrShiftSpotsText = label(hs.fig,'Min spots per jobset',[x y labelw h],10);
-%   hs.minChrShiftSpots = editbox(hs.fig,[],[editx y editw h],10);
   hs.chrShiftPanel = uipanel(hs.fig,'Units','characters','Position',[x y-5.75*h w 5.75*h],'FontSize',10,'Title','Chromatic shift jobsets');
   p = hs.chrShiftPanel;
   y = y-lh;
@@ -352,7 +350,7 @@ function hs = createControls()
   t = label(hs.fig,'Intensity measurement options',[x y w 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
-  t = label(hs.fig,'Measure in channels...',[x y labelw h],10);
+  label(hs.fig,'Measure in channels...',[x y labelw h],10);
   for i=1:3
     hs.intensityExecute{i} = checkbox(hs.fig,num2str(i),[x+w-(4-i)*5 y w h],@intensityOptionsCB,10);
   end
@@ -664,7 +662,6 @@ function selectDirectoryCB(hObj,event)
     set(handles.movieDirectory, 'String', dirName);
     populateMovieBox();
     set(handles.ROIs,'String',[]);
-    ROI = [];
   end
 end
 
@@ -857,7 +854,7 @@ function refineModeCB(hObj,event)
     handles.maxMmfTimeText.Enable = 'off';
     handles.maxMmfTime.Enable = 'off';
     handles.alphaAText.Enable = 'off';
-    for iChan=1:3;
+    for iChan=1:3
       handles.alphaAchText{iChan}.Enable = 'off';
       handles.alphaA{iChan}.Enable = 'off';
     end
@@ -1075,30 +1072,12 @@ function neighbourOptionsCB(hObj,event)
         handles.neighbourOrient{iChan}.Enable = 'on';
       end
   end
-
-  if strcmp(mapStrings(handles.neighbourMaskShape.Value,maskValues),'Circle')
-    handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
-      handles.neighbourChanVectText.Enable = 'off';
-      handles.neighbourChanNumText.Enable = 'off';
-      handles.neighbourInnerText.Enable = 'off';
-      handles.neighbourOuterText.Enable = 'off';
-      for iChan=1:3
-        handles.neighbourOrient{iChan}.Enable = 'off';
-      end
-  end
+  
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift') || ...
           strcmp(mapStrings(handles.coordSys.Value,coordSystemValues),'Centre of mass')
     handles.neighbourMaskShapeText.Enable = 'off';
     handles.neighbourMaskShape.Value = 1;
     handles.neighbourMaskShape.Enable = 'off';
-    handles.neighbourOrientPanel.ForegroundColor = [0.5 0.5 0.5];
-    handles.neighbourChanVectText.Enable = 'off';
-    handles.neighbourChanNumText.Enable = 'off';
-    handles.neighbourInnerText.Enable = 'off';
-    handles.neighbourOuterText.Enable = 'off';
-    for iChan=1:3
-        handles.neighbourOrient{iChan}.Enable = 'off';
-    end
   end
 end
 
@@ -1195,23 +1174,23 @@ end
 %   end
 % end
 
-function psfBtnCB(hObj,event)
-  [file,path] = uigetfile('*.mat','Select PSF file');
-  if isequal(file,0)
-    return
-  end
-  handles.psfFile.String = file;
-  file = fullfile(path,file);
-  data = load(file);
-  % Assume PSF is only variable.
-  f = fieldnames(data);
-  if length(f) > 1
-    h=msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning','modal');
-    uiwait(h);
-  end
-  jobset.psf = data.(f{1});
-  jobset.psfFile = file;
-end
+% function psfBtnCB(hObj,event)
+%   [file,path] = uigetfile('*.mat','Select PSF file');
+%   if isequal(file,0)
+%     return
+%   end
+%   handles.psfFile.String = file;
+%   file = fullfile(path,file);
+%   data = load(file);
+%   % Assume PSF is only variable.
+%   f = fieldnames(data);
+%   if length(f) > 1
+%     h=msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning','modal');
+%     uiwait(h);
+%   end
+%   jobset.psf = data.(f{1});
+%   jobset.psfFile = file;
+% end
 
 function populateMovieBox()
   movieDir = handles.movieDirectory.String;
@@ -1303,7 +1282,7 @@ function updateJobset()
   mmf = opts.mmf;
   mmf.addSpots = handles.mmfAddSpots.Value;
   mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
-  for iChan=1:3;
+  for iChan=1:3
     mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
   end
   opts.mmf = mmf;
