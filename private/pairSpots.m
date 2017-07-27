@@ -26,44 +26,54 @@ pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},3),'Uniform
 %% GET IMAGE AND COORDINATE INFORMATION
 
 % get coordinates in both µm and pixels
+% check whether or not this movie has a dataStruct
+if ~isfield(job,'dataStruct')
+  kitLog('No dataStruct present. Skipping movie.');
+  coords = [];
+  coordsPix = [];
+  skip = 1;
 % check whether or not this movie has an initCoord
-if ~isfield(job.dataStruct{opts.plotChan},'initCoord')
+elseif ~isfield(job.dataStruct{opts.plotChan},'initCoord')
   kitLog('No initCoord present. Skipping movie.');
   coords = [];
   coordsPix = [];
+  skip = 1;
 % check whether or not this movie has an initCoord
 elseif isfield(job.dataStruct{opts.plotChan},'failed') && job.dataStruct{opts.plotChan}.failed
   kitLog('Tracking failed to produce an initCoord. Skipping movie.');
   coords = [];
   coordsPix = [];
+  skip = 1;
 else
   coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[2 1 3]);
   coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[2 1 3]);
+  skip = 0;
 end
 nCoords = size(coords,1);
-
-% check that redo hasn't been incorrectly provided here
-if ~isfield(job.dataStruct{opts.plotChan},'sisterList') || ...
-        isempty(job.dataStruct{opts.plotChan}.sisterList(1).trackPairs)
-  opts.redo = 1;
-end
-% pre-allocate index vectors
-if opts.redo
-  pairedIdx = [];
-  sisterIdxArray = [];
-  defaultIdx = 1:nCoords;
-else
-  % get list of featIdx from current sisterList
-  sisterIdxArray = job.dataStruct{opts.plotChan}.sisterList(1).trackPairs(:,1:2);
-  pairedIdx = sisterIdxArray(:)';
-  defaultIdx = setdiff(1:nCoords,pairedIdx(:));
-end
-unpairedIdx = [];
-doublePairingIdx = [];
 
 %% PLOT IMAGE, REQUEST INPUT
 
 if ~isempty(coords)
+    
+  % check that redo hasn't been incorrectly provided here
+  if ~isfield(job.dataStruct{opts.plotChan},'sisterList') || ...
+          isempty(job.dataStruct{opts.plotChan}.sisterList(1).trackPairs)
+    opts.redo = 1;
+  end
+  % pre-allocate index vectors
+  if opts.redo
+    pairedIdx = [];
+    sisterIdxArray = [];
+    defaultIdx = 1:nCoords;
+  else
+    % get list of featIdx from current sisterList
+    sisterIdxArray = job.dataStruct{opts.plotChan}.sisterList(1).trackPairs(:,1:2);
+    pairedIdx = sisterIdxArray(:)';
+    defaultIdx = setdiff(1:nCoords,pairedIdx(:));
+  end
+  unpairedIdx = [];
+  doublePairingIdx = [];
+    
   % produce image file
   fullImg = zeros([cropSize(1:2),3]);
   for iChan = opts.imageChans
@@ -104,6 +114,7 @@ if ~isempty(coords)
 else
   % if not coords, make unallocatedIdx empty to avoid running spot finding
   unallocatedIdx = [];
+  sisterIdxArray = [];
   prog = kitProgress(1);
 
 end
@@ -281,6 +292,7 @@ while ~isempty(unallocatedIdx)
     % uses a crosshair to allow user to provide a pair of coordinates
     [userY,userX,key] = ginput(1);
     
+    
     if ismember(key,1:3)
         
         % correct user-provided information if zoomed
@@ -351,6 +363,7 @@ end
 prog = kitProgress(1,prog);
 
 userStatus = 'completed';
+if skip; return; end
 
 %% STORE INFORMATION
 
