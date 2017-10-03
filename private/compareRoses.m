@@ -1,4 +1,4 @@
-function compareRoses(data,varargin)
+function f = compareRoses(data,varargin)
 %COMPAREROSES Produces overlaid rose plots of up to 3 distributions.
 %
 %    COMPAREROSES(DATA,...) For n distributions of data in cell form {nx1},
@@ -60,6 +60,7 @@ CC = [ 1 , 0 , 0;
       0.5, 1 , 0;
       0.5, 0 , 1;
        0 , 0 , 0];
+nCols = size(CC,1);
 
 % Process data
 if iscell(data)
@@ -83,6 +84,11 @@ else
         data = {data};
         nExpts=1; emptyData=0;
     end
+end
+
+% Check have enough colours for the number of experiments
+if nExpts > nCols
+   CC = repmat(CC,ceil(nExpts/nCols),1); 
 end
 
 % Ensure data is in radians for rose plotting
@@ -122,7 +128,7 @@ end
 %% Plotting data
 
 if ~opts.withinFig
-    figure()
+    figure();
 end
 
 % Pre-plot rose to get plotting environment, then delete the plot

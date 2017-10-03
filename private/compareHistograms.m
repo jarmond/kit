@@ -57,7 +57,7 @@ function compareHistograms(data,varargin)
 opts.axisLimits = [];
 opts.transparency = 0.5;
 opts.fitDistribution = 'none'; % can also use 'Beta','Gamma','Normal','tLocationScale'
-opts.legend = {'Expt 1','Expt 2','Expt 3','Expt 4', 'Expt 5'};
+opts.legends = {'Expt 1','Expt 2','Expt 3','Expt 4', 'Expt 5'};
 opts.nBins = 20;
 opts.plotStyle = 'outline'; % can also use 'bars'
 opts.title = '';
@@ -72,6 +72,7 @@ CC = [ 0 , 0 , 1;
       0.5, 1 , 0;
       0.5, 0 , 1;
        0 , 0 , 0];
+nCols = size(CC,1);
        
 
 %% Data handling
@@ -112,29 +113,23 @@ else
     end
 end
 
-% Check fitType is acceptable
-allFitTypes = {'none','Beta','Gamma','Normal','tLocationScale'};
-accepted = 0;
-for iType=1:length(allFitTypes)
-    accepted = accepted + strcmp(opts.fitDistribution,allFitTypes{iType});
-end
-if accepted ~= 1
-    fprintf('fitType %s not allowed. Have set to none.\n',opts.fitDistribution)
-    opts.fitDistribution = 'none';
+% Check have enough colours for the number of experiments
+if nExpts > nCols
+   CC = repmat(CC,ceil(nExpts/nCols),1); 
 end
 
 % check legends
-if ~iscell(opts.legend) && strcmp(opts.legend,'off')
+if ~iscell(opts.legends) && strcmp(opts.legends,'off')
   legOff = 1;
-elseif iscell(opts.legend)
-  while length(opts.legend)<nExpts
-      legLength = length(opts.legend);
-      opts.legend{end+1} = ['Expt ' legLength+1];
+elseif iscell(opts.legends)
+  while length(opts.legends)<nExpts
+      legLength = length(opts.legends);
+      opts.legends{end+1} = ['Expt ' legLength+1];
   end
   legOff = 0;
 else
   warning('Legend provided not in correct format. Converting to default.')
-  opts.legend = {'Expt 1','Expt 2','Expt 3','Expt 4', 'Expt 5'};
+  opts.legends = {'Expt 1','Expt 2','Expt 3','Expt 4', 'Expt 5'};
   legOff = 0;
 end
 
@@ -158,10 +153,14 @@ normBins = floor(normMinVal)+(normBinsep/2) : normBinsep : ceil(normMaxVal)-(nor
 % De-normalise bins
 bins = normBins*normFact;
 
-% Calculate histogram bin intensities
 for iExpt = 1:nExpts
+    % Calculate histogram bin intensities.
     hExpt{iExpt} = hist(data{iExpt},bins);
     hExpt{iExpt} = hExpt{iExpt}/trapz(bins,hExpt{iExpt});
+    
+    % Get number of datapoints and adjust legends.
+    nPoints = length(data{iExpt});
+    legends{iExpt} = sprintf('%s (n=%i)',legends{iExpt},nPoints);
 end
 
 %% Plotting data
@@ -200,45 +199,6 @@ switch opts.plotStyle
         
 end
 
-% Plot fits and output distribution peaks and variances
-if ~strcmp(opts.fitDistribution,'none')
-    
-    % Find new bins required for plotting interpolated fitted curves
-    newNormBinsep = range/(opts.nBins*10);
-    newNormBins = floor(normMinVal)+(newNormBinsep/2) : newNormBinsep : ceil(normMaxVal)-(newNormBinsep/2);
-    % De-normalise newBins
-    newBins = newNormBins*normFact;
-    
-    fprintf('\nDistribution approximations (%s):\n',opts.fitDistribution)
-    for iExpt = 1:nExpts
-        if ~isempty(data{iExpt})
-            distFit = fitdist(data{iExpt},opts.fitDistribution);
-            fitPDF = pdf(distFit,newBins);
-            corrPDF = pdf(distFit,bins);
-            [R,P] = corrcoef(hExpt{iExpt},corrPDF);
-            R = R(1,2).^2; P = P(1,2); % extract information we want
-            plot(newBins,fitPDF,'Color',CC(iExpt,:),'LineWidth',2)
-            [peakValue,distVar] = getPeakValue(distFit);
-            if isempty(peakValue)
-                fprintf('%s peak value at %.2f. ',opts.legend{iExpt},peakValue)
-            else
-                fprintf('%s peak value at %.2f. ',opts.legend{iExpt},peakValue)
-            end
-            if isempty(distVar)
-                fprintf('Variance is undefined. ')
-            else
-                fprintf('Variance is %.2f. ',distVar)
-            end
-            if P<0.05
-                fprintf('R-squared = %.3f (significant).\n',R)
-            else
-                fprintf('R-squared = %.3f (not significant).\n',R)
-            end
-        end
-    end
-    
-end
-
 %% Aesthetics
 
 faceAlpha = 1-opts.transparency;
@@ -259,7 +219,7 @@ xlim(opts.axisLimits);
 set(gca,'FontSize',20)
 
 if ~legOff
-  legend(opts.legend{~emptyData}); legend boxoff
+  legend(opts.legends{~emptyData}); legend boxoff
 end
 title(opts.title, 'FontSize', 20)
 ylabel(opts.yLabel)
@@ -267,41 +227,4 @@ xlabel(opts.xLabel)
 
 end
 
-%% External functions
 
-function [peakValue,distVar] = getPeakValue(distFit)
-
-switch distFit.DistName
-    case 'none'
-        peakValue = [];
-        distVar = [];
-    case 'beta'
-        a = distFit.Params(1);
-        b = distFit.Params(2);
-        peakValue = (a - 1)/(a+b-2);
-        distVar = a*b / ((a+b)^2*(a+b+1));
-    case 'gamma'
-        k = distFit.Params(1);
-        t = distFit.Params(2);
-        peakValue = (k-1)*t;
-        distVar = k*(t^2);
-    case 'normal'
-        peakValue = distFit.Params(1);
-        distVar = distFit.Params(2)^2;
-    case 'tlocationscale'
-        peakValue = distFit.Params(1);
-        s = distFit.Params(2);
-        v = distFit.Params(3);
-        if v > 2
-            distVar = (s^2*v)/(v-2);
-        elseif v > 1
-            distVar = Inf;
-        else
-            distVar = [];
-        end
-    otherwise
-        peakValue = [];
-        distVar = [];
-end
-
-end

@@ -46,7 +46,7 @@ CC = [ 0 , 0 , 1;
       0.5, 1 , 0;
       0.5, 0 , 1;
        0 , 0 , 0];
-       
+nCols = size(CC,1);
 
 %% Data handling
 
@@ -74,6 +74,11 @@ else
     end
 end
 
+% Check have enough colours for the number of experiments
+if nExpts > nCols
+   CC = repmat(CC,ceil(nExpts/nCols),1); 
+end
+
 % Ensure that there are legends for each experiment
 if isempty(opts.legend)
   for iExpt = 1:nExpts
@@ -95,6 +100,8 @@ hold on
 for iExpt = 1:nExpts
   
   xData = iExpt;
+  nPoints = length(data{iExpt});
+  legends{iExpt} = sprintf('%s (n=%i)',legends{iExpt},nPoints);
   
   switch opts.stat
     case 'mean'

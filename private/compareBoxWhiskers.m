@@ -47,6 +47,7 @@ CC = [ 0 , 0 , 1;
       0.5, 1 , 0;
       0.5, 0 , 1;
        0 , 0 , 0];
+nCols = size(CC,1);
        
 
 %% Data handling
@@ -79,6 +80,11 @@ else
     end
 end
 
+% Check have enough colours for the number of experiments
+if nExpts > nCols
+   CC = repmat(CC,ceil(nExpts/nCols),1); 
+end
+
 % Ensure that there are legends for each experiment
 if isempty(opts.legend)
   for iExpt = 1:nExpts
@@ -100,11 +106,13 @@ hold on
 for iExpt = 1:nExpts
   
   xData = iExpt;
+  nPoints = length(data{iExpt});
+  legends{iExpt} = sprintf('%s (n=%i)',legends{iExpt},nPoints);
   
   % sort the data
   thisData = sort(data{iExpt});
   % get basic statistics
-  data_mean = nanmean(thisData);
+%   data_mean = nanmean(thisData);
   data_median = nanmedian(thisData);
   data_25pc = prctile(thisData,25);
   data_75pc = prctile(thisData,75);
@@ -112,35 +120,49 @@ for iExpt = 1:nExpts
   % find which datapoints are considered upper outliers
   testData = thisData(thisData>data_75pc);
   nTests = length(testData);
-  c=0; stop=0;
-  while ~stop && c < nTests
-    c=c+1;
-    stop = ttest2(thisData,testData(c),'alpha',opts.outlierP);
-  end
-  if stop
-    lastInlier = testData(c-1);
-    upperOutliers = testData(c:end);
+  if nTests > 0
+    c=0; stop=0;
+    while ~stop && c < nTests
+      c=c+1;
+      stop = ttest2(thisData,testData(c),'alpha',opts.outlierP);
+    end
+    if stop
+      lastInlier = testData(c-1);
+      upperOutliers = testData(c:end);
+    else
+      lastInlier = testData(nTests);
+      upperOutliers = [];
+    end
   else
-    lastInlier = testData(nTests);
+    lastInlier = thisData(end);
     upperOutliers = [];
   end
   
   % find which datapoints are considered lower outliers
   testData = thisData(thisData<data_25pc);
   nTests = length(testData);
-  c=nTests+1; stop=0;
-  while ~stop && c > 1
-    c=c-1;
-    stop = ttest2(thisData,testData(c),'alpha',opts.outlierP);
-  end
-  if stop
-    firstInlier = testData(c+1);
-    lowerOutliers = testData(1:c);
+  if nTests > 0
+      c=nTests+1; stop=0;
+      while ~stop && c > 1
+        c=c-1;
+        stop = ttest2(thisData,testData(c),'alpha',opts.outlierP);
+      end
+      if stop
+        firstInlier = testData(c+1);
+        lowerOutliers = testData(1:c);
+      else
+        firstInlier = testData(1);
+        lowerOutliers = [];
+      end
   else
-    firstInlier = testData(1);
+    firstInlier = thisData(1);
     lowerOutliers = [];
   end
   
+  % update data to remove outliers
+  thisData = thisData(thisData>=firstInlier & thisData<=lastInlier);
+  data_mean = nanmean(thisData);
+      
   rectangle('Position',[xData-0.25 data_25pc 0.5 data_75pc-data_25pc])
   % plot the medians and means
   line([xData-0.25 xData+0.25],[data_median data_median],'Color',CC(iExpt,:))
@@ -156,6 +178,8 @@ for iExpt = 1:nExpts
   else
     line([xData-0.05 xData+0.05],[firstInlier firstInlier],'Color','k')
     line([xData-0.05 xData+0.05],[lastInlier lastInlier],'Color','k')
+  end
+  
 end
 
 %% Aesthetics
