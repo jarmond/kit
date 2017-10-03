@@ -82,6 +82,13 @@ for iExpt = 1:nExpts
             thisCellInt = thisMov.dataStruct{iChan}.cellInt;
             % get background intensities
             bg(:,iChan) = thisCellInt.back(:);
+            
+            % THIS SHOULD BE REMOVED LATER - if number of spots between
+            % channels differ, skip
+            if length(thisSpotInt) ~= nSpots
+              continue
+            end
+            
             % loop over spots to get their intensities
             for iSpot = 1:nSpots
                 

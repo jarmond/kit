@@ -1,10 +1,13 @@
 function varargout=kitIntensityAnalysis()
 % KITINTENSITYANALYSIS Displays GUI to allow user to run analysis of
-% pre-processed intensity measurements.
+% pre-processed intensity measurements. Either jobsets or intrameasurement
+% structures can be used.
 %
 % Copyright (c) 2017 C. A. Smith
 
 % Set up GUI.
+dockStatus = get(0,'DefaultFigureWindowStyle');
+set(0,'DefaultFigureWindowStyle','normal');
 handles = createControls();
 updateControls();
 handles.fig.Visible = 'on';
@@ -12,6 +15,7 @@ uiwait(gcf);
 if nargout==1
     varargout{1} = analysis;
 end
+set(0,'DefaultFigureWindowStyle',dockStatus);
 
 %% NESTED FUNCTIONS
 
@@ -19,15 +23,22 @@ end
 function hs = createControls()
   
   % Create figure.
-  figw = 75;
-  figh = 26;
+  figw = 90;
+  figh = 34;
   hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 figw figh]);
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
-  hs.fig.Name = ['KiT ' kitVersion(1) ' - Intensity analysis'];
+  hs.fig.Name = 'Intensity analysis';
   hs.fig.NumberTitle = 'off';
   hs.fig.IntegerHandle = 'off';
   hs.fig.ToolBar = 'none';
+  
+  % Get pixel to character ratio.
+  set(hs.fig,'Units','pixels');
+  p(1,:) = get(hs.fig,'Position');
+  set(hs.fig,'Units','characters');
+  p(2,:) = get(hs.fig,'Position');
+  hs.pixPerChar = p(1,3:4)./p(2,3:4);
   
   % Define font sizes.
   medfont = 14;
@@ -38,20 +49,28 @@ function hs = createControls()
   h = 1.5; %height
   lh = 1.5*h; %large height
   dx = 2.5; %horizontal shift
+  ddx = 1; %small horiz shift
   toplabely = figh; %top-most point
+  colw = figw/2 - dx; %column width
   
-  % Save directory.
-  btnw = 15; x = dx;
+  % Conditions sub-title.
+  labw = colw; x = dx;
   y = toplabely-lh;
-  button(hs.fig,'Save directory:',[x y btnw h],@savedirCB);
-  txtw = 25; x = figw-(txtw+dx);
-  hs.filename = editbox(hs.fig,'Provide a filename',[x y txtw h],smallfont);
-  txtw = 30; x = x-txtw;
-  hs.savedirText = label(hs.fig,'./',[x y txtw h],smallfont);
-  hs.savedirText.HorizontalAlignment = 'right';
+  t = label(hs.fig,'1. Select data per condition',[x y labw h],medfont);
+  t.FontWeight = 'bold';
+  
+  % Data type selection.
+  txtw = 10; radw = 17.5;
+  x = dx;
+  y = y-lh;
+  hs.condsText = label(hs.fig,'Data type:',[x y txtw h],smallfont);
+  x = x+(txtw+ddx);
+  hs.dataType{1} = uicontrol('Parent',hs.fig,'Units','characters','Style','radio','String','intra-measurements','Position',[x y radw h],'Callback',@dataTypeCB);
+  x = x+(radw+ddx);
+  hs.dataType{2} = uicontrol('Parent',hs.fig,'Units','characters','Style','radio','String','jobsets','Position',[x y radw h],'Callback',@dataTypeCB,'Value',1);
   
   % Add/delete conditions.
-  btnw = 5; txtw = 12.5;
+  btnw = 6; txtw = 12.5;
   x = dx;
   y = y-lh;
   hs.condsText = label(hs.fig,'Conditions:',[x y txtw h],smallfont);
@@ -60,12 +79,6 @@ function hs = createControls()
   hs.addcond = button(hs.fig,'Add',[x y btnw h],@addcondCB,tinyfont);
   x = x+(btnw+dx/4);
   hs.delcond = button(hs.fig,'Delete',[x y btnw h],@delcondCB,tinyfont);
-  
-  % Figure option.
-  txtw = 30;
-  x = figw-txtw;
-  hs.closeFigs = checkbox(hs.fig,'Close figures afterwards',[x y txtw h],[],tinyfont);
-  hs.closeFigs.Value = 1;
   
   % Create condition tabs.
   panw = (figw-dx)/2; panh = 20;
@@ -77,17 +90,20 @@ function hs = createControls()
   hs.tabs{1} = uitab('Parent', hs.tabP, 'Title', '1');
   hs = createTabControls(1,hs);
   
-  % Channel information.
+  % Options sub-title.
   colx = (figw+dx)/2;
-  x = colx+dx; txtw = figw-(x+dx);
+  x = colx+dx; labw = colw;
+  y = toplabely-lh;
+  t = label(hs.fig,'2. Options',[x y labw h],medfont);
+  t.FontWeight = 'bold';
   y = y-lh;
-  txtlab = label(hs.fig,'Channel options',[x y txtw h],medfont);
-  txtlab.FontWeight = 'bold';
+  
   % Control channel.
-  y = y-h; txtw = 15;
+  nChans = 3;
+  txtw = 15;
   label(hs.fig,'Control channel',[x y txtw h],smallfont);
   radw = 5; x = figw-(radw-dx);
-  for i=1:3
+  for i=1:nChans
     hs.controlCh{i} = uicontrol('Parent',hs.fig,'Units','characters','Style','radio','String',num2str(i),'Position',[x-radw*(4-i) y radw h],'Callback',@contChCB);
   end
   hs.controlCh{1}.Value = 1;
@@ -97,7 +113,7 @@ function hs = createControls()
   x = colx+dx; txtw = 15;
   label(hs.fig,'To analyse...',[x y txtw h],smallfont);
   tickw = 5; x = figw-(tickw+dx);
-  for i=3:-1:1
+  for i=nChans:-1:1
     hs.analyseCh{i} = checkbox(hs.fig,num2str(i),[x y tickw h],@analyseChCB,tinyfont);
     x = x-tickw;
   end
@@ -107,25 +123,78 @@ function hs = createControls()
   y = y-h;
   x = colx+dx; txtw = 15;
   label(hs.fig,'Channel labels',[x y txtw h],smallfont);
-  x = x+txtw; txtw = 5; editw = figw-(x+txtw+dx);
-  for i=1:3
+  x = x+txtw+2*dx; txtw = 5; editw = figw-(x+txtw+dx);
+  for i=1:nChans
     hs.chlabelsTxt{i} = label(hs.fig,['ch ' num2str(i)],[x y txtw h],tinyfont);
     hs.chlabels{i} = editbox(hs.fig,'',[x+txtw y editw h],tinyfont);
     y = y-h;
   end
   
-  % 'Run' button.
-  btnw = 10;
-  x = figw-(btnw+dx);
-  y = 1;
-  hs.runbtn = button(hs.fig,'Execute',[x y btnw lh],@runCB,medfont);
+  % Plot style buttons.
+  x = colx+dx; txtw = 15;
+  label(hs.fig,'Select plot style',[x y txtw h],smallfont);
+  y = y-h;
+  btnw = ((figw-colx)-(2*ddx+2*dx))/3;
+  btnh = btnw*0.45;
+  y = y-(btnh-h);
+  hs.boxWhiskBtn = uicontrol('style','pushbutton','Units','characters',...
+      'position',[x y btnw btnh],'Callback',@boxWhiskBtnCB);
+  hs.boxWhiskJava = java(findjobj(hs.boxWhiskBtn));
+  changeBorder(hs.boxWhiskJava,1);
+  hs.plotStyle = 'boxwhisk';
+  [I,~]=imread('private/boxWhiskBtn.png','BackgroundColor',[1 1 1]);
+  I=imresize(I,0.8*[btnw btnh].*hs.pixPerChar);
+  set(hs.boxWhiskBtn,'cdata',I);
+  x = x+btnw+ddx;
+  hs.barBtn = uicontrol('style','pushbutton','Units','characters',...
+      'position',[x y btnw btnh],'Callback',@barBtnCB);
+  hs.barJava = java(findjobj(hs.barBtn));
+  changeBorder(hs.barJava,0);
+  [I,~]=imread('private/barBtn.png','BackgroundColor',[1 1 1]);
+  I=imresize(I,0.8*[btnw btnh].*hs.pixPerChar);
+  set(hs.barBtn,'cdata',I);
+  x = x+btnw+ddx;
+  hs.scatterBtn = uicontrol('style','pushbutton','Units','characters',...
+      'position',[x y btnw btnh],'Callback',@scatterBtnCB);
+  hs.scatterJava = java(findjobj(hs.scatterBtn));
+  changeBorder(hs.scatterJava,0);
+  [I,~]=imread('private/scatterBtn.png','BackgroundColor',[1 1 1]);
+  I=imresize(I,0.8*[btnw btnh].*hs.pixPerChar);
+  set(hs.scatterBtn,'cdata',I);
   
-  % KiT logo.
+  % Figure option.
+  y = y-lh;
+  txtw = 30;
+  x = figw-txtw;
+  hs.closeFigs = checkbox(hs.fig,'Leave figures open afterwards',[x y txtw h],[],tinyfont);
+  hs.closeFigs.Value = 0;
+  
+  % Running sub-title.
+  labw = colw; x = dx;
+  y = 1+2*lh;
+  t = label(hs.fig,'3. Saving and running',[x y labw h],medfont);
+  t.FontWeight = 'bold';
+  
+  % Save directory.
+  x = dx; btnw = 15; y = 1+lh;
+  button(hs.fig,'Save directory:',[x y btnw h],@savedirCB);
+  x = x+btnw+ddx; txtw = 27.5;
+  hs.savedirText = label(hs.fig,'./',[x y txtw h],smallfont);
+  hs.savedirText.HorizontalAlignment = 'right';
+  x = x+txtw;
+  btnw=10; txtw = figw-(x+ddx+btnw+dx); %btnw here refers to the 'Run' button
+  hs.filename = editbox(hs.fig,'filename',[x y txtw h],smallfont);
+  
+  % 'Run' button.
+  btnw = 10; btnh = 2;
   x = figw-(btnw+dx);
-  y = y+2.75;
-  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[x y btnw 3.2]);
-  pos = getpixelposition(hs.logo);
-  set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
+  hs.runbtn = button(hs.fig,'Run',[x y btnw btnh],@runCB,smallfont);
+  
+  % 'Close' button.
+  btnw = 10; btnh = 2;
+  x = figw-(btnw+dx);
+  y = y-lh;
+  hs.runbtn = button(hs.fig,'Close',[x y btnw btnh],@closeCB,smallfont);
   
   movegui(hs.fig,'center');
   
@@ -167,7 +236,9 @@ function hs = createTabControls(tabidx,hs)
   x = dx; btnw = 15;
   y = y-lh;
   button(tabhs,'Find jobset(s)',[x y btnw h],@jobsetdirCB,smallfont);
-  y = 1;
+  x = x+(btnw+dx); labw = panw-(btnw+3*dx);
+  hs.allfiles{tabidx} = checkbox(tabhs,'Show all .mat files',[x y labw h],[],tinyfont);
+  x = dx; y = 1;
   hs.jobsets{tabidx} = uicontrol(tabhs,'Style','listbox','Units','characters','Position',[x y w panh/2],'Max',Inf,'Min',0);
   % undocumentedmatlab.com hack to add horizontal scrollbars
   jScrollPane = findjobj(hs.jobsets{tabidx});
@@ -260,6 +331,61 @@ function tf=checkControls()
 end
 
 %% All callback functions.
+function dataTypeCB(hObj,event)
+    
+  if exist('hObj','var')  
+    hs = handles;
+    type = hObj.String;
+    switch type
+      case 'intra-measurements'
+        hs.dataType{1}.Value = 1;
+        hs.dataType{2}.Value = 0;
+        % Enable channels 1 and 2, and change labels.
+        hs.controlChNum = 1;
+        hs.controlCh{1}.Value = 1;
+        hs.analyseCh{1}.Value = 1;
+        hs.chlabels{1}.Enable = 'on';
+        hs.chlabelsTxt{1}.String = 'inner';
+        hs.chlabelsTxt{1}.Enable = 'on';
+        hs.controlCh{2}.Value = 0;
+        hs.analyseCh{2}.Value = 1;
+        hs.chlabels{2}.Enable = 'on';
+        hs.chlabelsTxt{2}.String = 'outer';
+        hs.chlabelsTxt{2}.Enable = 'on';
+        % silence channel 3
+        hs.controlCh{3}.Value = 0;
+        hs.controlCh{3}.Enable = 'off';
+        hs.analyseCh{3}.Value = 0;
+        hs.analyseCh{3}.Enable = 'off';
+        hs.chlabels{3}.Enable = 'off';
+        hs.chlabelsTxt{3}.String = '';
+        hs.chlabelsTxt{3}.Enable = 'off';
+      case 'jobsets'
+        hs.dataType{1}.Value = 0;
+        hs.dataType{2}.Value = 1;
+        % Enable channels 1 and 2, and change labels.
+        hs.controlChNum = 1;
+        hs.controlCh{1}.Value = 1;
+        hs.analyseCh{1}.Value = 1;
+        hs.analyseCh{1}.Enable = 'off';
+        hs.controlCh{3}.Enable = 'on';
+        for notChan = 2:3
+          hs.controlCh{notChan}.Value = 0;
+          hs.analyseCh{notChan}.Enable = 'on';
+          hs.analyseCh{notChan}.Value = 0;
+        end
+        for iChan = 1:3
+          hs.chlabelsTxt{iChan}.String = sprintf('Ch. %i',iChan);
+        end
+        analyseChCB();
+    end
+    
+    
+    handles = hs;
+  end
+    
+end
+
 function savedirCB(hObj,event)
   
   % ask the user to select a directory
@@ -298,32 +424,41 @@ function normcondCB(hObj,event)
 end
 
 function addcondCB(hObj,event)
+    hs = handles;
     
     % get the number of conditions, and set new tab number
-    nConds = length(handles.tabP.Children); condidx = nConds+1;
+    nConds = length(hs.tabP.Children); condidx = nConds+1;
     % add the tab and switch to this one, then create the controls
-    handles.tabs{condidx} = uitab('Parent', handles.tabP, 'Title', num2str(condidx));
-    handles.tabP.SelectedTab = handles.tabs{condidx};
-    handles = createTabControls(condidx,handles);
-    pause(0.5); % required to avoid crashing
+    hs.tabs{condidx} = uitab('Parent', hs.tabP, 'Title', num2str(condidx));
+    hs = createTabControls(condidx,hs);
+    hs.jobsetdir{condidx} = [];
     
+    pause(0.5); % required to avoid crashing
+    hs.tabP.SelectedTab = hs.tabs{condidx};
+    handles = hs;
 end
 
 function delcondCB(hObj,event)
-    
+    % get handles
+    hs = handles;
     % get the number of conditions and selected tab
-    nConds = length(handles.tabP.Children);
-    condtit = strrep(handles.tabP.SelectedTab.Title,'*','');
+    nConds = length(hs.tabP.Children);
+    condtit = strrep(hs.tabP.SelectedTab.Title,'*','');
     condidx = str2double(condtit);
     % delete the tab, and relabel all tabs to be 1:nConds
-	delete(handles.tabs{condidx});
-    handles.tabs(condidx) = [];
-    handles.normConds(condidx) = [];
+	delete(hs.tabs{condidx});
+    hs.tabs(condidx) = [];
+    hs.condlabel(condidx) = [];
+    hs.normConds(condidx) = [];
+    hs.jobsets(condidx) = [];
+    hs.jobsetdir(condidx) = [];
+    hs.allfiles(condidx) = [];
     for i=1:nConds-1
-       handles.tabs{i}.Title = num2str(i); 
+       hs.tabs{i}.Title = num2str(i);
     end
     pause(0.5); % required to avoid crashing
-    
+    % give back handles
+    handles = hs;
 end
 
 function jobsetdirCB(hObj,event)
@@ -342,18 +477,34 @@ end
 
 function contChCB(hObj,event)
   
-  if exist('hObj')
+  if exist('hObj','var')
+      
+    hs = handles;
+    
+    % set new control channel
     chan = str2double(hObj.String);
-    handles.contChNum = chan;
-    handles.analyseCh{chan}.Value = 1;
-    handles.analyseCh{chan}.Enable = 'off';
-    for notChan = setdiff(1:3,chan)
-      handles.controlCh{notChan}.Value = 0;
-      handles.analyseCh{notChan}.Enable = 'on';
-      handles.analyseCh{notChan}.Value = 0;
+    hs.controlChNum = chan;
+    hs.analyseCh{chan}.Value = 1;
+    hs.analyseCh{chan}.Enable = 'off';
+    
+    % adjust control and analysis channel information accordingly
+    if hs.dataType{1}.Value
+      notChan = setdiff(1:2,chan);
+      hs.controlCh{notChan}.Value = 0;
+      hs.analyseCh{notChan}.Enable = 'on';
+      hs.analyseCh{notChan}.Value = 1;
+    else  
+      for notChan = setdiff(1:3,chan)
+        hs.controlCh{notChan}.Value = 0;
+        hs.analyseCh{notChan}.Enable = 'on';
+        hs.analyseCh{notChan}.Value = 0;
+      end
+      analyseChCB();
     end
+    
+    handles = hs;
+    
   end
-  analyseChCB();
   
 end
 
@@ -370,33 +521,63 @@ function analyseChCB(hObj,event)
     end
 end
 
+function boxWhiskBtnCB(hObj,event)
+  % check whether plot style is already boxWhisker
+  if strcmp(handles.plotStyle,'boxwhisk')
+    return
+  end
+  % reverse border on each
+  changeBorder(handles.boxWhiskJava,1);
+  changeBorder(handles.barJava,0);
+  changeBorder(handles.scatterJava,0);
+  % change plot style
+  handles.plotStyle = 'boxwhisk';
+end
+
+function barBtnCB(hObj,event)
+  % check whether plot style is already boxWhisker
+  if strcmp(handles.plotStyle,'bars')
+    return
+  end
+  % reverse border on each
+  changeBorder(handles.boxWhiskJava,0);
+  changeBorder(handles.barJava,1);
+  changeBorder(handles.scatterJava,0);
+  % change plot style
+  handles.plotStyle = 'bars';
+end
+        
+function scatterBtnCB(hObj,event)
+  % check whether plot style is already boxWhisker
+  if strcmp(handles.plotStyle,'1Dscat')
+    return
+  end
+  % reverse border on each
+  changeBorder(handles.boxWhiskJava,0);
+  changeBorder(handles.barJava,0);
+  changeBorder(handles.scatterJava,1);
+  % change plot style
+  handles.plotStyle = '1Dscat';
+end
+
+function closeCB(hObj,event)
+  close(gcf);  
+end
+
 function runCB(hObj,event)
 %   if ~checkControls()
 %     return
 %   end
-
-  % get all jobs ready for analysis
-  nConds = length(handles.tabP.Children);
-  jobs = repmat({[]},1,nConds);
-  for iCond = 1:nConds
-    % find which, and if any, jobsets are selected
-    selJSs = handles.jobsets{iCond}.Value;
-    if isempty(selJSs)
-      errorbox('Must first select jobsets in every condition before executing analysis.');
-      return
-    end
-    jsdir = handles.jobsetdir{iCond}.String;
-    % loop over selected jobsets for this condition
-    for iJS = selJSs
-      jsname = handles.jobsets{iCond}.String{iJS};
-      jobset = kitLoadJobset(fullfile(jsdir,jsname));
-      tempjobs = kitLoadAllJobs(jobset);
-      jobs{iCond} = [jobs{iCond} tempjobs];
-    end
-  end
   
-  % process intensity measurements - get required information throughout
-  contchan = handles.contChNum;
+  kitLog('Starting intensity analysis');
+  
+  % check what data type has been selected
+  dataTypes = {'intrameas','jobset'};
+  type = handles.dataType{2}.Value+1;
+  type = dataTypes{type};
+  
+  % get channel information and labels
+  contchan = handles.controlChNum;
   analchans = zeros(1,3);
   for iChan = 1:3
     analchans(iChan) = handles.analyseCh{iChan}.Value;
@@ -404,14 +585,90 @@ function runCB(hObj,event)
   end
   analchans = find(analchans);
   chanlabel = chanlabel(analchans);
+  
+  % get all jobs ready for analysis
+  nConds = length(handles.tabP.Children);
+  jobs = repmat({[]},1,nConds);
+  
+  % predesignate analysis structure if using intra-measurements
+  if strcmp(type,'intrameas')
+    norms = struct('cellwise',[],'spotwise',[]);
+    analysis = struct('channels',[1 2],...
+                      'raw',[],...
+                      'norm',norms,...
+                      'bg',[],...
+                      'stats',[]);
+    analysis = repmat({analysis},1,nConds);
+  end
+  
+  % loop over conditions
+  for iCond = 1:nConds    
+    % find which, if any, jobsets are selected
+    selData = handles.jobsets{iCond}.Value;
+    if isempty(selData)
+      errorbox('Must first select data in every condition before executing analysis.');
+      return
+    end
+    datdir = handles.jobsetdir{iCond}.String;
+    
+    % get intensities per condition, using wither data type
+    switch type
+      
+      case 'jobset'
+        
+        % loop over selected jobsets for this condition
+        for iData = selData
+          jsname = handles.jobsets{iCond}.String{iData};
+          jobset = kitLoadJobset(fullfile(datdir,jsname));
+          tempjobs = kitLoadAllJobs(jobset);
+          jobs{iCond} = [jobs{iCond} tempjobs];
+        end
+        kitLog('Getting intensities: %s',condlabel{iCond});
+    
+        % get intensity measurements
+        analysis{iCond} = intensityMeasurements(jobs{iCond},...
+            'controlChan',contchan,'analysisChans',analchans);
+          
+      case 'intrameas'
+        
+        for iData = selData
+          
+          % get intrameasurement data from file
+          imname = handles.jobsets{iCond}.String{iData};
+          imdata = load(fullfile(datdir,imname));
+          fnames = fieldnames(imdata);
+          imdata = getfield(imdata,fnames{1});
+              
+          % collate the data per experiment
+          tempRaw = [imdata.intensity.mean.inner(:) imdata.intensity.mean.outer(:)];
+          analysis{iCond}.raw = [analysis{iCond}.raw; tempRaw];
+          tempSpot = tempRaw;
+          tempSpot(:,1) = tempSpot(:,1)./tempRaw(:,contchan);
+          tempSpot(:,2) = tempSpot(:,2)./tempRaw(:,contchan);
+          analysis{iCond}.norm.spotwise = [analysis{iCond}.norm.spotwise; tempSpot];
+          analysis{iCond}.norm.cellwise = [analysis{iCond}.norm.cellwise; nan(size(tempSpot))];
+          tempBg = [imdata.intensity.bg.inner(:) imdata.intensity.bg.outer(:)];
+          analysis{iCond}.bg = [analysis{iCond}.bg; tempBg];
+            
+        end
+              
+      otherwise
+        errorbox('Ensure only jobsets or intra-measurements structures are selected.');  
+        return
+    end
+      
+  end
+  kitLog('Intensities compiled across all conditions');
+  
   for iCond = 1:nConds
-    analysis{iCond} = intensityMeasurements(jobs{iCond},...
-        'controlChan',contchan,'analysisChans',analchans);
+    % get condition information
     condlabel{iCond} = handles.condlabel{iCond}.String;
     normcond(iCond) = handles.normConds{iCond}.Value;
   end
+  % get condition information for plotting
   normcond = find(normcond);
-  closefigs = handles.closeFigs.Value;
+  plotstyle = handles.plotStyle;
+  closefigs = ~handles.closeFigs.Value;
   % get saving filenames etc
   filename = handles.filename.String;
   savepath = handles.savedir;
@@ -420,14 +677,13 @@ function runCB(hObj,event)
   GUIfile = ['GUIoptions_' filename];
   % print the figure to file
   print(fullfile(savepath,GUIfile),'-depsc');
-  % resume and close the figure to avoid simply printing the GUI
-  uiresume(handles.fig);
-  close(handles.fig);
   
   % produce the figures
   intensityFigures(analysis,'channelLabels',chanlabel,'conditions',condlabel,...
       'normalise',normcond,'save',1,'savePath',savepath,'filename',filename,...
-      'closeFigs',closefigs);
+      'closeFigs',closefigs,'plotType',plotstyle);
+  
+  kitLog('Spot detection analysis complete')
   
 end
 
@@ -437,13 +693,37 @@ function populateJSbox(condidx)
   jobsetDir = handles.jobsetdir{condidx}.String;
   if ~isempty(jobsetDir)
     % Find jobset files.
-    jobsets = kitFindFiles(jobsetDir,'.mat',0,1);
+    waitmsg = 'Finding jobsets...';
+    hwait = waitbar(0,waitmsg);
+    if handles.allfiles{condidx}.Value
+      jobsets = kitFindFiles(jobsetDir,'.mat');
+    else
+      jobsets = kitFindFiles(jobsetDir,'.mat');
+      rmv = contains(jobsets,[filesep 'kittracking']);
+      jobsets(rmv) = [];
+    end
     % Strip search directory from filenames.
     for i=1:length(jobsets)
       jobsets{i} = strrep(jobsets{i},[jobsetDir filesep],'');
     end
     set(handles.jobsets{condidx},'String',jobsets,'Value',1:length(jobsets));
+    waitbar(1,hwait,waitmsg);
+    close(hwait);
   end
+end
+
+function changeBorder(javaH,add)
+  % set up new border details
+  rndCrnrs = true;
+  col = java.awt.Color(1,0,0);
+  if add
+    thickness = 1;
+  else
+    thickness = 0;
+  end
+  newBorder = javax.swing.border.LineBorder(col,thickness,rndCrnrs);
+  % give new border details to the java handle
+  set(javaH,'Border',newBorder);
 end
 
 function errorbox(msg)
