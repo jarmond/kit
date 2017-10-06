@@ -343,19 +343,25 @@ function dataTypeCB(hObj,event)
         % Enable channels 1 and 2, and change labels.
         hs.controlChNum = 1;
         hs.controlCh{1}.Value = 1;
+        hs.controlCh{1}.String = 'i';
         hs.analyseCh{1}.Value = 1;
+        hs.analyseCh{1}.String = 'i';
         hs.chlabels{1}.Enable = 'on';
         hs.chlabelsTxt{1}.String = 'inner';
         hs.chlabelsTxt{1}.Enable = 'on';
         hs.controlCh{2}.Value = 0;
+        hs.controlCh{2}.String = 'o';
         hs.analyseCh{2}.Value = 1;
+        hs.analyseCh{2}.String = 'o';
         hs.chlabels{2}.Enable = 'on';
         hs.chlabelsTxt{2}.String = 'outer';
         hs.chlabelsTxt{2}.Enable = 'on';
         % silence channel 3
         hs.controlCh{3}.Value = 0;
+        hs.controlCh{3}.String = '';
         hs.controlCh{3}.Enable = 'off';
         hs.analyseCh{3}.Value = 0;
+        hs.analyseCh{3}.String = '';
         hs.analyseCh{3}.Enable = 'off';
         hs.chlabels{3}.Enable = 'off';
         hs.chlabelsTxt{3}.String = '';
@@ -376,6 +382,8 @@ function dataTypeCB(hObj,event)
         end
         for iChan = 1:3
           hs.chlabelsTxt{iChan}.String = sprintf('Ch. %i',iChan);
+          hs.controlCh{iChan}.String = num2str(iChan);
+          hs.analyseCh{iChan}.String = num2str(iChan);
         end
         analyseChCB();
     end
@@ -640,7 +648,9 @@ function runCB(hObj,event)
           imdata = getfield(imdata,fnames{1});
               
           % collate the data per experiment
+          filtIdx = ~isnan(imdata.microscope.depthFilter.delta.threeD.all(:));
           tempRaw = [imdata.intensity.mean.inner(:) imdata.intensity.mean.outer(:)];
+          tempRaw = tempRaw(filtIdx,:); %filter out data not included in delta measurements
           analysis{iCond}.raw = [analysis{iCond}.raw; tempRaw];
           tempSpot = tempRaw;
           tempSpot(:,1) = tempSpot(:,1)./tempRaw(:,contchan);
