@@ -2,7 +2,7 @@ function intensityFigures(intStructs,varargin)
 % Produces figures and analyses of intensity measurements for an intensity
 % structure output from intensityMeasurements.
 %
-% Used by the kitIntensityAnalysis function.
+% Used by the kitAnalysis function.
 %
 
 % default vs user-defined options
@@ -60,10 +60,9 @@ condLab = opts.conditions(1:nConds);
 
 %% Plot figures
 
-kitLog('Processing figures:')
+kitLog('Processing figures:');
 
 % raw intensities
-kitLog('Background-corrected intensities.');
 f = figure();
 for iCond = 1:nConds
     for iChan = 1:nChans
@@ -93,17 +92,17 @@ for iChan = 1:nChans
         strTit = [chanLab{iChan} ' intensity']; title(strTit);
         if iChan==1; ylabel('background-corrected intensity');
         else; ylabel(''); end
-        set(gca,'XTickLabel',condLab);
+        set(gca,'XTickLabel',condLab,'FontSize',12);
     end
 end
 if opts.save
   
-  kitLog('Saving background-corrected figure to file.')
+  kitLog('Saving figure: Background-corrected intensities')
   
   % create filename
   filename = [opts.plotType '_bgCorr_' opts.filename];
   % print the figure to file
-  print(fullfile(opts.savePath,filename),'-depsc');
+  print(f,fullfile(opts.savePath,filename),'-depsc');
   if opts.closeFigs
     close(f);
   end
@@ -111,7 +110,6 @@ if opts.save
 end
 
 % cell-normalised intensities
-kitLog('Intensities normalised to cell-by-cell control channel.');
 f = figure();
 for iCond = 1:nConds
     for iChan = 1:nChans
@@ -141,17 +139,17 @@ for iChan = 1:nChans
         strTit = [chanLab{iChan} ' intensity']; title(strTit);
         if iChan==1; ylabel('per-cell normalised intensity');
         else; ylabel(''); end
-        set(gca,'XTickLabel',condLab);
+        set(gca,'XTickLabel',condLab,'FontSize',12);
     end
 end
 if opts.save
   
-  kitLog('Saving cell-by-cell normalised figure to file.')
+  kitLog('Saving figure: Intensities normalised to cell-by-cell control channel')
   
   % create filename
   filename = [opts.plotType '_cellNorm_' opts.filename];
   % print the figure to file
-  print(fullfile(opts.savePath,filename),'-depsc');
+  print(f,fullfile(opts.savePath,filename),'-depsc');
   if opts.closeFigs
     close(f);
   end
@@ -159,7 +157,6 @@ if opts.save
 end
 
 % spot-normalised intensities
-kitLog('Intensities normalised to spot-by-spot control channel.');
 f = figure();
 for iCond = 1:nConds
     for iChan = 1:nChans
@@ -189,17 +186,17 @@ for iChan = 1:nChans
         strTit = [chanLab{iChan} ' intensity']; title(strTit);
         if iChan==1; ylabel('per-spot normalised intensity');
         else; ylabel(''); end
-        set(gca,'XTickLabel',condLab);
+        set(gca,'XTickLabel',condLab,'FontSize',12);
     end
 end
 if opts.save
   
-  kitLog('Saving spot-by-spot normalised figure to file.')
+  kitLog('Saving figure: Intensities normalised to spot-by-spot control channel')
   
   % create filename
   filename = [opts.plotType '_spotNorm_' opts.filename];
   % print the figure to file
-  print(fullfile(opts.savePath,filename),'-depsc');
+  print(f,fullfile(opts.savePath,filename),'-depsc');
   if opts.closeFigs
     close(f);
   end
@@ -208,13 +205,28 @@ end
 
 %% Save results to file
 
-if opts.save
-  kitLog('Saving intensity-structure to file.')
-  % create filename
+if opts.save  
+  % create filename for .mat struct
   filename = ['intStruct_' opts.filename];
+  kitLog('Saving intensity analysis MATLAB structure: %s',filename)
   % print the intensity structure to file
   save(fullfile(opts.savePath,filename),'intStructs');
   
+  kitLog('Saving .csv files:')
+  for iCond = 1:nConds
+    % create filename for background-corrected data
+    filename = sprintf('bgcorr_%s_%s.csv',condLab{iCond},opts.filename);
+    kitLog('%s',filename)
+    csvwrite(fullfile(opts.savePath,filename),intStructs{iCond}.raw);
+    % per-cell normalised data
+    filename = sprintf('cellnorm_%s_%s.csv',condLab{iCond},opts.filename);
+    kitLog('%s',filename)
+    csvwrite(fullfile(opts.savePath,filename),intStructs{iCond}.norm.cellwise);
+    % per-spot normalised data
+    filename = sprintf('spotnorm_%s_%s.csv',condLab{iCond},opts.filename);
+    kitLog('%s',filename)
+    csvwrite(fullfile(opts.savePath,filename),intStructs{iCond}.norm.spotwise);
+  end
 end
 
 
