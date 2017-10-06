@@ -10,7 +10,7 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %
 %    Options, defaults in {}:-
 %
-%    centralise: {0} or 1. Whether or not to adjust the outer kinetochore
+%    centralise: 0 or {1}. Whether or not to adjust the outer kinetochore
 %       components' position so that average delta-x, delta-y and delta-z
 %       measurements are zero.
 %
@@ -22,69 +22,66 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %    paired: 0 or {1}. Whether or not to take paired measurements, or raw
 %       spot-by-spot measurements.
 %
-%    prevMeas: {[]} or a structure previously generated. A structure of
-%       results from previous experiments to allow new experiment data to
-%       be appended.
-%
 %    spotSelection: {[]} or output from kitSelectData. A structure
 %       containing a selection of either sister pair or track IDs per
 %       movie, for each experiment. Allows for only specific sisters or
 %       spots to be included in the data collection.
 %
+%    verbose: {0} or 1. Whether or not to print progress to command line.
+%
 %
 % Copyright (c) 2017 C. A. Smith
 
 % default options
-opts.centralise = 0;
+opts.centralise = 1;
 opts.channels = [1 2];
 opts.paired = 1;
-opts.prevMeas = [];
 opts.spotSelection = [];
+opts.verbose = 0;
 % user options
 opts = processOptions(opts,varargin{:});
 
 %% Pre-processing input structure
 
-%check structure of movies
+% check structure of movies
 if ~iscell(movies{1})
     movies = {movies};
-    kitLog('Movie structure provided implies only one experiment. Assuming only one experiment.');
+    if opts.verbose
+      kitLog('Movie structure provided implies only one experiment. Assuming only one experiment.');
+    end
 end
-%find number of movies
-numExpts1 = length(movies);
 
-%process input so that all structs are in cell format
+% find number of movies
+nExpts = length(movies);
+
+% check whether or not a correct spotSelection has been provided
 if isempty(opts.spotSelection)
-  subset = repmat({[]},numExpts1,1);
-  selType = 0;
-elseif isstruct(opts.spotSelection) && isfield(opts.spotSelection,'dataType')
-  subset = opts.spotSelection.selection;
-  switch opts.spotSelection.dataType
-    case 'spots'
-      selType = 1;
-    case 'sisters'
-      selType = 2;
-  end
+    spotSel = 0;
 else
-  kitLog('Provided spotSelection structure was not derived from kitSelectData. No selection will be imposed.');
-  subset = repmat({[]},numExpts1,1);
-  selType = 0;
+    if ~iscell(opts.spotSelection)
+        opts.spotSelection = {opts.spotSelection};
+    end
+    if ~isfield(opts.spotSelection{1},'dataType')
+        spotSel = 0;
+        if opts.verbose
+            kitLog('Spot selection provided not produced using kitSelectData. Providing full dataset.')
+        end
+    else
+        spotSel = 1;
+    end
+    testn = length(opts.spotSelection);
+    if testn ~= nExpts
+        spotSel = 0;
+        if opts.verbose
+            kitLog('Spot selection contains only %i experiments, whereas %i are required. Providing full dataset.',nExpts,testn);
+        end
+    end
 end
-
-%find number of movies and sisters, and ensure they match
-numExpts2 = length(subset);
-if numExpts1 ~= numExpts2
-  error('Have %i spot selections for %i experiments. Please provide spot selection for each experiment.',numExpts2,numExpts1)
-end
-numExpts = numExpts1;
-
-
-%% Pre-processing output structure
 
 % find whether any movies have paired spots
 paired = 0;
 if opts.paired
-  for iExpt = 1:numExpts
+  for iExpt = 1:nExpts
     for iMov = 1:length(movies{iExpt})
       paired = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'sisterList');
       if paired; break; end
@@ -92,48 +89,46 @@ if opts.paired
     if paired; break; end
   end
 end
-%check whether or not there is intensity information
-ints = 0;
-for iExpt = 1:numExpts
-  for iMov = 1:length(movies{iExpt})
-    ints = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'spotInt');
-    if ints; break; end
-  end
-  if ints; break; end  
-end
 
-if isempty(opts.prevMeas)
-    
-    % make new intra-measurements structure if no previous measurements
-    % provided
-    allData = dublMakeIntraStructure(paired);
-    allData = struct2strForm(allData);
-    
-else
-    % get all old data
-    allData = struct2strForm(opts.prevMeas);
-    
-end
+% make new intra-measurements structure
+allData = dublMakeIntraStructure(paired);
+allData = struct2strForm(allData);
 
 % predesignate error arrays
 noDS = [];
 noSpot = [];
 noSis = [];
 
+% form experiment label
+labprfx = 'expt0';
+for iExpt = 1:nExpts
+    if iExpt==10
+        labprfx(end) = '';
+    end
+    exptLabs(iExpt,:) = [labprfx num2str(iExpt)];
+end 
+
 %% Compiling measurements
 
-for iExpt = 1:numExpts
+% set up progress and counter
+prog = kitProgress(0);
+totalMovs = 0;
+for iExpt = 1:nExpts
+    totalMovs = totalMovs+length(movies{iExpt});
+end
+movCount = 1;
+
+for iExpt = 1:nExpts
     
     % get movie and sister list
     theseMovies = movies{iExpt};
-    iSubset = subset{iExpt};
+    nMovs = length(theseMovies);
     
-    % find channel vector
+    % get the channel vector
     chanVect = movies{iExpt}{1}.options.neighbourSpots.channelOrientation;
-    remChans = setdiff(chanVect,opts.channels);
-    chanVect(chanVect==remChans) = [];
+    chanVect = intersect(chanVect,opts.channels,'stable');
     
-    for iMov = 1:length(theseMovies)
+    for iMov = 1:nMovs
       
       % get the movie index
       movNum = theseMovies{iMov}.index;
@@ -152,6 +147,51 @@ for iExpt = 1:numExpts
         noSpot = [noSpot; iExpt movNum];
         continue
       end
+      
+      % get pixelSize
+      pixelSize = theseMovies{iMov}.metadata.pixelSize;
+      
+      % get initCoords
+      iCinner = dSinner.initCoord;
+      iCouter = dSouter.initCoord;
+      nFrames = theseMovies{iMov}.metadata.nFrames;
+      nSpots = size(iCinner(1).allCoord,1);
+      
+      % get xyz correction for centralisation
+      if opts.centralise
+        deltaxyz = [];
+        
+        for iFrame = 1:nFrames
+          deltaxyz = [deltaxyz; iCouter(iFrame).allCoord(:,1:3)-iCinner(iFrame).allCoord(:,1:3)];
+        end
+        mCentMeds = nanmedian(deltaxyz);
+      else
+        mCentMeds = [0 0 0];
+      end
+      
+      % check whether or not this movie has a planeFit
+      if isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit)
+        plane = 1;
+        
+        % get planeFits
+        pFinner = dSinner.planeFit;
+        pFouter = dSouter.planeFit;
+        
+        % produce centralisation median structures by rotating
+        pCentMeds = repmat(mCentMeds,nFrames,1);
+        for iFrame = 1:nFrames
+          if ~isempty(pFinner(iFrame).planeVectors)
+            coordSystem = pFinner(iFrame).planeVectors;
+            pCentMeds(iFrame,:) = (coordSystem\mCentMeds')';
+          end
+        end
+        
+      else
+        plane = 0;
+      end
+      
+      % get experiment label
+      exptLab = exptLabs(iExpt,:);
         
       if paired
         
@@ -161,309 +201,338 @@ for iExpt = 1:numExpts
           continue
         end
         
-        % if no sisters given, go through all sisters in movie
-        switch selType
-            case 0 % no spot selection
-                iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
-            case 1 % using spots/tracks
-                iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
-                theseTracks = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
-            case 2 % using sisters
-                iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+        % get trackIDs
+        trackIDs = dSinner.sisterList(1).trackPairs(:,1:2);
+        
+        % convert spotSelection to spotIdx if required
+        if spotSel
+            % find the selected indices
+            keepIDs = opts.spotSelection{iExpt}(:,1)==iMov;
+            keepIDs = opts.spotSelection{iExpt}(keepIDs,2);
+            if strcmp(opts.spotSelection{iExpt}.dataType,'sisters')
+                % if sisters, get the trackIDs
+                trackIDs = trackIDs(keepIDs,:);
+            else
+                % convert all IDs not included to NaNs
+                rmIDs = ~ismember(trackIDs,keepIDs);
+                trackIDs(rmIDs) = NaN;
+            end
         end
-
-        for iSis = iSubset
+        
+        % get number of sisters (two tracks per sister)
+        nSisters = size(trackIDs,1);
+        
+        % get spotInts
+        if isfield(dSinner,'spotInt')
+            sIinner = dSinner.spotInt;
+            innerBg = dSinner.cellInt.back;
+            sIouter = dSouter.spotInt;
+            outerBg = dSouter.cellInt.back;
+        else
+            sIinner = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            innerBg = nan(nFrames,1);
+            sIouter = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            outerBg = nan(nFrames,1);
+        end
+        
+        % Loop over sisters
+        for iSis = 1:nSisters
             
-            % start counter for storing data
-            c=1;
-
-            % get sisterLists
-            sLinner = dSinner.sisterList(iSis);
-            sLouter = dSouter.sisterList(iSis);
-            % check that there are sisters
-            if isempty(dSinner.sisterList(1).trackPairs)
+            % skip if both trackIDs are NaNs 
+            if sum(isnan(trackIDs(iSis,:))==2)
                 continue
             end
             
-            % get basic metadata
-            nFrames = theseMovies{iMov}.metadata.nFrames;
-            pixelSize = theseMovies{iMov}.metadata.pixelSize;
+            % start counter for storing data
+            c=1;
+            % store experiment number
+            newData(c,:) = {'exptLabel',exptLab}; c=c+1;
             
-            % get trackID and spotIDs, make spotIDs nan if deselected
-            trackIDs = dSinner.sisterList(1).trackPairs(iSis,1:2);
+            % get spotIDs, unless trackID is NaN
             spotIDs = nan(nFrames,2);
-            for iTrack = 1:2
-                if selType~=1 || ismember(trackIDs(iTrack),theseTracks)
-                    spotIDs(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).featIndx;
+            for iTrk = 1:2
+                if ~isnan(trackIDs(iSis,iTrk))
+                    spotIDs(:,iTrk) = dSinner.trackList(trackIDs(iSis,iTrk)).featIndx;
                 end
-            end
-            % get spotInts
-            if ints
-              sIinner = dSinner.spotInt;
-              innerBg = dSinner.cellInt.back;
-              sIouter = dSouter.spotInt;
-              outerBg = dSouter.cellInt.back;
             end
 
-            % get initCoords for these tracks
-            for iTime = 1:nFrames
-                if ~isnan(spotIDs(iTime,1))
-                    iCinner.coords1(iTime,:) = dSinner.initCoord(iTime).allCoord(spotIDs(iTime,1),:);
-                    iCouter.coords1(iTime,:) = dSouter.initCoord(iTime).allCoord(spotIDs(iTime,1),:);
-                else
-                    iCinner.coords1(iTime,:) = NaN(1,6);
-                    iCouter.coords1(iTime,:) = NaN(1,6);
+            % get microscope coordinates, and plane coordinates if present
+            mCoordsInner = nan(nFrames,6);
+            mCoordsOuter = nan(nFrames,6);
+            if plane
+                pCoordsInner = nan(nFrames,6);
+                pCoordsOuter = nan(nFrames,6);
+            end
+            for iFrame = 1:nFrames
+                for iTrk = 1:2
+                    % track one stored in (:,1:3), two in (:,4:6)
+                    rng = (3*(iTrk-1)+1):3*iTrk;
+                    if ~isnan(spotIDs(iFrame,1))
+                        mCoordsInner(iFrame,rng) = iCinner(iFrame).allCoord(spotIDs(iFrame,iTrk),1:3);
+                        mCoordsOuter(iFrame,rng) = iCouter(iFrame).allCoord(spotIDs(iFrame,iTrk),1:3) - mCentMeds;
+                        if plane
+                            pCoordsInner(iFrame,rng) = pFinner(iFrame).rotatedCoord(spotIDs(iFrame,iTrk),1:3);
+                            pCoordsOuter(iFrame,rng) = pFouter(iFrame).rotatedCoord(spotIDs(iFrame,iTrk),1:3) - pCentMeds;
+                        end
+                    end
                 end
-                if ~isnan(spotIDs(iTime,2))
-                    iCinner.coords2(iTime,:) = dSinner.initCoord(iTime).allCoord(spotIDs(iTime,2),:);
-                    iCouter.coords2(iTime,:) = dSouter.initCoord(iTime).allCoord(spotIDs(iTime,2),:);
-                else
-                    iCinner.coords2(iTime,:) = NaN(1,6);
-                    iCouter.coords2(iTime,:) = NaN(1,6);
-                end
+            end
+            
+            % get coordinates in sister-sister axis
+            sCoordsInner = mCoordsInner; sCoordsOuter = mCoordsOuter;
+            sisSep = sCoordsInner(:,1:3) - sCoordsInner(:,4:6); % points towards first ID
+            % calculate angles for rotation, in XY and XZ
+            theta = sisSep(:,2)./sisSep(:,1); theta = atan(theta);
+            rho = sign(sisSep(:,1)).*sisSep(:,3)./sqrt(sum(sisSep(:,1:2).^2,2)); rho = atan(rho);
+            % loop over spots
+            for iRot = 1:length(theta)
+                % get rotation angles
+                iThe = theta(iRot); iRho = rho(iRot);
+                xyRotMat = [cos(iThe), -sin(iThe), 0;
+                            sin(iThe),  cos(iThe), 0;
+                            0,          0,         1];
+                xzRotMat = [cos(iRho),  0, -sin(iRho);
+                            0,          1,  0;
+                            sin(iRho),  0,  cos(iRho)];
+                rotMat = xyRotMat*xzRotMat;
+                % rotate inner coordinates
+                sCoordsInner(iRot,1:3) = sCoordsInner(iRot,1:3)*rotMat;
+                sCoordsInner(iRot,4:6) = sCoordsInner(iRot,4:6)*rotMat;
+                % rotate outer coordinates
+                sCoordsOuter(iRot,1:3) = sCoordsOuter(iRot,1:3)*rotMat;
+                sCoordsOuter(iRot,4:6) = sCoordsOuter(iRot,4:6)*rotMat;
+                                           
             end
 
             %% Kinetochore positions
 
             % get microscope coordinates of each spot
-            micrCoordsInner = [iCinner.coords1(:,1:3) iCinner.coords2(:,1:3)];
-            micrCoordsOuter = [iCouter.coords1(:,1:3) iCouter.coords2(:,1:3)];
-            micrCoord1_x = [iCinner.coords1(:,1) iCouter.coords1(:,1)];
-            micrCoord1_y = [iCinner.coords1(:,2) iCouter.coords1(:,2)];
-            micrCoord1_z = [iCinner.coords1(:,3) iCouter.coords1(:,3)];
-            micrCoord2_x = [iCinner.coords2(:,1) iCouter.coords2(:,1)];
-            micrCoord2_y = [iCinner.coords2(:,2) iCouter.coords2(:,2)];
-            micrCoord2_z = [iCinner.coords2(:,3) iCouter.coords2(:,3)];
+            mCoords_x = [mCoordsInner(:,[1 4]) mCoordsOuter(:,[1 4])];
+            mCoords_y = [mCoordsInner(:,[2 5]) mCoordsOuter(:,[2 5])];
+            mCoords_z = [mCoordsInner(:,[3 6]) mCoordsOuter(:,[3 6])];
             % put data into string format
-            newData(c,:) = {'microscope.coords.x',[micrCoord1_x micrCoord2_x]}; c=c+1;
-            newData(c,:) = {'microscope.coords.y',[micrCoord1_y micrCoord2_y]}; c=c+1;
-            newData(c,:) = {'microscope.coords.z',[micrCoord1_z micrCoord2_z]}; c=c+1;
+            newData(c,:) = {'microscope.coords.x',mCoords_x(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'microscope.coords.y',mCoords_y(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'microscope.coords.z',mCoords_z(:,[1 3 2 4])}; c=c+1;
             
-            if isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit)
-              plate = 1;
-            else
-              plate = 0;
-            end
-            if plate
+            if plane
               % get plate coordinates of each spot
-              plateCoordsInner = [sLinner.coords1(:,1:3) sLinner.coords2(:,1:3)];
-              plateCoordsOuter = [sLouter.coords1(:,1:3) sLouter.coords2(:,1:3)];
-              plateCoord1_x = [sLinner.coords1(:,1) sLouter.coords1(:,1)];
-              plateCoord1_y = [sLinner.coords1(:,2) sLouter.coords1(:,2)];
-              plateCoord1_z = [sLinner.coords1(:,3) sLouter.coords1(:,3)];
-              plateCoord2_x = [sLinner.coords2(:,1) sLouter.coords2(:,1)];
-              plateCoord2_y = [sLinner.coords2(:,2) sLouter.coords2(:,2)];
-              plateCoord2_z = [sLinner.coords2(:,3) sLouter.coords2(:,3)];
+              pCoords_x = [pCoordsInner(:,[1 4]) pCoordsOuter(:,[1 4])];
+              pCoords_y = [pCoordsInner(:,[2 5]) pCoordsOuter(:,[2 5])];
+              pCoords_z = [pCoordsInner(:,[3 6]) pCoordsOuter(:,[3 6])];
               % put data into string format
-              newData(c,:) = {'plate.coords.x',[plateCoord1_x plateCoord2_x]}; c=c+1;
-              newData(c,:) = {'plate.coords.y',[plateCoord1_y plateCoord2_y]}; c=c+1;
-              newData(c,:) = {'plate.coords.z',[plateCoord1_z plateCoord2_z]}; c=c+1;
+              newData(c,:) = {'plate.coords.x',pCoords_x(:,[1 3 2 4])}; c=c+1;
+              newData(c,:) = {'plate.coords.y',pCoords_y(:,[1 3 2 4])}; c=c+1;
+              newData(c,:) = {'plate.coords.z',pCoords_z(:,[1 3 2 4])}; c=c+1;
             end
+            
+            % get microscope coordinates of each spot
+            sCoords_x = [sCoordsInner(:,[1 4]) sCoordsOuter(:,[1 4])];
+            sCoords_y = [sCoordsInner(:,[2 5]) sCoordsOuter(:,[2 5])];
+            sCoords_z = [sCoordsInner(:,[3 6]) sCoordsOuter(:,[3 6])];
+            % put data into string format
+            newData(c,:) = {'sisters.coords.x',sCoords_x(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'sisters.coords.y',sCoords_y(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'sisters.coords.z',sCoords_z(:,[1 3 2 4])}; c=c+1;
             
             %% Inter- and intra-kinetochore measurements
             
-            micrData = pairedMeasurements(micrCoordsInner,micrCoordsOuter,0,opts.centralise);
+            mData = pairedMeasurements(mCoordsInner,mCoordsOuter,0);
             % put data into string format
-            newData(c,:) = {'microscope.sisSep.x',micrData.sisSep_x}; c=c+1;
-            newData(c,:) = {'microscope.sisSep.y',micrData.sisSep_y}; c=c+1;
-            newData(c,:) = {'microscope.sisSep.z',micrData.sisSep_z}; c=c+1;
-            newData(c,:) = {'microscope.sisSep.twoD',micrData.sisSep_2D}; c=c+1;
-            newData(c,:) = {'microscope.sisSep.threeD',micrData.sisSep_3D}; c=c+1;
-            newData(c,:) = {'microscope.raw.delta.x.all',micrData.delta_x}; c=c+1;
-            newData(c,:) = {'microscope.raw.delta.y.all',micrData.delta_y}; c=c+1;
-            newData(c,:) = {'microscope.raw.delta.z.all',micrData.delta_z}; c=c+1;
-            newData(c,:) = {'microscope.raw.delta.oneD',micrData.delta_1D}; c=c+1;
-            newData(c,:) = {'microscope.raw.delta.twoD.all',micrData.delta_2D}; c=c+1;
-            newData(c,:) = {'microscope.raw.delta.threeD.all',micrData.delta_3D}; c=c+1;
-            newData(c,:) = {'microscope.raw.swivel.y.all',micrData.swivel_y}; c=c+1;
-            newData(c,:) = {'microscope.raw.swivel.z.all',micrData.swivel_z}; c=c+1;
-            newData(c,:) = {'microscope.raw.swivel.threeD.all',micrData.swivel_3D}; c=c+1;
-            if isfield(micrData,'swivel_kMT')
-              newData(c,:) = {'microscope.raw.swivel.kMT',micrData.swivel_kMT}; c=c+1;
+            newData(c,:) = {'microscope.sisSep.x',mData.sisSep_x}; c=c+1;
+            newData(c,:) = {'microscope.sisSep.y',mData.sisSep_y}; c=c+1;
+            newData(c,:) = {'microscope.sisSep.z',mData.sisSep_z}; c=c+1;
+            newData(c,:) = {'microscope.sisSep.twoD',mData.sisSep_2D}; c=c+1;
+            newData(c,:) = {'microscope.sisSep.threeD',mData.sisSep_3D}; c=c+1;
+            newData(c,:) = {'microscope.raw.delta.x',mData.delta_x}; c=c+1;
+            newData(c,:) = {'microscope.raw.delta.y',mData.delta_y}; c=c+1;
+            newData(c,:) = {'microscope.raw.delta.z',mData.delta_z}; c=c+1;
+            newData(c,:) = {'microscope.raw.delta.oneD',mData.delta_1D}; c=c+1;
+            newData(c,:) = {'microscope.raw.delta.twoD',mData.delta_2D}; c=c+1;
+            newData(c,:) = {'microscope.raw.delta.threeD',mData.delta_3D}; c=c+1;
+            newData(c,:) = {'microscope.raw.swivel.y',mData.swivel_y}; c=c+1;
+            newData(c,:) = {'microscope.raw.swivel.z',mData.swivel_z}; c=c+1;
+            newData(c,:) = {'microscope.raw.swivel.threeD',mData.swivel_3D}; c=c+1;
+            if isfield(mData,'swivel_kMT')
+              newData(c,:) = {'microscope.raw.swivel.kMT',mData.swivel_kMT}; c=c+1;
             else
               newData(c,:) = {'microscope.raw.swivel.kMT',[]}; c=c+1;
             end
             
-            if plate
-              plateData = pairedMeasurements(plateCoordsInner,plateCoordsOuter,1,opts.centralise);
+            if plane
+              pData = pairedMeasurements(pCoordsInner,pCoordsOuter,1);
               % put data into string format
-              newData(c,:) = {'plate.sisSep.x',plateData.sisSep_x}; c=c+1;
-              newData(c,:) = {'plate.sisSep.y',plateData.sisSep_y}; c=c+1;
-              newData(c,:) = {'plate.sisSep.z',plateData.sisSep_z}; c=c+1;
-              newData(c,:) = {'plate.sisSep.twoD',plateData.sisSep_2D}; c=c+1;
-              newData(c,:) = {'plate.sisSep.threeD',plateData.sisSep_3D}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.z.all',plateData.delta_z}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.oneD',plateData.delta_1D}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.twoD.all',plateData.delta_2D}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.threeD.all',plateData.delta_3D}; c=c+1;
-              newData(c,:) = {'plate.raw.swivel.y.all',plateData.swivel_y}; c=c+1;
-              newData(c,:) = {'plate.raw.swivel.z.all',plateData.swivel_z}; c=c+1;
-              newData(c,:) = {'plate.raw.swivel.threeD.all',plateData.swivel_3D}; c=c+1;
-              if isfield(plateData,'swivel_kMT')
-                newData(c,:) = {'plate.raw.swivel.kMT',plateData.swivel_kMT}; c=c+1;
+              newData(c,:) = {'plate.sisSep.x',pData.sisSep_x}; c=c+1;
+              newData(c,:) = {'plate.sisSep.y',pData.sisSep_y}; c=c+1;
+              newData(c,:) = {'plate.sisSep.z',pData.sisSep_z}; c=c+1;
+              newData(c,:) = {'plate.sisSep.twoD',pData.sisSep_2D}; c=c+1;
+              newData(c,:) = {'plate.sisSep.threeD',pData.sisSep_3D}; c=c+1;
+              newData(c,:) = {'plate.raw.delta.x',pData.delta_x}; c=c+1;
+              newData(c,:) = {'plate.raw.delta.y',pData.delta_y}; c=c+1;
+              newData(c,:) = {'plate.raw.delta.z',pData.delta_z}; c=c+1;
+              newData(c,:) = {'plate.raw.delta.oneD',pData.delta_1D}; c=c+1;
+              newData(c,:) = {'plate.raw.delta.twoD',pData.delta_2D}; c=c+1;
+              newData(c,:) = {'plate.raw.delta.threeD',pData.delta_3D}; c=c+1;
+              newData(c,:) = {'plate.raw.swivel.y',pData.swivel_y}; c=c+1;
+              newData(c,:) = {'plate.raw.swivel.z',pData.swivel_z}; c=c+1;
+              newData(c,:) = {'plate.raw.swivel.threeD',pData.swivel_3D}; c=c+1;
+              if isfield(pData,'swivel_kMT')
+                newData(c,:) = {'plate.raw.swivel.kMT',pData.swivel_kMT}; c=c+1;
               else
                 newData(c,:) = {'plate.raw.swivel.kMT',[]}; c=c+1;
               end
-              newData(c,:) = {'plate.raw.twist.y',plateData.twist_y}; c=c+1;
-              newData(c,:) = {'plate.raw.twist.z',plateData.twist_z}; c=c+1;
-              newData(c,:) = {'plate.raw.twist.threeD',plateData.twist_3D}; c=c+1;
-              newData(c,:) = {'plate.sisterCentreSpeed',plateData.sisCentreSpeed}; c=c+1;
+              newData(c,:) = {'plate.raw.twist.y',pData.twist_y}; c=c+1;
+              newData(c,:) = {'plate.raw.twist.z',pData.twist_z}; c=c+1;
+              newData(c,:) = {'plate.raw.twist.threeD',pData.twist_3D}; c=c+1;
+              newData(c,:) = {'plate.sisterCentreSpeed',pData.sisCentreSpeed}; c=c+1;
 
               % get plate thickness measurements
-              sisCentre_x = [];
-              if length(dSinner.sisterList) == 1
-                plateThickness = nan(1,nFrames);
-              else
-                for jSis = 1:length(dSinner.sisterList)
-                  sisCentre_x = [sisCentre_x nanmean([dSinner.sisterList(jSis).coords1(:,1) dSinner.sisterList(jSis).coords2(:,1)],2)];
-                end
-                plateThickness = nanstd(sisCentre_x,[],2);
-              end
-              % put data into string format
-              newData(c,:) = {'plate.plateThickness',plateThickness}; c=c+1;
+%               sisCentre_x = [];
+%               if length(dSinner.sisterList) == 1
+%                 plateThickness = nan(nFrames,1);
+%               else
+%                 for jSis = 1:length(dSinner.sisterList)
+%                   sisCentre_x = [sisCentre_x; nanmean([dSinner.sisterList(jSis).coords1(:,1) dSinner.sisterList(jSis).coords2(:,1)],2)];
+%                 end
+%                 plateThickness = nanstd(sisCentre_x,[],2);
+%               end
+%               % put data into string format
+%               newData(c,:) = {'plate.plateThickness',plateThickness}; c=c+1;
             
             end
+            
+            sData = pairedMeasurements(sCoordsInner,sCoordsOuter,0);
+            % put data into string format
+            newData(c,:) = {'sisters.sisSep.x',sData.sisSep_x}; c=c+1;
+            newData(c,:) = {'sisters.sisSep.y',sData.sisSep_y}; c=c+1;
+            newData(c,:) = {'sisters.sisSep.z',sData.sisSep_z}; c=c+1;
+            newData(c,:) = {'sisters.sisSep.twoD',sData.sisSep_2D}; c=c+1;
+            newData(c,:) = {'sisters.sisSep.threeD',sData.sisSep_3D}; c=c+1;
+            newData(c,:) = {'sisters.raw.delta.x',sData.delta_x}; c=c+1;
+            newData(c,:) = {'sisters.raw.delta.y',sData.delta_y}; c=c+1;
+            newData(c,:) = {'sisters.raw.delta.z',sData.delta_z}; c=c+1;
+            newData(c,:) = {'sisters.raw.delta.oneD',sData.delta_1D}; c=c+1;
+            newData(c,:) = {'sisters.raw.delta.twoD',sData.delta_2D}; c=c+1;
+            newData(c,:) = {'sisters.raw.delta.threeD',sData.delta_3D}; c=c+1;
+            newData(c,:) = {'sisters.raw.swivel.y',sData.swivel_y}; c=c+1;
+            newData(c,:) = {'sisters.raw.swivel.z',sData.swivel_z}; c=c+1;
+            newData(c,:) = {'sisters.raw.swivel.threeD',sData.swivel_3D}; c=c+1;
 
             %% Quality control
-            
+           
             % find which data satisfies the z-depth requirement
-            satisfies = +(abs(micrData.delta_z)<0.5*pixelSize(3));
+            satisfies = +(abs(mData.delta_z)<0.5*pixelSize(3));
             satisfies(satisfies==0) = NaN;
+            
             % put all data into string format
-            newData(c,:) = {'microscope.depthFilter.delta.x.all',micrData.delta_x.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.y.all',micrData.delta_y.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.z.all',micrData.delta_z.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.oneD',micrData.delta_1D.*prod(satisfies,2)}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.twoD.all',micrData.delta_2D.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.threeD.all',micrData.delta_3D.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.swivel.y.all',micrData.swivel_y.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.swivel.z.all',micrData.swivel_z.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.swivel.threeD.all',micrData.swivel_3D.*satisfies}; c=c+1;
-            if isfield(micrData,'swivel_kMT')
-              newData(c,:) = {'microscope.depthFilter.swivel.kMT',micrData.swivel_kMT.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.delta.x',mData.delta_x.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.delta.y',mData.delta_y.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.delta.z',mData.delta_z.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.delta.oneD',mData.delta_1D.*prod(satisfies,2)}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.delta.twoD',mData.delta_2D.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.delta.threeD',mData.delta_3D.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.swivel.y',mData.swivel_y.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.swivel.z',mData.swivel_z.*satisfies}; c=c+1;
+            newData(c,:) = {'microscope.depthFilter.swivel.threeD',mData.swivel_3D.*satisfies}; c=c+1;
+            if isfield(mData,'swivel_kMT')
+              newData(c,:) = {'microscope.depthFilter.swivel.kMT',mData.swivel_kMT.*satisfies}; c=c+1;
             else
               newData(c,:) = {'microscope.depthFilter.swivel.kMT',[]}; c=c+1;
             end
-            if plate
-              newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.oneD',plateData.delta_1D.*prod(satisfies,2)}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.twoD.all',plateData.delta_2D.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.threeD.all',plateData.delta_3D.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.swivel.y.all',plateData.swivel_y.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.swivel.z.all',plateData.swivel_z.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.swivel.threeD.all',plateData.swivel_3D.*satisfies}; c=c+1;
-              if isfield(plateData,'swivel_kMT')
-                newData(c,:) = {'plate.depthFilter.swivel.kMT',plateData.swivel_kMT.*satisfies}; c=c+1;
+            if plane
+              newData(c,:) = {'plate.depthFilter.delta.x',pData.delta_x.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.delta.y',pData.delta_y.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.delta.z',pData.delta_z.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.delta.oneD',pData.delta_1D.*prod(satisfies,2)}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.delta.twoD',pData.delta_2D.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.delta.threeD',pData.delta_3D.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.swivel.y',pData.swivel_y.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.swivel.z',pData.swivel_z.*satisfies}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.swivel.threeD',pData.swivel_3D.*satisfies}; c=c+1;
+              if isfield(pData,'swivel_kMT')
+                newData(c,:) = {'plate.depthFilter.swivel.kMT',pData.swivel_kMT.*satisfies}; c=c+1;
               else
                 newData(c,:) = {'plate.depthFilter.swivel.kMT',[]}; c=c+1;
               end
-              newData(c,:) = {'plate.depthFilter.twist.y',plateData.twist_y.*nanmax(satisfies,[],2)}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.twist.z',plateData.twist_z.*nanmax(satisfies,[],2)}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.twist.threeD',plateData.twist_3D.*nanmax(satisfies,[],2)}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.twist.y',pData.twist_y.*nanmax(satisfies,[],2)}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.twist.z',pData.twist_z.*nanmax(satisfies,[],2)}; c=c+1;
+              newData(c,:) = {'plate.depthFilter.twist.threeD',pData.twist_3D.*nanmax(satisfies,[],2)}; c=c+1;
             end
+            % put all data into string format
+            newData(c,:) = {'sisters.depthFilter.delta.x',sData.delta_x.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.delta.y',sData.delta_y.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.delta.z',sData.delta_z.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.delta.oneD',sData.delta_1D.*prod(satisfies,2)}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.delta.twoD',sData.delta_2D.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.delta.threeD',sData.delta_3D.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.swivel.y',sData.swivel_y.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.swivel.z',sData.swivel_z.*satisfies}; c=c+1;
+            newData(c,:) = {'sisters.depthFilter.swivel.threeD',sData.swivel_3D.*satisfies}; c=c+1;
             
             % get intensities if required
-            if ints
-              %intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
-              intsInnerMean = [sIinner(trackIDs(1)).intensity(:)-innerBg sIinner(trackIDs(2)).intensity(:)-innerBg];
-              intsInnerMax  = [sIinner(trackIDs(1)).intensity_max(:)-innerBg sIinner(trackIDs(2)).intensity_max(:)-innerBg];
-              intsOuterMean = [sIouter(trackIDs(1)).intensity(:)-innerBg sIouter(trackIDs(2)).intensity(:)-innerBg];
-              intsOuterMax  = [sIouter(trackIDs(1)).intensity_max(:)-innerBg sIouter(trackIDs(2)).intensity_max(:)-innerBg];
-              % put data into string format
-              newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
-              newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
-              newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
-              newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
-              newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
-              newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
-            end
+            intsInnerMean = [sIinner(trackIDs(iSis,1)).intensity(:)-innerBg     sIinner(trackIDs(iSis,2)).intensity(:)-innerBg];
+            intsInnerMax  = [sIinner(trackIDs(iSis,1)).intensity_max(:)-innerBg sIinner(trackIDs(iSis,2)).intensity_max(:)-innerBg];
+            intsOuterMean = [sIouter(trackIDs(iSis,1)).intensity(:)-outerBg     sIouter(trackIDs(iSis,2)).intensity(:)-outerBg];
+            intsOuterMax  = [sIouter(trackIDs(iSis,1)).intensity_max(:)-outerBg sIouter(trackIDs(iSis,2)).intensity_max(:)-outerBg];
+            % put data into string format
+            newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+            newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+            newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+            newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+            newData(c,:) = {'intensity.bg.inner',innerBg}; c=c+1;
+            newData(c,:) = {'intensity.bg.outer',outerBg}; c=c+1;
             
             %% Directional information
             
-            % get direction of movement
-            direc = [];
-            for iTrack = 1:2
-              if ~isempty(dSinner.trackList(trackIDs(iTrack)).direction)
-                  if selType==1 && ~ismember(trackIDs(iTrack),theseTracks)
-                    direc(:,iTrack) = nan(nFrames,1);
-                  else
-                    direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+            if nFrames > 1
+                % get direction of movement
+                direc = [];
+                for iTrack = 1:2
+                  if ~isempty(dSinner.trackList(trackIDs(iTrack)).direction)
+                      if selType==1 && ~ismember(trackIDs(iTrack),theseTracks)
+                        direc(:,iTrack) = nan(nFrames-1,1);
+                      else
+                        direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+                      end
                   end
-              end
-            end
-            direc(end+1,:) = NaN;
-            
-            % get potential switch events (i.e. individual timepoints between P and AP)
-            switchBuffer = 4;
-            switchEvent = zeros(size(direc));
-            switchDirec = [diff(direc); NaN NaN];
-            for iPoint = 1:2:size(switchEvent,1)-(switchBuffer+1)
-                for jSis = 1:2
-                    tempDirec = switchDirec(iPoint:iPoint+(switchBuffer-1),jSis);
-                    idx = find(tempDirec(2:(switchBuffer-1))==0);
-                    if max(abs(tempDirec))==1 && abs(sum(tempDirec))>1 && ~isempty(idx)
-                        switchEvent(iPoint+idx(1):iPoint+idx(end),jSis) = 1;
+                end
+                direc(end+1,:) = NaN;
+
+                % get potential switch events (i.e. individual timepoints between P and AP)
+                switchBuffer = 4;
+                switchEvent = zeros(size(direc));
+                switchDirec = [diff(direc); NaN NaN];
+                for iPoint = 1:2:size(switchEvent,1)-(switchBuffer+1)
+                    for iTrack = 1:2
+                        tempDirec = switchDirec(iPoint:iPoint+(switchBuffer-1),iTrack);
+                        idx = find(tempDirec(2:(switchBuffer-1))==0);
+                        if max(abs(tempDirec))==1 && abs(sum(tempDirec))>1 && ~isempty(idx)
+                            switchEvent(iPoint+idx(1):iPoint+idx(end),iTrack) = 1;
+                        end
                     end
                 end
-            end
-            % calculate directional information
-            direc_P = +(direc==1);               direc_P(direc_P==0) = NaN;
-            direc_AP = +(direc==-1);             direc_AP(direc_AP==0) = NaN;
-            direc_S = +(switchEvent==1);         direc_S(direc_S==0) = NaN;
-            direc_N = +((direc+switchEvent)==0); direc_N(direc_N==0) = NaN;
-            % put data into string format
-            dirLabel = {'P','AP','S','N'};
-            for iDir = 1:4
-                eval(['newData(c,:) = {''direction.' dirLabel{iDir} ''',direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.x.' dirLabel{iDir} ''',micrData.delta_x.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.y.' dirLabel{iDir} ''',micrData.delta_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.z.' dirLabel{iDir} ''',micrData.delta_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.twoD.' dirLabel{iDir} ''',micrData.delta_2D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.threeD.' dirLabel{iDir} ''',micrData.delta_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.swivel.y.' dirLabel{iDir} ''',micrData.swivel_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.swivel.z.' dirLabel{iDir} ''',micrData.swivel_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.swivel.threeD.' dirLabel{iDir} ''',micrData.swivel_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.x.' dirLabel{iDir} ''',micrData.delta_x.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.y.' dirLabel{iDir} ''',micrData.delta_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.z.' dirLabel{iDir} ''',micrData.delta_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.twoD.' dirLabel{iDir} ''',micrData.delta_2D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.threeD.' dirLabel{iDir} ''',micrData.delta_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.swivel.y.' dirLabel{iDir} ''',micrData.swivel_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.swivel.z.' dirLabel{iDir} ''',micrData.swivel_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.swivel.threeD.' dirLabel{iDir} ''',micrData.swivel_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                if plate
-                  eval(['newData(c,:) = {''plate.raw.delta.x.' dirLabel{iDir} ''',plateData.delta_x.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.y.' dirLabel{iDir} ''',plateData.delta_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.z.' dirLabel{iDir} ''',plateData.delta_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.twoD.' dirLabel{iDir} ''',plateData.delta_2D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.threeD.' dirLabel{iDir} ''',plateData.delta_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.swivel.y.' dirLabel{iDir} ''',plateData.swivel_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.swivel.z.' dirLabel{iDir} ''',plateData.swivel_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.swivel.threeD.' dirLabel{iDir} ''',plateData.swivel_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.x.' dirLabel{iDir} ''',plateData.delta_x.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.y.' dirLabel{iDir} ''',plateData.delta_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.z.' dirLabel{iDir} ''',plateData.delta_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.twoD.' dirLabel{iDir} ''',plateData.delta_2D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.threeD.' dirLabel{iDir} ''',plateData.delta_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.swivel.y.' dirLabel{iDir} ''',plateData.swivel_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.swivel.z.' dirLabel{iDir} ''',plateData.swivel_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.swivel.threeD.' dirLabel{iDir} ''',plateData.swivel_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                end
+                % calculate directional information
+                direc_P = +(direc==1);               direc_P(direc_P==0) = NaN;
+                direc_AP = +(direc==-1);             direc_AP(direc_AP==0) = NaN;
+                direc_S = +(switchEvent==1);         direc_S(direc_S==0) = NaN;
+                direc_N = +((direc+switchEvent)==0); direc_N(direc_N==0) = NaN;
+                % put data into string format
+                newData(c,:) = {'direction.P',direc_P}; c=c+1;
+                newData(c,:) = {'direction.AP',direc_AP}; c=c+1;
+                newData(c,:) = {'direction.S',direc_S}; c=c+1;
+                newData(c,:) = {'direction.N',direc_N};
+                
             end
         
             % compile new data with original
             allData = combineStrForms(allData,newData);
             
-            % clear some data to ensure no overlap on next loop
-            clear spotIDs iCinner iCouter newData direc
+            % clear data to ensure no overlap on next loop
+            clear newData
         
         end % sisters
         
-      else
+      else % if paired
         
           % start counter for storing data
           c=1;
@@ -474,18 +543,31 @@ for iExpt = 1:numExpts
           % get initCoords
           iCinner = dSinner.initCoord;
           iCouter = dSouter.initCoord;
+          nSpots = size(iCinner(1).allCoord,1);
+          
+          % get basic metadata
+          nFrames = theseMovies{iMov}.metadata.nFrames;
+          pixelSize = theseMovies{iMov}.metadata.pixelSize;
+          
           % get spotInts
-          if ints
-              sIinner = dSinner.spotInt;
-              innerBg = dSinner.cellInt.back;
-              sIouter = dSouter.spotInt;
-              outerBg = dSouter.cellInt.back;
-              nSpots = length(sIinner);
+          if isfield(dSinner,'spotInt')
+            sIinner = dSinner.spotInt;
+            innerBg = dSinner.cellInt.back;
+            sIouter = dSouter.spotInt;
+            outerBg = dSouter.cellInt.back;
+          else
+            sIinner = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            innerBg = nan(nFrames,1);
+            sIouter = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            outerBg = nan(nFrames,1);
           end
           
           % get basic metadata
           nFrames = theseMovies{iMov}.metadata.nFrames;
           pixelSize = theseMovies{iMov}.metadata.pixelSize;
+          
+          % store experiment numbers
+          newData(c,:) = {'exptLabel',repmat(exptLab,nSpots,1)}; c=c+1;
           
           %% Kinetochore positions
           
@@ -496,108 +578,123 @@ for iExpt = 1:numExpts
           for iFrame = 1:nFrames
             % get microscope coordinates of each spot
             micrCoordsInner = [micrCoordsInner; iCinner(iFrame).allCoord(:,1:3)];
-            micrCoordsOuter = [micrCoordsOuter; iCouter(iFrame).allCoord(:,1:3)];
-            micrCoord_x = [micrCoord_x; [iCinner(iFrame).allCoord(:,1) iCouter(iFrame).allCoord(:,1)]];
-            micrCoord_y = [micrCoord_y; [iCinner(iFrame).allCoord(:,2) iCouter(iFrame).allCoord(:,2)]];
-            micrCoord_z = [micrCoord_z; [iCinner(iFrame).allCoord(:,3) iCouter(iFrame).allCoord(:,3)]];
+            micrCoordsOuter = [micrCoordsOuter; iCouter(iFrame).allCoord(:,1:3)-mCentMeds];
+            micrCoord_x = [micrCoord_x; [iCinner(iFrame).allCoord(:,1) iCouter(iFrame).allCoord(:,1)-mCentMeds(1)]];
+            micrCoord_y = [micrCoord_y; [iCinner(iFrame).allCoord(:,2) iCouter(iFrame).allCoord(:,2)-mCentMeds(2)]];
+            micrCoord_z = [micrCoord_z; [iCinner(iFrame).allCoord(:,3) iCouter(iFrame).allCoord(:,3)-mCentMeds(3)]];
           end
+           
           % put data into string format
           newData(c,:) = {'microscope.coords.x',micrCoord_x}; c=c+1;
           newData(c,:) = {'microscope.coords.y',micrCoord_y}; c=c+1;
           newData(c,:) = {'microscope.coords.z',micrCoord_z}; c=c+1;
             
           if isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit)
-            plate = 1;
+            plane = 1;
             pFinner = dSinner.planeFit; pFouter = dSouter.planeFit;
           else
-            plate = 0;
+            plane = 0;
           end
-          if plate
+          if plane
             
             % predefine various variables
             plateCoordsInner = []; plateCoordsOuter = [];
             plateCoord_x = []; plateCoord_y = []; plateCoord_z = [];
           
             for iFrame = 1:nFrames
+              
+              if ~isempty(pFinner(iFrame).planeVectors)
+                %get the coordinate system of each frame with a plane
+                coordSystem = pFinner(iFrame).planeVectors;
+                pCentMeds = (coordSystem\mCentMeds')';
+              end
+              
               % get microscope coordinates of each spot
               plateCoordsInner = [plateCoordsInner; pFinner(iFrame).rotatedCoord(:,1:3)];
-              plateCoordsOuter = [plateCoordsOuter; pFouter(iFrame).rotatedCoord(:,1:3)];
-              plateCoord_x = [plateCoord_x; [pFinner(iFrame).rotatedCoord(:,1) pFouter(iFrame).rotatedCoord(:,1)]];
-              plateCoord_y = [plateCoord_y; [pFinner(iFrame).rotatedCoord(:,2) pFouter(iFrame).rotatedCoord(:,2)]];
-              plateCoord_z = [plateCoord_z; [pFinner(iFrame).rotatedCoord(:,3) pFouter(iFrame).rotatedCoord(:,3)]];
+              plateCoordsOuter = [plateCoordsOuter; pFouter(iFrame).rotatedCoord(:,1:3)-pCentMeds];
+              plateCoord_x = [plateCoord_x; [pFinner(iFrame).rotatedCoord(:,1) pFouter(iFrame).rotatedCoord(:,1)-pCentMeds(1)]];
+              plateCoord_y = [plateCoord_y; [pFinner(iFrame).rotatedCoord(:,2) pFouter(iFrame).rotatedCoord(:,2)-pCentMeds(2)]];
+              plateCoord_z = [plateCoord_z; [pFinner(iFrame).rotatedCoord(:,3) pFouter(iFrame).rotatedCoord(:,3)-pCentMeds(3)]];
               % put data into string format
               newData(c,:) = {'plate.coords.x',plateCoord_x}; c=c+1;
               newData(c,:) = {'plate.coords.y',plateCoord_y}; c=c+1;
               newData(c,:) = {'plate.coords.z',plateCoord_z}; c=c+1;
+              
             end
           end
           
-          % get intensities if required
-          if ints
-            intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
-            for iSpot = 1:nSpots
-              intsInnerMean = [intsInnerMean; sIinner(iSpot).intensity(:)-innerBg];
-              intsInnerMax = [intsInnerMax; sIinner(iSpot).intensity_max(:)-innerBg];
-              intsOuterMean = [intsOuterMean; sIouter(iSpot).intensity(:)-outerBg];
-              intsOuterMax = [intsOuterMax; sIouter(iSpot).intensity_max(:)-outerBg];
-            end
-            % put data into string format
-            newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
-            newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
-            newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
-            newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+          % get intensities
+          intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
+          for iSpot = 1:nSpots
+            intsInnerMean = [intsInnerMean; sIinner(iSpot).intensity(:)-innerBg];
+            intsInnerMax = [intsInnerMax;   sIinner(iSpot).intensity_max(:)-innerBg];
+            intsOuterMean = [intsOuterMean; sIouter(iSpot).intensity(:)-outerBg];
+            intsOuterMax = [intsOuterMax;   sIouter(iSpot).intensity_max(:)-outerBg];
           end
-          
-          %% Inter- and intra-kinetochore measurements
-            
-          micrData = soloMeasurements(micrCoordsInner,micrCoordsOuter,opts.centralise);
           % put data into string format
-          newData(c,:) = {'microscope.raw.delta.x.all',micrData.delta_x}; c=c+1;
-          newData(c,:) = {'microscope.raw.delta.y.all',micrData.delta_y}; c=c+1;
-          newData(c,:) = {'microscope.raw.delta.z.all',micrData.delta_z}; c=c+1;
-          newData(c,:) = {'microscope.raw.delta.twoD.all',micrData.delta_2D}; c=c+1;
-          newData(c,:) = {'microscope.raw.delta.threeD.all',micrData.delta_3D}; c=c+1;
+          newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+          newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+          newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+          newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
           
-          if plate
-            plateData = soloMeasurements(plateCoordsInner,plateCoordsOuter,opts.centralise);
-            % put data into string format
-            newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.z.all',plateData.delta_z}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.twoD.all',plateData.delta_2D}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.threeD.all',plateData.delta_3D}; c=c+1;
-          end
-          
-          %% Quality control
+      %% Inter- and intra-kinetochore measurements
+
+      mData = soloMeasurements(micrCoordsInner,micrCoordsOuter);
+      % put data into string format
+      newData(c,:) = {'microscope.raw.delta.x',mData.delta_x}; c=c+1;
+      newData(c,:) = {'microscope.raw.delta.y',mData.delta_y}; c=c+1;
+      newData(c,:) = {'microscope.raw.delta.z',mData.delta_z}; c=c+1;
+      newData(c,:) = {'microscope.raw.delta.twoD',mData.delta_2D}; c=c+1;
+      newData(c,:) = {'microscope.raw.delta.threeD',mData.delta_3D}; c=c+1;
+
+      if plane
+        pData = soloMeasurements(plateCoordsInner,plateCoordsOuter);
+        % put data into string format
+        newData(c,:) = {'plate.raw.delta.x',pData.delta_x}; c=c+1;
+        newData(c,:) = {'plate.raw.delta.y',pData.delta_y}; c=c+1;
+        newData(c,:) = {'plate.raw.delta.z',pData.delta_z}; c=c+1;
+        newData(c,:) = {'plate.raw.delta.twoD',pData.delta_2D}; c=c+1;
+        newData(c,:) = {'plate.raw.delta.threeD',pData.delta_3D}; c=c+1;
+      end
+
+      %% Quality control
+
+        % find which data satisfies the z-depth requirement
+        satisfies = +(abs(mData.delta_z)<0.5*pixelSize(3));
+        satisfies(satisfies==0) = NaN;
+        % put all data into string format
+        newData(c,:) = {'microscope.depthFilter.delta.x',mData.delta_x.*satisfies}; c=c+1;
+        newData(c,:) = {'microscope.depthFilter.delta.y',mData.delta_y.*satisfies}; c=c+1;
+        newData(c,:) = {'microscope.depthFilter.delta.z',mData.delta_z.*satisfies}; c=c+1;
+        newData(c,:) = {'microscope.depthFilter.delta.twoD',mData.delta_2D.*satisfies}; c=c+1;
+        newData(c,:) = {'microscope.depthFilter.delta.threeD',mData.delta_3D.*satisfies}; c=c+1;
+
+        if plane
+          newData(c,:) = {'plate.depthFilter.delta.x',pData.delta_x.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.y',pData.delta_y.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.z',pData.delta_z.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.twoD',pData.delta_2D.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.threeD',pData.delta_3D.*satisfies}; c=c+1;
+        end
+
+      % compile new data with original
+      allData = combineStrForms(allData,newData);  
             
-            % find which data satisfies the z-depth requirement
-            satisfies = +(abs(micrData.delta_z)<0.5*pixelSize(3));
-            satisfies(satisfies==0) = NaN;
-            % put all data into string format
-            newData(c,:) = {'microscope.depthFilter.delta.x.all',micrData.delta_x.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.y.all',micrData.delta_y.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.z.all',micrData.delta_z.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.twoD.all',micrData.delta_2D.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.threeD.all',micrData.delta_3D.*satisfies}; c=c+1;
-            
-            if plate
-              newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.twoD.all',plateData.delta_2D.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.threeD.all',plateData.delta_3D.*satisfies}; c=c+1;
-            end
-          
-          % compile new data with original
-          allData = combineStrForms(allData,newData);  
-            
-      end % paired
-    end % movies     
+    end % paired
+    
+    % update progress
+    prog = kitProgress(movCount/totalMovs,prog);
+    
+  end % movies     
 end % expts
 
 %% Save results to structure
 
 compiledIntra = strForm2struct(allData);
+compiledIntra.exptLabel = num2cell(compiledIntra.exptLabel,2);
+compiledIntra.options.channels = opts.channels;
+compiledIntra.options.paired = paired;
+compiledIntra.options.plate = plane;
 
 %% Output any error information
 
@@ -612,22 +709,20 @@ if ~isempty(noSpot)
   for iCell = 1:size(noSpot,1)
     fprintf('    Exp %i, Mov %i\n',noSpot(iCell,1),noSpot(iCell,2));
   end
+  fprintf('\n');
 end
 if ~isempty(noSis)
   fprintf('\nThe following cells contain no sisterList:\n');
   for iCell = 1:size(noSis,1)
     fprintf('    Exp %i, Mov %i\n',noSis(iCell,1),noSis(iCell,2));
   end
+  fprintf('\n');
 end
-fprintf('\n');
 
-function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,centralise)
+function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
     
     if nargin<3 || isempty(plate)
         plate = 0;
-    end
-    if nargin<4 || isempty(centralise)
-        centralise = 0;
     end
         
     %% Inter-kinetochore: separation, twist, and velocities
@@ -676,15 +771,6 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,central
     % coordinate-specific delta
     delta1_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
     delta2_xyz = coordsOuter(:,4:6) - coordsInner(:,4:6);
-    if centralise
-        medVal = nanmedian([delta1_xyz;delta2_xyz]);
-        for iCoord=1:3
-            coordsOuter(:,iCoord) = coordsOuter(:,iCoord) - medVal(iCoord);
-            coordsOuter(:,iCoord+3) = coordsOuter(:,iCoord+3) - medVal(iCoord);
-        end
-        delta1_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
-        delta2_xyz = coordsOuter(:,4:6) - coordsInner(:,4:6);
-    end
     
     measurements.delta_x = [delta1_xyz(:,1) delta2_xyz(:,1)];
     measurements.delta_y = [delta1_xyz(:,2) delta2_xyz(:,2)];
@@ -751,21 +837,10 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,central
 
 end %pairedMeasurements subfunction
 
-function measurements = soloMeasurements(coordsInner,coordsOuter,centralise)
-    
-    if nargin<3 || isempty(centralise)
-        centralise = 0;
-    end
+function measurements = soloMeasurements(coordsInner,coordsOuter)
     
     % coordinate-specific delta
     delta_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
-    if centralise
-        medVal = nanmedian(delta_xyz);
-        for iCoord=1:3
-            coordsOuter(:,iCoord) = coordsOuter(:,iCoord) - medVal(iCoord);
-        end
-        delta_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
-    end
     
     measurements.delta_x = delta_xyz(:,1);
     measurements.delta_y = delta_xyz(:,2);

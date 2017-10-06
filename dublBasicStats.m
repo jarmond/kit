@@ -8,7 +8,7 @@ function dublBasicStats(intraStructure,varargin)
 %
 %    Options, defaults in {}:-
 %
-%    coordSystem: {'plate'} or 'microscope'. The coordinate system in which
+%    coordSystem: {'plate'}, 'microscope' or 'sisters'. The coordinate system in which
 %       to provide statistics. Note that some statistics are coordinate-
 %       independent.
 %
@@ -65,15 +65,21 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    delta3D = intraStructure.plate.depthFilter.delta.threeD.all(:);
+                    delta3D = intraStructure.plate.depthFilter.delta.threeD(:);
                 else
-                    delta3D = intraStructure.plate.raw.delta.threeD.all(:);
+                    delta3D = intraStructure.plate.raw.delta.threeD(:);
                 end
             case 'microscope'
                 if opts.depthFilter
-                    delta3D = intraStructure.microscope.depthFilter.delta.threeD.all(:);
+                    delta3D = intraStructure.microscope.depthFilter.delta.threeD(:);
                 else
-                    delta3D = intraStructure.microscope.raw.delta.threeD.all(:);
+                    delta3D = intraStructure.microscope.raw.delta.threeD(:);
+                end
+            case 'sisters'
+                if opts.depthFilter
+                    delta3D = intraStructure.sisters.depthFilter.delta.threeD(:);
+                else
+                    delta3D = intraStructure.sisters.raw.delta.threeD(:);
                 end
         end
         
@@ -94,15 +100,21 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    delta2D = intraStructure.plate.depthFilter.delta.twoD.all(:);
+                    delta2D = intraStructure.plate.depthFilter.delta.twoD(:);
                 else
-                    delta2D = intraStructure.plate.raw.delta.twoD.all(:);
+                    delta2D = intraStructure.plate.raw.delta.twoD(:);
                 end
             case 'microscope'
                 if opts.depthFilter
-                    delta2D = intraStructure.microscope.depthFilter.delta.twoD.all(:);
+                    delta2D = intraStructure.microscope.depthFilter.delta.twoD(:);
                 else
-                    delta2D = intraStructure.microscope.raw.delta.twoD.all(:);
+                    delta2D = intraStructure.microscope.raw.delta.twoD(:);
+                end
+            case 'sisters'
+                if opts.depthFilter
+                    delta2D = intraStructure.sisters.depthFilter.delta.twoD(:);
+                else
+                    delta2D = intraStructure.sisters.raw.delta.twoD(:);
                 end
         end
 
@@ -133,6 +145,12 @@ switch opts.stat
                 else
                     delta1D = intraStructure.microscope.raw.delta.oneD(:);
                 end
+            case 'sisters'
+                if opts.depthFilter
+                    delta1D = intraStructure.sisters.depthFilter.delta.oneD(:);
+                else
+                    delta1D = intraStructure.sisters.raw.delta.oneD(:);
+                end
         end
 
         median = nanmedian(delta1D)*1000;
@@ -152,23 +170,33 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    deltaXYZ(:,1) = intraStructure.plate.depthFilter.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.plate.depthFilter.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.plate.depthFilter.delta.z.all(:);
+                    deltaXYZ(:,1) = intraStructure.plate.depthFilter.delta.x(:);
+                    deltaXYZ(:,2) = intraStructure.plate.depthFilter.delta.y(:);
+                    deltaXYZ(:,3) = intraStructure.plate.depthFilter.delta.z(:);
                 else
-                    deltaXYZ(:,1) = intraStructure.plate.raw.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.plate.raw.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.plate.raw.delta.z.all(:);
+                    deltaXYZ(:,1) = intraStructure.plate.raw.delta.x(:);
+                    deltaXYZ(:,2) = intraStructure.plate.raw.delta.y(:);
+                    deltaXYZ(:,3) = intraStructure.plate.raw.delta.z(:);
                 end
             case 'microscope'
                 if opts.depthFilter
-                    deltaXYZ(:,1) = intraStructure.microscope.depthFilter.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.microscope.depthFilter.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.microscope.depthFilter.delta.z.all(:);
+                    deltaXYZ(:,1) = intraStructure.microscope.depthFilter.delta.x(:);
+                    deltaXYZ(:,2) = intraStructure.microscope.depthFilter.delta.y(:);
+                    deltaXYZ(:,3) = intraStructure.microscope.depthFilter.delta.z(:);
                 else
-                    deltaXYZ(:,1) = intraStructure.microscope.raw.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.microscope.raw.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.microscope.raw.delta.z.all(:);
+                    deltaXYZ(:,1) = intraStructure.microscope.raw.delta.x(:);
+                    deltaXYZ(:,2) = intraStructure.microscope.raw.delta.y(:);
+                    deltaXYZ(:,3) = intraStructure.microscope.raw.delta.z(:);
+                end
+            case 'sisters'
+                if opts.depthFilter
+                    deltaXYZ(:,1) = intraStructure.sisters.depthFilter.delta.x(:);
+                    deltaXYZ(:,2) = intraStructure.sisters.depthFilter.delta.y(:);
+                    deltaXYZ(:,3) = intraStructure.sisters.depthFilter.delta.z(:);
+                else
+                    deltaXYZ(:,1) = intraStructure.sisters.raw.delta.x(:);
+                    deltaXYZ(:,2) = intraStructure.sisters.raw.delta.y(:);
+                    deltaXYZ(:,3) = intraStructure.sisters.raw.delta.z(:);
                 end
         end
     
@@ -191,6 +219,8 @@ switch opts.stat
                 sisSep3D = intraStructure.plate.sisSep.threeD(:);
             case 'microscope'
                 sisSep3D = intraStructure.microscope.sisSep.threeD(:);
+            case 'sisters'
+                sisSep3D = intraStructure.sisters.sisSep.threeD(:);
         end
         
         median = nanmedian(sisSep3D)*1000;
@@ -212,6 +242,8 @@ switch opts.stat
                 sisSep2D = intraStructure.plate.sisSep.twoD(:);
             case 'microscope'
                 sisSep2D = intraStructure.microscope.sisSep.twoD(:);
+            case 'sisters'
+                sisSep2D = intraStructure.sisters.sisSep.twoD(:);
         end
         
         median = nanmedian(sisSep2D)*1000;
@@ -237,6 +269,10 @@ switch opts.stat
                 sisSepXYZ(:,1) = intraStructure.microscope.sisSep.x(:);
                 sisSepXYZ(:,2) = intraStructure.microscope.sisSep.y(:);
                 sisSepXYZ(:,3) = intraStructure.microscope.sisSep.z(:);
+            case 'sisters'
+                sisSepXYZ(:,1) = intraStructure.sisters.sisSep.x(:);
+                sisSepXYZ(:,2) = intraStructure.sisters.sisSep.y(:);
+                sisSepXYZ(:,3) = intraStructure.sisters.sisSep.z(:);
         end
 
         median = nanmedian(sisSepXYZ)*1000;
@@ -256,7 +292,7 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 twist3D = intraStructure.plate.twist.threeD(:);
-            case 'microscope'
+            otherwise
                 error('Twist is not defined for a non-plate coordinate system.')
         end
         
@@ -278,7 +314,7 @@ switch opts.stat
             case 'plate'
                 twistYZ(:,1) = intraStructure.plate.twist.y(:);
                 twistYZ(:,2) = intraStructure.plate.twist.z(:);
-            case 'microscope'
+            otherwise
                 error('Twist is not defined for a non-plate coordinate system.')
         end
 
@@ -299,16 +335,18 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    swivel3D = intraStructure.plate.depthFilter.swivel.threeD.all(:);
+                    swivel3D = intraStructure.plate.depthFilter.swivel.threeD(:);
                 else
-                    swivel3D = intraStructure.plate.raw.swivel.threeD.all(:);
+                    swivel3D = intraStructure.plate.raw.swivel.threeD(:);
                 end
             case 'microscope'
                 if opts.depthFilter
-                    swivel3D = intraStructure.microscope.depthFilter.swivel.threeD.all(:);
+                    swivel3D = intraStructure.microscope.depthFilter.swivel.threeD(:);
                 else
-                    swivel3D = intraStructure.microscope.raw.swivel.threeD.all(:);
+                    swivel3D = intraStructure.microscope.raw.swivel.threeD(:);
                 end
+            otherwise
+                error('Swivel can only be defined for plate or microscope coordinate systems.')
         end
         
         median = nanmedian(swivel3D);
@@ -338,6 +376,8 @@ switch opts.stat
                 else
                     swivelKMT = intraStructure.microscope.raw.swivel.kMT(:);
                 end
+            otherwise
+                error('Swivel can only be defined for plate or microscope coordinate systems.')
         end
 
         median = nanmedian(swivelKMT);
@@ -357,20 +397,22 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.y(:);
+                    swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.z(:);
                 else
-                    swivelYZ(:,1) = intraStructure.plate.raw.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.plate.raw.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.plate.raw.swivel.y(:);
+                    swivelYZ(:,2) = intraStructure.plate.raw.swivel.z(:);
                 end
             case 'microscope'
                 if opts.depthFilter
-                    swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.y(:);
+                    swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.z(:);
                 else
-                    swivelYZ(:,1) = intraStructure.microscope.raw.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.microscope.raw.swivel.z.all(:);
+                    swivelYZ(:,1) = intraStructure.microscope.raw.swivel.y(:);
+                    swivelYZ(:,2) = intraStructure.microscope.raw.swivel.z(:);
                 end
+            otherwise
+                error('Swivel can only be defined for plate or microscope coordinate systems.')
         end
     
         median = nanmedian(swivelYZ);
@@ -390,7 +432,7 @@ switch opts.stat
         ints(:,1) = intraStructure.intensity.mean.inner(:);
         ints(:,2) = intraStructure.intensity.mean.outer(:);
         if opts.depthFilter
-            filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            filt = isnan(intraStructure.plate.depthFilter.delta.threeD(:));
             ints(repmat(filt,1,2)) = NaN;
         end
         
@@ -411,7 +453,7 @@ switch opts.stat
         ints(:,1) = intraStructure.intensity.mean.inner(:);
         ints(:,2) = intraStructure.intensity.mean.outer(:);
         if opts.depthFilter
-            filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            filt = isnan(intraStructure.plate.depthFilter.delta.threeD(:));
             ints(repmat(filt,1,2)) = NaN;
         end
         normInts = ints;
