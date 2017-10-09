@@ -14,7 +14,7 @@ else
   jobset = jobsetorname;
   % Generate output name.
   job = jobset;
-  job.movie = jobset.ROI(index).movie;
+  job.ROI = jobset.ROI(index);
   job.index = index;
   outputName = kitGenerateOutputFilename(job);
 end
