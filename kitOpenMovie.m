@@ -1,4 +1,4 @@
-function [metadata,reader]=kitOpenMovie(movieFileName,metadata,verbose)
+function varargout = kitOpenMovie(movieFileName,mode,metadata,suppWarn)
 % KITOPENMOVIE Open movie and extract metadata from BioFormats metadata
 %
 %    [METADATA,READER] = KITOPENMOVIE(MOVIEFILENAME) Open movie with filename
@@ -9,28 +9,40 @@ function [metadata,reader]=kitOpenMovie(movieFileName,metadata,verbose)
 % Modified by: C. A. Smith
 % Copyright (c) 2016 C. A. Smith
 
+% whether or not to suppress warnings
+if nargin<4
+  suppWarn = 0;
+end
+if suppWarn
+  w = warning;
+  warning('off','all');
+end
+
+% judge the mode of opening movies
+if nargin<2 || (isempty(mode) && nargin<3)
+  mode = 'init';
+elseif isempty(mode) && ~isempty(metadata)
+  mode = 'valid';
+end
+mode = find(strcmp(mode,{'init','valid','ROI'}));
+
+% only announce opening of movie if outside of validation or ROI production
+if mode == 1
+  kitLog('Opening movie: %s', movieFileName);
+end
 if ~exist(movieFileName,'file')
   error('Could not find file: %s',movieFileName);
 end
-if nargin<2 || isempty(metadata)
-  validated = 0;
-else
-  validated = 1;
-end
-if nargin<3 || isempty(verbose)
-  verbose = 1;
-end
 
-if verbose
-  kitLog('Opening movie: %s', movieFileName);
-end
 addpath bfmatlab;
 bfCheckJavaPath(1);
 
 reader = bfGetReader(movieFileName);
 
-% if previously run, don't find movie-logged metadata
-if validated
+% if previously validated, don't find any metadata
+if mode == 2
+  varargout{1} = metadata;
+  varargout{2} = reader;
   return
 end
 
@@ -59,6 +71,14 @@ end
 
 md.frameSize = [reader.getSizeX() reader.getSizeY() reader.getSizeZ()];
 
+% if requesting ROIs, don't need additional data
+if mode == 3
+  varargout{1} = md;
+  if nargout > 1
+      varargout{2} = reader;
+  end
+  return
+end
 
 % Read additional metadata
 metaTable = reader.getMetadataStore();
@@ -66,7 +86,7 @@ try
 
 % Wavelengths. Needed to estimate PSFs.
 numWvs = metaTable.getChannelCount(0);
-md.wavelength = [525 615 705]/1000; % Default assumes EGFP, mCherry,
+md.wavelength = [525 615 705 360]/1000; % Default assumes EGFP, mCherry,
                                     % DAPI. FIXME Ask user.
 warnWv = 0;
 for i=1:numWvs
@@ -105,14 +125,14 @@ for i=1:nTimepoints
     idx = idx+1;
   end
 end
-if warnT && verbose
+if warnT
   warning('Missing metadata: Assuming %d s per frame.', ...
           defDt);
 end
 dT = diff(md.frameTime(1,:));
 if isempty(dT); dT=0; end
 warndT = 0.5;
-if (max(dT)-min(dT) > warndT) && verbose
+if (max(dT)-min(dT) > warndT)
   warning('Frame time deviates by more than %f',warndT);
 end
 
@@ -123,9 +143,7 @@ md.is3D = nZPlanes > 1;
 try
   md.na = metaTable.getObjectiveLensNA(0,0).doubleValue;
 catch
-  if verbose
-    warning('Missing metadata: Assuming NA = 1.4');
-  end
+  warning('Missing metadata: Assuming NA = 1.4');
   md.na = 1.4; % Assume default.
 end
 
@@ -157,7 +175,7 @@ catch
 end
 
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
-    md.pixelSize(3) > 5 && verbose
+    md.pixelSize(3) > 5
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
 end
 
@@ -170,5 +188,13 @@ catch e
   error(['Missing required metadata: ' e.message]);
 end
 
-% Rename output.
-metadata = md;
+% reset warnings
+if suppWarn
+  warning(w);
+end
+
+% Process output.
+varargout{1} = md;
+if nargout > 1
+  varargout{2} = reader;
+end
