@@ -76,6 +76,7 @@ warningState = warning;
 warning off stats:lillietest:OutOfRangeP
 
 opts = job.options;
+nTimePoints = job.metadata.nFrames;
 
 % threshold for an acceptable eigenvalue ratio
 minEigenValRatio1 = 3;
@@ -86,8 +87,9 @@ minEigenValRatio2 = 3;
 rankNNearestNeighbors = 10;
 
 % minimal number of consecutive frames in a movie that have stable enough
-% eigenvectors for plane rotation estimation
-minConsecFrames = 5;
+% eigenvectors for plane rotation estimation - if less than 5 timepoints,
+% force plane fitting
+minConsecFrames = min(5,nTimePoints-1);
 
 % minimum number of spots to attempt to fit plane to
 minSpotsInFrame = 3;
@@ -110,9 +112,9 @@ else
 end
 
 % Get coordinates.
-nTimePoints = job.metadata.nFrames;
 if isfield(dataStruct,'initCoord')
   initCoord = dataStruct.initCoord;
+%   initCoord.allCoord = initCoord(~isnan(initCoord(:,1))); % remove pre-filtered spots
   spotsFound = 1;
 else
   % Fake initCoord if none. This will be case for image moment coordinate
@@ -121,7 +123,7 @@ else
     'correctionMu',0,'nSpots',0,'initAmp',[],'amp',[]);
   spotsFound = 0;
 end
-nSpots = cat(1,initCoord.nSpots);
+nSpots = size(cat(1,initCoord.allCoord),1);
 
 %assign dimensionality for fit
 probDim = 3 - use2D;
@@ -795,7 +797,7 @@ end % function kitFitPlane
 function showPlaneFit(job,reader,channel,frameNum,origin,eVecs,allCoordPix)
 % Show debugging visualization.
 
-img = kitReadImageStack(reader, job.metadata, frameNum, channel, job.crop);
+img = kitReadImageStack(reader, job.metadata, frameNum, channel, job.ROI.crop);
 % Max project image.
 img = max(img,[],3);
 
