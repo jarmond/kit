@@ -28,16 +28,16 @@ else
 end
 
 % predesignate intensity structure
-intStruct(1:nKTs) = struct(...
-    'intensity',nan(nFrames,1),...
-    'intensity_median',nan(nFrames,1),...
-    'intensity_min',nan(nFrames,1),...
-    'intensity_max',nan(nFrames,1),...
-    'intensity_ratio',nan(nFrames,1),...
-    'maskCoord',nan(nFrames,3),...
-    'maxCoord',nan(nFrames,3),...
-    'angleToMax',nan(nFrames,1),...
-    'distToMax',nan(nFrames,1));
+intStruct(1:nFrames) = struct(...
+    'intensity',nan(nKTs,1),...
+    'intensity_median',nan(nKTs,1),...
+    'intensity_min',nan(nKTs,1),...
+    'intensity_max',nan(nKTs,1),...
+    'intensity_ratio',nan(nKTs,1),...
+    'maskCoord',nan(nKTs,3),...
+    'maxCoord',nan(nKTs,3),...
+    'angleToMax',nan(nKTs,1),...
+    'distToMax',nan(nKTs,1));
 
 % convert pole shift to pixels
 poleShiftPixels = round(opts.poleShift / metadata.pixelSize(1));
@@ -86,7 +86,7 @@ maskWarning=0;
 
 prog = kitProgress(0);
 for t=1:nFrames
-    stack = kitReadImageStack(reader, metadata, t, channel, job.crop, 0);
+    stack = kitReadImageStack(reader, metadata, t, channel, job.ROI.crop, 0);
     if opts.gaussFilterSpots
       % Gaussian filter each z-plane.
       for z=1:size(stack,3)
@@ -177,32 +177,32 @@ for t=1:nFrames
           % matrix is indexed by (row,col) => (y,x).
           maskImg = mask .* imgPlane(y-r:y+r, x-r:x+r);
           nonNanPix = maskImg(~isnan(maskImg));
-          intStruct(j).intensity(t) = mean(nonNanPix);
-          intStruct(j).intensity_median(t) = median(nonNanPix);
-          intStruct(j).intensity_max(t) = max(nonNanPix);
-          intStruct(j).intensity_min(t) = min(nonNanPix);
-          intStruct(j).intensity_ratio(t) = ...
-              intStruct(j).intensity_max(t)/intStruct(j).intensity_min(t);
-          intStruct(j).maskCoord(t,:) = maskCoords;
+          intStruct(t).intensity(j) = mean(nonNanPix);
+          intStruct(t).intensity_median(j) = median(nonNanPix);
+          intStruct(t).intensity_max(j) = max(nonNanPix);
+          intStruct(t).intensity_min(j) = min(nonNanPix);
+          intStruct(t).intensity_ratio(j) = ...
+              intStruct(t).intensity_max(j)/intStruct(t).intensity_min(j);
+          intStruct(t).maskCoord(j,:) = maskCoords;
           %[maxX,maxY] = ind2sub(size(maskImg),maxIdx);
           [~,maxIdx] = max(maskImg(:));
           [maxY,maxX] = ind2sub(size(maskImg),maxIdx);
-          intStruct(j).maxCoord(t,:) = [maxX+x-r-1,maxY+y-r-1,z];
+          intStruct(t).maxCoord(j,:) = [maxX+x-r-1,maxY+y-r-1,z];
 
           % Calculate angle between spot and max point.
-          vector = pixCoords-intStruct(j).maxCoord(t,:);
-          intStruct(j).distToMax(t) = norm(vector(1:2),2)*metadata.pixelSize(1);
+          vector = pixCoords-intStruct(t).maxCoord(j,:);
+          intStruct(t).distToMax(j) = norm(vector(1:2),2)*metadata.pixelSize(1);
           % Rotate angle into coordinate system.
           if size(pixCoords,2)==size(planeFit(t).planeVectors,2)
             vector = vector*planeFit(t).planeVectors;
           end
           angle = -atan2(vector(2),-vector(1)); % See doc atan2 for diagram.
-          intStruct(j).angleToMax(t) = angle;
-          intStruct(j).referenceChannel = refChan;
+          intStruct(t).angleToMax(j) = angle;
+          intStruct(t).referenceChannel = refChan;
           if useTracks
-            intStruct(j).referenceStruct = 'trackList';
+            intStruct(t).referenceStruct = 'trackList';
           else
-            intStruct(j).referenceStruct = 'initCoord';
+            intStruct(t).referenceStruct = 'initCoord';
           end
         end
       end
@@ -212,25 +212,25 @@ for t=1:nFrames
   prog = kitProgress(t/nFrames, prog);
 end
 
-if ~isempty(opts.photobleachCorrect)
+if opts.photobleachCorrect
   % Compute photobleach from entire image.
-  pbProfile=kitIntensityDistn(job,reader,metadata,channel,[],[],1,job.crop);
-  t=((1:size(pbProfile,1))-1)';
+  pbProfile=kitIntensityDistn(job,reader,metadata,channel,[],[],1,job.ROI.crop);
+  t1=((1:size(pbProfile,1))-1)';
 
   % Normalize PB if necessary.
   if pbProfile(1) ~= 1 || ~all(pbProfile(:) < 1)
     pbProfile(:) = pbProfile(:)/pbProfile(1);
   end
 
-  if numel(t) > 4 && license('test','Curve_Fitting_Toolbox')
+  if numel(t1) > 4 && license('test','Curve_Fitting_Toolbox')
     % Fit double exp.
-    pbF = fit(t,pbProfile(:,channel),'exp2');
+    pbF = fit(t1,pbProfile(:,channel),'exp2');
     % Correct.
-    for j=1:nKTs
-      intStruct(j).intensity(:) = intStruct(j).intensity(:)./pbF(t);
-      intStruct(j).intensity_median(:) = intStruct(j).intensity_median(:)./pbF(t);
-      intStruct(j).intensity_max(:) = intStruct(j).intensity_max(:)./pbF(t);
-      intStruct(j).intensity_min(:) = intStruct(j).intensity_min(:)./pbF(t);
+    for t=1:nFrames
+      intStruct(t).intensity(:) = intStruct(t).intensity(:)/pbF(t1(t));
+      intStruct(t).intensity_median(:) = intStruct(t).intensity_median(:)/pbF(t1(t));
+      intStruct(t).intensity_max(:) = intStruct(t).intensity_max(:)/pbF(t1(t));
+      intStruct(t).intensity_min(:) = intStruct(t).intensity_min(:)/pbF(t1(t));
     end
   else
     kitLog('Warning: Not correcting for photobleach');

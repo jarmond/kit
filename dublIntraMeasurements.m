@@ -470,10 +470,12 @@ for iExpt = 1:nExpts
             newData(c,:) = {'sisters.depthFilter.swivel.threeD',sData.swivel_3D.*satisfies}; c=c+1;
             
             % get intensities if required
-            intsInnerMean = [sIinner(trackIDs(iSis,1)).intensity(:)-innerBg     sIinner(trackIDs(iSis,2)).intensity(:)-innerBg];
-            intsInnerMax  = [sIinner(trackIDs(iSis,1)).intensity_max(:)-innerBg sIinner(trackIDs(iSis,2)).intensity_max(:)-innerBg];
-            intsOuterMean = [sIouter(trackIDs(iSis,1)).intensity(:)-outerBg     sIouter(trackIDs(iSis,2)).intensity(:)-outerBg];
-            intsOuterMax  = [sIouter(trackIDs(iSis,1)).intensity_max(:)-outerBg sIouter(trackIDs(iSis,2)).intensity_max(:)-outerBg];
+            for iFrame = 1:nFrames
+              intsInnerMean = [sIinner(iFrame).intensity(trackIDs(iSis,1))-innerBg     sIinner(iFrame).intensity(trackIDs(iSis,2))-innerBg];
+              intsInnerMax  = [sIinner(iFrame).intensity_max(trackIDs(iSis,1))-innerBg sIinner(iFrame).intensity_max(trackIDs(iSis,2))-innerBg];
+              intsOuterMean = [sIouter(iFrame).intensity(trackIDs(iSis,1))-outerBg     sIouter(iFrame).intensity(trackIDs(iSis,2))-outerBg];
+              intsOuterMax  = [sIouter(iFrame).intensity_max(trackIDs(iSis,1))-outerBg sIouter(iFrame).intensity_max(trackIDs(iSis,2))-outerBg];
+            end
             % put data into string format
             newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
             newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
@@ -625,11 +627,11 @@ for iExpt = 1:nExpts
           
           % get intensities
           intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
-          for iSpot = 1:nSpots
-            intsInnerMean = [intsInnerMean; sIinner(iSpot).intensity(:)-innerBg];
-            intsInnerMax = [intsInnerMax;   sIinner(iSpot).intensity_max(:)-innerBg];
-            intsOuterMean = [intsOuterMean; sIouter(iSpot).intensity(:)-outerBg];
-            intsOuterMax = [intsOuterMax;   sIouter(iSpot).intensity_max(:)-outerBg];
+          for iFrame = 1:nFrames
+            intsInnerMean = [intsInnerMean; sIinner(iFrame).intensity(:)-innerBg];
+            intsInnerMax = [intsInnerMax;   sIinner(iFrame).intensity_max(:)-innerBg];
+            intsOuterMean = [intsOuterMean; sIouter(iFrame).intensity(:)-outerBg];
+            intsOuterMax = [intsOuterMax;   sIouter(iFrame).intensity_max(:)-outerBg];
           end
           % put data into string format
           newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
