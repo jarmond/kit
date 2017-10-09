@@ -13,14 +13,14 @@ tstart = tic;
 if nargin<2
   switch job.options.jobProcess
     case 'zandt'
-      tasks = 1:8;
+      tasks = 1:9;
     case 'zonly'
-      tasks = [1,2,6];
+      tasks = [1,2,6,9];
     case 'chrshift'
       tasks = [1,6];
   end
-  if any(job.options.intensity.execute)
-    tasks(end+1) = 9;
+  if ~any(jobset.options.intensity.execute)
+    tasks = setdiff(tasks,9);
   end
 end
 % 1: finding spots
@@ -39,9 +39,9 @@ if any(ismember(tasks,[1 2 9]))
     if iscell(job.metadata)
       job.metadata = job.metadata{job.index};
     end
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
+    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata);
   else
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie));
+    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'init');
   end
   job = kitSaveJob(job);
 end
@@ -150,8 +150,11 @@ end
 if ismember(6,tasks)
   % Find neighbouring 3D spot coordinates per frame.
   for c = neighChans
-    kitLog('Finding particle coordinates in channel %d',c);
-    job = kitFindCoords(job, reader, c);
+    if ismember(1,tasks)
+      % Find coordinates in neighbour channel.
+      kitLog('Finding particle coordinates in channel %d',c);
+      job = kitFindCoords(job, reader, c);
+    end
     if ismember(2,tasks)
       % Transform coordinates into plane.
       kitLog('Transforming coordinates in channel %d to plane from channel %d',c,planeChan);
