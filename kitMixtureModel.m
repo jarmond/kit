@@ -21,6 +21,7 @@ options.mmf.alphaA = options.mmf.alphaA.*(options.mmf.alphaA + (0.1381-pixelSize
 
 % get number of frames
 nFrames = job.metadata.nFrames;
+updProg = (nFrames==1);
 is3D = job.metadata.is3D;
 ndims = 2 + is3D;
 %get initial guess of PSF sigma
@@ -62,7 +63,9 @@ end
 initCoord(frames) = struct('allCoord',[],'allCoordPix',[],'nSpots',0,'amp',[],'bg',[]);
 
 kitLog('Refining particles using mixture-model fitting');
-prog = kitProgress(0);
+if ~updProg
+  prog = kitProgress(0);
+end
 
 %if neighbour, firstly go over all empty images to give nan structures
 if neighbour
@@ -103,7 +106,8 @@ for iImage = goodImages
   opts.mmf.alphaD = opts.mmf.alphaD(channel);
   opts.mmf.alphaF = opts.mmf.alphaF(channel);
   % Run mixture model fitting.
-  [coordList,spotID,ampList,bgList,rejects] = mixtureModelFit(cands,imageRaw,psfSigma,opts);
+  [coordList,spotID,ampList,bgList,rejects] = ...
+      mixtureModelFit(cands,imageRaw,psfSigma,opts,updProg);
   
   elapsedTime = etime(clock,startTime);
   if options.mmf.maxMmfTime > 0 && elapsedTime > options.mmf.maxMmfTime
@@ -202,7 +206,9 @@ for iImage = goodImages
   end
 
   %display progress
-  prog = kitProgress(iImage/length(goodImages),prog);
+  if ~updProg
+    prog = kitProgress(iImage/length(goodImages),prog);
+  end
 end
 
 %% Post-processing

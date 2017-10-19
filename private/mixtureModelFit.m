@@ -1,4 +1,4 @@
-function [spots,spotID,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma,options)
+function [spots,spotID,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma,options,updProg)
 % MIXTUREMODELFIT Fit Gaussian mixture models to spots
 %
 % Enhances candidate spots obtained by centroid fitting by fitting Gaussian
@@ -11,6 +11,10 @@ function [spots,spotID,amps,bgAmps,rejects]=mixtureModelFit(cands,image,psfSigma
 
 verbose = options.debug.mmfVerbose;
 mmf = options.mmf;
+
+if nargin < 5 || isempty(updProg)
+  updProg=0;
+end
 
 % Set optimization options.
 optoptions = optimset('Jacobian','on','Display','off','Tolfun',mmf.mmfTol,'TolX',1e-6);
@@ -51,9 +55,14 @@ warning('off','MATLAB:singularMatrix');
 
 startTime = clock;
 
+  if updProg
+    prog = kitProgress(0);
+  end
+
   % For each cluster, perform iterative mixture-model fitting, increasing
   % number of Gaussians and F-testing.
   for i=1:nClusters
+    
     % Extract cluster data.
     idx = clusters==i;
     clusterCandsT = cands(idx,1:cols); % Candidates in this cluster.
@@ -154,6 +163,12 @@ startTime = clock;
     spotID = [spotID; candID];
     amps = [amps; clusterAmp];
     bgAmps = [bgAmps; repmat(bgAmp,[numCands,1])];
+    
+    % Update progress if necessary.
+    if updProg
+        prog = kitProgress(0.5*i/nClusters,prog);
+    end
+    
   end
 
 % Recluster to incorporate new candidates that are nearby into same
@@ -350,6 +365,12 @@ for i=1:nClusters
   candID2 = [candID2; candID];
   amps2 = [amps2; [clusterAmp clusterAmpVar pValue]];
   bgAmps2 = [bgAmps2; repmat([bgAmp bgAmpVar],[numCands,1])];
+  
+  % Update progress if necessary.
+  if updProg
+      prog = kitProgress(0.5*(1+i/nClusters),prog);
+  end
+    
 end
 
 spots = spots2;
