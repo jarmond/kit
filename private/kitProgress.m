@@ -1,7 +1,7 @@
-function lastUpdate = kitProgress(progress, lastUpdate)
+function lastUpdate = kitProgress(progress, lastUpdate, updateInterval)
 % KITPROGRESS Print formatted progress message
 %
-% SYNOPSIS: kitProgress(progress, lastUpdate)
+% SYNOPSIS: kitProgress(progress, lastUpdate, updateInterval)
 %
 % INPUT progress: Fraction complete [0,1].
 %
@@ -12,14 +12,24 @@ function lastUpdate = kitProgress(progress, lastUpdate)
 
 currentClock = clock;
 
-% Add timestamp to message.
-fmt = [datestr(now, 'HH:MM:SS') ': % 6.2f%% complete\n'];
-msgLength = 27;
+if nargin<3
+    updateInterval = 10.0; % seconds
+end
 
-updateInterval = 10.0; % seconds
+% Add timestamp to message.
+fmt = [datestr(now, 'HH:MM:SS') ': %6.2f%% complete\n'];
+
 msg = sprintf(fmt, 100*progress);
-if nargin < 2 || etime(currentClock, lastUpdate) > updateInterval
+msg = deblank(msg);
+if progress == 1
     % Print message.
-    fprintf('%s\n',deblank(msg));
+    fprintf(repmat('\b',1,length(msg)+1));
+    fprintf('%s\n',msg);
+elseif nargin < 2 || etime(currentClock, lastUpdate) > updateInterval
+    % Print message.
+    if progress > 0
+      fprintf(repmat('\b',1,length(msg)+1));
+    end
+    fprintf('%s\n',msg);
     lastUpdate = currentClock;
 end
