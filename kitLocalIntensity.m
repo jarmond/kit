@@ -20,7 +20,7 @@ initCoord = job.dataStruct{refChan}.initCoord;
 planeFit = job.dataStruct{refChan}.planeFit;
 if strcmp(job.options.jobProcess,'zonly') && ~isfield(job.dataStruct{refChan},'trackList')
   useTracks = 0;
-  nKTs = initCoord(1).nSpots;
+  nKTs = size(initCoord(1).allCoord,1);
 else
   useTracks = 1;
   trackList = job.dataStruct{refChan}.trackList;
@@ -84,9 +84,14 @@ maskWarning=0;
 
 %% Get intensities
 
+% read whole movie
+movie = kitReadWholeMovie(reader, metadata, channel, job.ROI.crop);
+
 prog = kitProgress(0);
 for t=1:nFrames
-    stack = kitReadImageStack(reader, metadata, t, channel, job.ROI.crop, 0);
+    
+    stack = movie(:,:,:,t);
+    
     if opts.gaussFilterSpots
       % Gaussian filter each z-plane.
       for z=1:size(stack,3)
@@ -212,7 +217,7 @@ for t=1:nFrames
   prog = kitProgress(t/nFrames, prog);
 end
 
-if opts.photobleachCorrect
+if opts.photobleachCorrect && nFrames>1
   % Compute photobleach from entire image.
   pbProfile=kitIntensityDistn(job,reader,metadata,channel,[],[],1,job.ROI.crop);
   t1=((1:size(pbProfile,1))-1)';
