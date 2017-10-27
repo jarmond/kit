@@ -5,6 +5,10 @@ function varargout = kitOpenMovie(movieFileName,mode,metadata,suppWarn)
 %    MOVIEFILENAME and extract METADATA from BioFormats metadata. Returns a
 %    READER Java object which can be used to extract image data.
 %
+%    N.B. 'init' mode will attempt to read all metadata, while 'ROI' will
+%    only read basic metadata. Alternatively, 'valid' utilises previously
+%    validated metadata, and therefore speeds up processing.
+%
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
 % Copyright (c) 2016 C. A. Smith
@@ -101,7 +105,7 @@ for i=1:numWvs
     warnWv = 1;
   end
 end
-if warnWv && verbose
+if warnWv && ~suppWarn
   warning('Missing metadata: Assuming wavelengths %d, %d, %d nm',...
           1000*md.wavelength);
 end
