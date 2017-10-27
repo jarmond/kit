@@ -197,7 +197,7 @@ if ismember(9,tasks)
   % Read spot intensity.
   intChans = find(job.options.intensity.execute);
   for c = intChans
-    kitLog('Measure particle intensity in channel %d',c);
+    kitLog('Measuring particle intensity in channel %d',c);
     job = kitLocalIntensity(job, reader, job.metadata, c, opts.intensity);
   end
   job = kitSaveJob(job);

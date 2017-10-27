@@ -25,7 +25,7 @@ chanPos = find(options.neighbourSpots.channelOrientation==channel);
 chanOrient = (chanPos>refChanPos);
 
 % get list of frames over which to look for neighbours
-if isempty(options.neighbourSpots.timePoints{channel});
+if isempty(options.neighbourSpots.timePoints{channel})
     timePoints = 1:nFrames;
 else
     timePoints = options.neighbourSpots.timePoints{channel};
@@ -40,14 +40,15 @@ timePoints = setxor(emptyFrames,1:nFrames); % final list of frames
 timePoints = timePoints(:)'; % ensure is a row vector - setxor has undergone a change over MATLAB versions
 
 %get number of z-slices
-if isempty(options.neighbourSpots.zSlices{channel});
+if isempty(options.neighbourSpots.zSlices{channel})
     zSlices = 1:nPlanes;
 else
     zSlices = options.neighbourSpots.zSlices{channel};
 end
 
-%turn warnings off
-warningState = warning();
+% Turn warnings off.
+w = warning;
+warning('off','all');
 
 %% Get frame with plane fits
 
@@ -57,8 +58,8 @@ if ~strcmp(options.jobProcess,'chrshift')
  
   % find frames with and without plane fit
   framesNoPlane = [];
-  for iFrame = 1:nFrames;
-    if isempty(planeFit(iFrame).plane);
+  for iFrame = 1:nFrames
+    if isempty(planeFit(iFrame).plane)
       framesNoPlane = [framesNoPlane iFrame];
     end
   end
@@ -201,7 +202,7 @@ switch options.jobProcess
                 % make sure that the mask doesn't extend over image
                 % boundaries
                 if coords(1)-2*r>0 && coords(1)+2*r<=imageSizeX && ...
-                    coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY;
+                    coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY
 
                   % get intensity values of mask-derived spot vicinity
                   imageMask = mask .* image(coords(1)-r:coords(1)+r, ...
@@ -245,7 +246,7 @@ switch options.jobProcess
     spots = {[]};
     spotIDs = {[]};
 
-    for iSpot = 1:nSpots;
+    for iSpot = 1:nSpots
 
       % get coordinate information, then transpose
       % (the results of MMF are transposed, so need to be transposed back)
@@ -266,7 +267,7 @@ switch options.jobProcess
         % make sure that the mask doesn't extend over image
         % boundaries
         if coords(1)-2*r>0 && coords(1)+2*r<=imageSizeX && ...
-            coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY;
+            coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY
 
           % get intensity values of mask-derived spot vicinity
           imageMask = mask .* image(coords(1)-r:coords(1)+r, ...
@@ -277,31 +278,46 @@ switch options.jobProcess
 
         end
 
-        % find local maximum intensity
+        % Find local maximum intensity.
         locMax1DIndx = find(imageMask==nanmax(imageMask(:)));
         if isempty(locMax1DIndx)
           continue
+        else
+          locMaxCrd = nan(length(locMax1DIndx),3); locMaxDiff = nan(length(locMax1DIndx),3);
+          for i=1:length(locMax1DIndx)
+            
+            % Get pixel positions for this local maximum.
+            [locMaxCrd(i,1),locMaxCrd(i,2),locMaxCrd(i,3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx(i));
+            
+            % Correct coordinates to full image.
+            locMaxCrd(i,1) = locMaxCrd(i,1)+coords(1)-(r+1);
+            locMaxCrd(i,2) = locMaxCrd(i,2)+coords(2)-(r+1);
+            locMaxCrd(i,3) = coords(3);
+            
+            % Calculate difference to reference coords.
+            locMaxDiff(i,:) = locMaxCrd(i,:) - coords(1:3);
+            
+          end
+          
+          % Take the closest max coords to the original if have multiple.
+          locMaxDiff = sqrt(sum(locMaxDiff.^2,2));
+          locMaxCrd = locMaxCrd(locMaxDiff == nanmin(locMaxDiff),:);
+          
+          % Ensure the coordinates are within the image boundaries.
+          if locMaxCrd(1)>imageSizeX || locMaxCrd(2)>imageSizeY || locMaxCrd(3)>imageSizeZ
+            continue
+          end
         end
 
-        [locMaxCrd(1),locMaxCrd(2),locMaxCrd(3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx);
-        % correct coordinates to full image
-        locMaxCrd(1) = locMaxCrd(1)+coords(1)-(r+1);
-        locMaxCrd(2) = locMaxCrd(2)+coords(2)-(r+1);
-        locMaxCrd(3) = coords(3);
-
-        if locMaxCrd(1)>imageSizeX || locMaxCrd(2)>imageSizeY || locMaxCrd(3)>imageSizeZ;
-          continue
-        end
-
-        % compile coordinates for MMF
+        % Compile coordinates for MMF.
         spots{1} = [spots{1}; locMaxCrd];
         spotIDs{1} = [spotIDs{1}; iSpot];
 
-      end % if in z-range
+      end % If in z-range.
 
-    end %iSpot
+    end % iSpot
     
 end
 
-%go back to original warnings state
-warning(warningState);
+% Go back to original warnings state
+warning(w);
