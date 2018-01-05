@@ -434,6 +434,7 @@ function updateControls(jobset)
   end
   if isfield(jobset,'filename')
     [~,file] = fileparts(jobset.filename);
+    file = file(18:end);
     hs.filename.String = file;
   end
   if ~strcmp(hs.mode,'chrshift')
@@ -1100,7 +1101,10 @@ end
 function updateJobset()
   jobset.movieDirectory = handles.movieDirectory.String;
   jobset.movieFiles = handles.movies.String;
-  jobset.filename = fullfile(jobset.movieDirectory,[handles.filename.String '.mat']);
+  
+  filename = [handles.filenameTxt.String handles.filename.String '.mat'];
+  jobset.filename = fullfile(jobset.movieDirectory,filename);
+%   jobset.filename = fullfile(jobset.movieDirectory,[handles.filename.String '.mat']);
 
   opts = jobset.options;
   
