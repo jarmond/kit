@@ -173,6 +173,9 @@ function opts = updVer9(opts)
   cSresult = repmat({zeros(1,6)},4,4);
   cSresult(1:3,1:3) = opts.chrShift.result;
   opts.chrShift.result = cSresult;
+  cSjobset = repmat({[]},4,4);
+  cSjobset(1:3,1:3) = opts.chrShift.jobset;
+  opts.chrShift.jobset = cSjobset;
   for i=1:4; for j=1:4; chanOrder{i,j} = [i j]; end; end
   chanOrder(1:3,1:3) = opts.chrShift.chanOrder;
   opts.chrShift.chanOrder = chanOrder;
