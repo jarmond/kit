@@ -29,7 +29,7 @@ end
 
 % predesignate intensity structure
 intStruct(1:nFrames) = struct(...
-    'intensity',nan(nKTs,1),...
+    'intensity_mean',nan(nKTs,1),...
     'intensity_median',nan(nKTs,1),...
     'intensity_min',nan(nKTs,1),...
     'intensity_max',nan(nKTs,1),...
@@ -122,7 +122,7 @@ for t=1:nFrames
         
       if pixIdx > 0 && pixIdx < size(initCoord(t).allCoordPix,1)
         % Read off intensity in radius r around spot.
-        pixCoords = initCoord(t).allCoordPix(pixIdx,1:3);
+        pixCoords = initCoord(t).allCoordPix(pixIdx,[2 1 3]);
 
         if sum(isnan(pixCoords)) == 0
 
@@ -137,7 +137,7 @@ for t=1:nFrames
             maskCoords = pixCoords;
           end
           % chromatic shift from coordSysChan to the channel being measured
-          maskCoords = maskCoords + chrShift;
+          maskCoords = maskCoords + chrShift([2 1 3]);
 
           % Extract intensity.
           x = max(1,round(maskCoords(1)));
@@ -152,7 +152,7 @@ for t=1:nFrames
           else
             imgPlane = stack;
           end
-          [my,mx] = size(imgPlane);
+          [mx,my] = size(imgPlane);
           % If too close to edge, skip.
           if x <= r || y <= r || x >= mx-r || y >= my-r
             continue
@@ -180,9 +180,9 @@ for t=1:nFrames
           % Coordinates are in image system, so plot(x,y) should draw the
           % spots in the correct place over the image. However, the image
           % matrix is indexed by (row,col) => (y,x).
-          maskImg = mask .* imgPlane(y-r:y+r, x-r:x+r);
+          maskImg = mask .* imgPlane(x-r:x+r, y-r:y+r);
           nonNanPix = maskImg(~isnan(maskImg));
-          intStruct(t).intensity(j) = mean(nonNanPix);
+          intStruct(t).intensity_mean(j) = mean(nonNanPix);
           intStruct(t).intensity_median(j) = median(nonNanPix);
           intStruct(t).intensity_max(j) = max(nonNanPix);
           intStruct(t).intensity_min(j) = min(nonNanPix);
@@ -229,10 +229,10 @@ if opts.photobleachCorrect && nFrames>1
 
   if numel(t1) > 4 && license('test','Curve_Fitting_Toolbox')
     % Fit double exp.
-    pbF = fit(t1,pbProfile(:,channel),'exp2');
+    pbF = fit(t1,pbProfile,'exp2');
     % Correct.
     for t=1:nFrames
-      intStruct(t).intensity(:) = intStruct(t).intensity(:)/pbF(t1(t));
+      intStruct(t).intensity_mean(:) = intStruct(t).intensity_mean(:)/pbF(t1(t));
       intStruct(t).intensity_median(:) = intStruct(t).intensity_median(:)/pbF(t1(t));
       intStruct(t).intensity_max(:) = intStruct(t).intensity_max(:)/pbF(t1(t));
       intStruct(t).intensity_min(:) = intStruct(t).intensity_min(:)/pbF(t1(t));
