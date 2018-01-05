@@ -40,17 +40,17 @@ warning('off','all');
 % get important information
 dataStruct = job.dataStruct{opts.channel};
 if isempty(opts.subset)
-  if isfield(dataStruct,'tracks')
-    nSpots = length(dataStruct.tracks);
-    opts.subset = 1:nSpots;
-  else
+%   if isfield(dataStruct,'tracks')
+%     nSpots = length(dataStruct.tracks);
+%     opts.subset = 1:nSpots;
+%   else
     nSpots = size(dataStruct.initCoord(opts.timePoint).allCoord,1);
     opts.subset = 1:nSpots;
-  end
+%   end
 else
   nSpots = length(opts.subset);
 end
-opts.imageSize = job.ROI(job.index).cropSize;
+opts.imageSize = job.ROI.cropSize;
 
 % set up figure
 figure(1); clf
@@ -58,9 +58,9 @@ fig_n=ceil(sqrt(nSpots));
 fig_m=ceil(nSpots/fig_n);
 
 % open movie
-[~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata,0);
+[~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata,0);
 % read stack
-img = kitReadImageStack(reader,job.metadata,opts.timePoint,opts.channel,job.crop,0);
+img = kitReadImageStack(reader,job.metadata,opts.timePoint,opts.channel,job.ROI.crop,0);
 
 % show each sister
 for iSpot=opts.subset
@@ -99,26 +99,26 @@ tp = opts.timePoint;
 pixelSize = job.metadata.pixelSize;
 imageSize = size(img);
 
-if isfield(job.dataStruct{chan},'tracks')
-    % accumulate track information
-    track = job.dataStruct{chan}.tracks(tk);
-    startTime = track.seqOfEvents(1,1);
-    endTime   = track.seqOfEvents(2,1);
-    if tp < startTime || tp > endTime
-        coords = nan(1,3);
-    else
-        coords = ...
-            track.tracksCoordAmpCG(8*(tp-(startTime-1))-7:8*(tp-(startTime-1))-5);
-        coords = coords + chrShift;
-        coords = coords./pixelSize;
-    end
-else
+% if isfield(job.dataStruct{chan},'tracks')
+%     % accumulate track information
+%     track = job.dataStruct{chan}.tracks(tk);
+%     startTime = track.seqOfEvents(1,1);
+%     endTime   = track.seqOfEvents(2,1);
+%     if tp < startTime || tp > endTime
+%         coords = nan(1,3);
+%     else
+%         coords = ...
+%             track.tracksCoordAmpCG(8*(tp-(startTime-1))-7:8*(tp-(startTime-1))-5);
+%         coords = coords + chrShift;
+%         coords = coords./pixelSize;
+%     end
+% else
     % accumulate initCoord information
     initCoord = job.dataStruct{chan}.initCoord(tp);
     coords = initCoord.allCoordPix(tk,1:3);
     chrShift = chrShift./pixelSize;
     coords = coords + chrShift;
-end
+% end
 
 % check whether any coordinates have been found, plot nothing if so
 if any(isnan(coords))

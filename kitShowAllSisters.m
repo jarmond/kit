@@ -48,9 +48,9 @@ fig_n=ceil(sqrt(nSisters));
 fig_m=ceil(nSisters/fig_n);
 
 % open movie
-[~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata,0);
+[~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata,0);
 % read stack
-img = kitReadImageStack(reader,job.metadata,opts.timePoint,opts.channel,job.crop,0);
+img = kitReadImageStack(reader,job.metadata,opts.timePoint,opts.channel,job.ROI.crop,0);
 
 % show each sister
 for iSis=opts.subset
