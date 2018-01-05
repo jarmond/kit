@@ -36,7 +36,7 @@ for t = 1:nFrames
 
     %HLE,KJ - calculate low-index edge patch adjustment if relevant
     edgeAdjustTmp = localMaxima(t).cands(iSpot,:) - halfPatchSize;
-    edgeAdjustTmp = abs(edgeAdjustTmp) .* edgeAdjustTmp<0;
+    edgeAdjustTmp = abs(edgeAdjustTmp) .* (edgeAdjustTmp<0);
 
     % subpixel coord is integer coord plus centroid (subtract
     % halfPatchSize so that center coordinate of patch is (0,0,0))
