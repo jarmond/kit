@@ -39,26 +39,28 @@ opts.transparency = 1-opts.transparency;
 
 % get coordinate-specific delta
 if opts.depthFilter
-    delta(:,1) = intraStruct.plate.depthFilter.delta.y.all(:);
-    delta(:,2) = intraStruct.plate.depthFilter.delta.x.all(:);
-    delta(:,3) = intraStruct.plate.depthFilter.delta.z.all(:);
-    delta3D    = intraStruct.plate.depthFilter.delta.threeD.all(:);
+    delta(:,1) = intraStruct.plate.depthFilter.delta.y(:);
+    delta(:,2) = intraStruct.plate.depthFilter.delta.x(:);
+    delta(:,3) = intraStruct.plate.depthFilter.delta.z(:);
+    delta3D    = intraStruct.plate.depthFilter.delta.threeD(:);
 else
-    delta(:,1) = intraStruct.plate.raw.delta.y.all(:);
-    delta(:,2) = intraStruct.plate.raw.delta.x.all(:);
-    delta(:,3) = intraStruct.plate.raw.delta.z.all(:);
-    delta3D    = intraStruct.plate.raw.delta.threeD.all(:);
+    delta(:,1) = intraStruct.plate.raw.delta.y(:);
+    delta(:,2) = intraStruct.plate.raw.delta.x(:);
+    delta(:,3) = intraStruct.plate.raw.delta.z(:);
+    delta3D    = intraStruct.plate.raw.delta.threeD(:);
 end
 
 % and coordinate-specific sister separation
-sisSep(:,1) = intraStruct.plate.sisSep.x;
-sisSep(:,2) = intraStruct.plate.sisSep.y;
-sisSep(:,3) = intraStruct.plate.sisSep.z;
-sisSep = [sisSep;-sisSep];
+if opts.rotate
+    sisSep(:,1) = intraStruct.plate.sisSep.x;
+    sisSep(:,2) = intraStruct.plate.sisSep.y;
+    sisSep(:,3) = intraStruct.plate.sisSep.z;
+    sisSep = [sisSep;-sisSep];
 
-% get x-positions
-positX = intraStruct.plate.coords.x(:,[1 3]);
-positX = [positX; fliplr(positX)];
+    % get x-positions
+    positX = intraStruct.plate.coords.x(:,[1 3]);
+    positX = [positX; fliplr(positX)];
+end
 
 % get numbers
 nKTs = size(delta,1);
