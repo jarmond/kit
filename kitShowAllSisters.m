@@ -53,11 +53,12 @@ fig_m=ceil(nSisters/fig_n);
 img = kitReadImageStack(reader,job.metadata,opts.timePoint,opts.channel,job.ROI.crop,0);
 
 % show each sister
+ctr = 1;
 for iSis=opts.subset
     
     opts.sisterPair = iSis;
     
-    f = subplot(fig_m,fig_n,iSis);
+    f = subplot(fig_m,fig_n,ctr);
     
     noCoords = showSisterPair(job,img,opts);
     if noCoords
@@ -66,6 +67,9 @@ for iSis=opts.subset
         plotTit = sprintf('Sis %i',iSis);
         title(plotTit,'FontSize',10)
     end
+    
+    ctr = ctr+1;
+    
 end
 
 end
