@@ -107,7 +107,6 @@ function hs = createControls(desc)
   % Manual spot and cell filter buttons.
   btnw = 15; btnh = 2;
   hs.spotFilterBtn = button(hs.fig,'Spot filtering',[x y btnw btnh],@filterSpotsCB);
-  hs.spotFilterBtn.Enable = 'off';
   x = x+btnw+ddx;
   hs.cellFilterBtn = button(hs.fig,'Cell filtering',[x y btnw btnh],@filterCellsCB);
   hs.cellFilterBtn.Enable = 'off';
@@ -127,10 +126,12 @@ function hs = createControls(desc)
   y = y-lh;
   end
   
-  % Analysis button.
+  % CupL button.
   btnw = 15;
-  hs.intAnalBtn = button(hs.fig,'Intensity analysis',[x y btnw btnh],@intAnalCB);
-  hs.intAnalBtn.Enable = 'off';
+  hs.cuplBtn = button(hs.fig,'CupL analysis',[x y btnw btnh],@cuplCB);
+  x = x+(btnw+ddx);
+  hs.dublBtn = button(hs.fig,'DubL analysis',[x y btnw btnh],@dublCB);
+  hs.dublBtn.Enable = 'off';
   
   % Close button.
   x = figw-btnw-dx; y = 1;
@@ -301,21 +302,35 @@ function executeCB(hObj,event)
   pause(1);
   
   % Run the job.
-  kitRunJob(handles.jobset);
+  kitRunJob(handles.jobset,'tasks',handles.jobset.options.tasks);
   
   % We turn back on the interface
   set(guiObj,'Enable','on');
   handles.runBtn.String = 'Re-run';
 end
 
-function intAnalCB(hObj,event)
-  kitLog('Starting spot detection analysis')
+function cuplCB(hObj,event)
+  kitLog('Starting CupL analysis')
   
   % Turn off the GUI during processing.
   guiObj=findobj(handles.fig,'Enable','on');
   set(guiObj,'Enable','inactive');
   
-  kitAnalysis;
+  cuplAnalysis(handles.jobset);
+  
+  % Re-activate GUI.
+  set(guiObj,'Enable','on');
+  
+end
+
+function dublCB(hObj,event)
+  kitLog('Starting DubL analysis')
+  
+  % Turn off the GUI during processing.
+  guiObj=findobj(handles.fig,'Enable','on');
+  set(guiObj,'Enable','inactive');
+  
+  dublAnalysis;
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
