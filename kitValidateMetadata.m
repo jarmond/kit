@@ -149,19 +149,16 @@ close(gcf);
 %% NESTED FUNCTIONS
 function hs = createControls()
   
-  colwidth = 35;
-  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 colwidth+5 32]);
+  figw = 50;
+  figh = 29;
+  hs.fig = figure('Visible','off','Resize','off','Units','characters','Position',[100 35 figw figh]);
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
-  hs.fig.Name = ['KiT ' kitVersion(1) ' - Check metadata'];
+  hs.fig.Name = 'Check metadata';
   hs.fig.NumberTitle = 'off';
   hs.fig.IntegerHandle = 'off';
   hs.fig.ToolBar = 'none';
 
-  figpos = hs.fig.Position;
-  figw = figpos(3);
-  figh = figpos(4);
-  headfont = 16;
   medfont = 14;
   smallfont = 12;
   tinyfont = 10;
@@ -169,95 +166,105 @@ function hs = createControls()
   % Set some standard positions and distances
   h = 1.5; %height
   lh = 1.5*h; %large height
-  x = 2.5;
-  toplabely = figh-x; %top-most point
+  dx = 2.5;
+  ddx = 1;
+  toplabely = figh-lh; %top-most point
   
   % Editable jobset name at top of the screen
-  hs.movieNameText = label(hs.fig,'Movie file name',[x toplabely figw-x h],medfont);
+  colw = figw-2*dx;
+  hs.movieNameText = label(hs.fig,'Movie file name',[dx toplabely colw h],medfont);
   hs.movieNameText.FontWeight = 'bold';
   y = toplabely-lh;
-  hs.movieName = label(hs.fig,[],[x+1.25 y figw-2*x lh],smallfont);
-  
-  % Validate button
-  btnw = 10;
-  btnx = figw-2.5-btnw;
-  hs.validate = button(hs.fig,'Validate',[btnx 1.25 btnw h],@saveCB);
-  
-  % KiT logo
-  hs.logo = uicontrol(hs.fig,'Units','characters','Position',[btnx 3 btnw 3.2]);
-  pos = getpixelposition(hs.logo);
-  set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
+  hs.movieName = label(hs.fig,[],[dx+ddx y colw lh],smallfont);
   
   %% List of metadata for validation
   
-  % tab-specific positions and distances
-  colwidth = 35;
-  x = x+2.5;
-  w = colwidth-5;
-  labelw = 0.75*w;
-  editw = 0.2*w;
-  editx = w-editw-1.5;
-  
   % dimensions panel
-  hs.dimensionsPanel = uipanel(hs.fig,'Units','characters','Position',[x y-6.75*h w 6.25*h],'FontSize',tinyfont,'Title','Movie dimensions');
+  panx = 2*dx; panw = colw-panx;
+  panh = 6.25*h; pany = y-(panh+0.5*h);
+  hs.dimensionsPanel = uipanel(hs.fig,'Units','characters','Position',[panx pany panw panh],'FontSize',tinyfont,'Title','Movie dimensions');
   p = hs.dimensionsPanel;
-  y = y-lh;
-  labelw = 0.75*w;
-  edity = 4.25*h;
-  colw = editw;
-  colx = [editx+1.5-2*(colw-0.5);
-          editx+1.5-(colw-0.5);
-          editx+1.5];
   
-  hs.nXYpixelsText = label(p,'Frame size: [x,y]',[1 edity labelw h],tinyfont);
-  hs.nXYpixels = label(p,[],[editx-0.5*editw edity 2*editw h],tinyfont);
+  % Frame size, z-slices and t-points
+  labw = 25;
+  editx = dx+(labw+ddx);
+  editw = panw-(editx+dx);
+  edity = panh-(2*h);
+  hs.nXYpixelsText = label(p,'Frame size: [x,y]',[dx edity labw h],tinyfont);
+  hs.nXYpixels = label(p,[],[editx edity editw h],tinyfont);
   edity = edity-h;
-  hs.is3D = checkbox(p,'3D movies?',[1 edity labelw h],@is3DCB,tinyfont);
+  hs.is3D = checkbox(p,'3D movies?',[dx edity labw h],@is3DCB,tinyfont);
   edity = edity-h;
-  hs.nPlanesText = label(p,'z-slices',[1 edity labelw h],tinyfont);
+  hs.nPlanesText = label(p,'z-slices',[dx edity labw h],tinyfont);
   hs.nPlanes = editbox(p,[],[editx edity editw h],tinyfont);
   edity = edity-h;
-  hs.nFramesText = label(p,'Time points',[1 edity labelw h],tinyfont);
+  hs.nFramesText = label(p,'Time points',[dx edity labw h],tinyfont);
   hs.nFrames = editbox(p,[],[editx edity editw h],tinyfont);
   edity = edity-h;
-  hs.nChannelsText = label(p,'Channels',[1 edity labelw h],tinyfont);
-  for iChan=1:3
-    hs.channelNum{iChan} = uicontrol('Parent',p,'Units','characters','Style','radio','String',num2str(iChan),'Position',[colx(iChan) edity colw h],'Callback',@nChannelsCB);
+  
+  % Channels
+  nChans = 4;
+  labw = 10;
+  editx = dx+(labw+ddx);
+  editw = (panw-(editx+dx+(nChans-1)*ddx))/nChans;
+  hs.nChannelsText = label(p,'Channels',[dx edity labw h],tinyfont);
+  for iChan=1:nChans
+    hs.channelNum{iChan} = uicontrol('Parent',p,'Units','characters','Style','radio','String',num2str(iChan),'Position',[editx edity editw h],'Callback',@nChannelsCB);
+    editx = editx+(editw+ddx);
   end
   hs.channelNum{1}.Value = 1;
   hs.nChannels = 1;
   
-  editx = x+w-editw;
-  y = y-7.5*h;
-  colw = 4/5*editw;
-  colx = [colwidth-(3*colw+0.5);
-          colwidth-(2*colw+0.25);
-          colwidth-(colw)];
-  
-  hs.wavelengthText = label(hs.fig,'Wavelength (nm)',[x y labelw h],tinyfont);
-  for iChan=1:3
-    hs.waveChanText{iChan} = label(hs.fig,['Ch.' num2str(iChan)],[colx(iChan) y+0.75*h colw h],tinyfont);
+  % Wavelengths
+  y = y-(panh+3*h);
+  labw = 15;
+  editx = dx+(labw+ddx);
+  editw = (colw-(editx+(nChans-1)*ddx))/nChans;
+  hs.wavelengthText = label(hs.fig,'Wavelength (nm)',[dx y labw h],tinyfont);
+  for iChan=1:4
+    hs.waveChanText{iChan} = label(hs.fig,['Ch.' num2str(iChan)],[editx y+0.75*h editw h],tinyfont);
     hs.waveChanText{iChan}.HorizontalAlignment = 'center';
     hs.waveChanText{iChan}.FontWeight = 'bold';
-    hs.wavelength{iChan} = editbox(hs.fig,num2str(iChan),[colx(iChan) y colw h],tinyfont);
+    hs.wavelength{iChan} = editbox(hs.fig,[],[editx y editw h],tinyfont);
+    editx = editx+(editw+ddx);
   end
+  
+  % Pixel sizes
   y = y-2*h;
+  labw = 15;
+  editx = dx+(labw+ddx);
+  editw = (colw-(editx+(nChans-1)*ddx))/nChans;
+  editx = editx+(editw+ddx);
   coordLabel = ['x','y','z'];
-  hs.pixelSizeText = label(hs.fig,'Pixel size (nm)',[x y labelw h],tinyfont);
+  hs.pixelSizeText = label(hs.fig,'Pixel size (nm)',[dx y labw h],tinyfont);
   for iCoord=1:3
-    hs.pixCoordText{iChan} = label(hs.fig,coordLabel(iCoord),[colx(iCoord) y+0.75*h colw h],tinyfont);
-    hs.pixCoordText{iChan}.HorizontalAlignment = 'center';
-    hs.pixCoordText{iChan}.FontWeight = 'bold';
-    hs.pixelSize{iCoord} = editbox(hs.fig,num2str(iCoord),[colx(iCoord) y colw h],tinyfont);
+    hs.pixCoordText{iCoord} = label(hs.fig,coordLabel(iCoord),[editx y+0.75*h editw h],tinyfont);
+    hs.pixCoordText{iCoord}.HorizontalAlignment = 'center';
+    hs.pixCoordText{iCoord}.FontWeight = 'bold';
+    hs.pixelSize{iCoord} = editbox(hs.fig,[],[editx y editw h],tinyfont);
+    editx = editx+(editw+ddx);
   end
+  
+  % Time lapse and NA
   y = y-lh;
-  hs.timeLapseText = label(hs.fig,'Time lapse, dt (s)',[x y labelw h],tinyfont);
+  labw = 30;
+  editx = dx+(labw+ddx);
+  editw = colw-(editx);
+  hs.timeLapseText = label(hs.fig,'Time lapse, dt (s)',[dx y labw h],tinyfont);
   hs.timeLapse = editbox(hs.fig,[],[editx y editw h],tinyfont);
   y = y-h;
-  hs.numAperText = label(hs.fig,'Numerical aperture',[x y labelw h],tinyfont);
+  hs.numAperText = label(hs.fig,'Numerical aperture',[dx y labw h],tinyfont);
   hs.numAper = editbox(hs.fig,[],[editx y editw h],tinyfont);
+  
+  % Apply to all
   y = y-h;
-  hs.applyAll = checkbox(hs.fig,'Apply to all movies?',[x y labelw h],[],tinyfont);
+  hs.applyAll = checkbox(hs.fig,'Apply to all movies?',[dx y labw h],[],tinyfont);
+  
+  % Validate button
+  btnw = 10; btnh = 2;
+  y = 1.25;
+  btnx = figw-(btnw+dx);
+  hs.validate = button(hs.fig,'Validate',[btnx y btnw btnh],@saveCB);
   
   movegui(hs.fig,'center');
   
@@ -276,12 +283,12 @@ function updateControls(md)
   hs.is3D.Value = md.is3D;
   hs.nPlanes.String = num2str(md.nPlanes/(md.nChannels*md.nFrames));
   hs.nFrames.String = num2str(md.nFrames);
-  hs.nChannels = md.nChannels;
-  for iChan=1:3;
+  hs.nChannels = length(md.wavelength);
+  for iChan=1:hs.nChannels
     hs.channelNum{iChan}.Value = (iChan==hs.nChannels);
     hs.wavelength{iChan}.String = num2str(md.wavelength(iChan)*1000);
   end
-  for iCoord=1:3;
+  for iCoord=1:3
     hs.pixelSize{iCoord}.String = num2str(md.pixelSize(iCoord)*1000);
   end
   if str2double(hs.nFrames.String) == 1
@@ -374,14 +381,14 @@ function tf=checkControls()
 end
 
 function nChannelsCB(hObj,event)
-  if exist('hObj')
+  if exist('hObj','var')
     nChans = str2double(hObj.String);
     handles.nChannels = nChans;
-    for notChan = setdiff(1:3,nChans)
+    for notChan = setdiff(1:4,nChans)
       handles.channelNum{notChan}.Value = 0;
     end
   end
-  for iChan = 1:3
+  for iChan = 1:4
     if iChan > handles.nChannels
       handles.wavelength{iChan}.Enable = 'off';
       handles.waveChanText{iChan}.Enable = 'off';
@@ -422,7 +429,7 @@ function updateMetadata()
   md.nChannels = handles.nChannels;
   md.nPlanes = str2double(handles.nPlanes.String)*md.nFrames*md.nChannels;
   md.frameSize(3) = str2double(handles.nPlanes.String);
-  for iChan = 1:3
+  for iChan = 1:4
     md.wavelength(iChan) = str2double(handles.wavelength{iChan}.String)/1000;
   end
   % construct frameTime
