@@ -4,12 +4,11 @@ function [job,userStatus] = pairSpots(job,opts)
 % Copyright (c) 2017 C. A. Smith
 
 %% GET REQUIRED IMAGE AND METADATA
-[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
-movieIdx = job.index;
+[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
 
 % get crop information, if any
-crop = job.ROI(movieIdx).crop;
-cropSize = job.ROI(movieIdx).cropSize;
+crop = job.ROI.crop;
+cropSize = job.ROI.cropSize;
 if isempty(crop)
     cropSize = md.frameSize;
 end
