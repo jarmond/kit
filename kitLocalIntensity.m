@@ -9,7 +9,7 @@ function job=kitLocalIntensity(job, reader, metadata, channel, opts)
 nFrames = metadata.nFrames;
 
 % check if this channel contains coordinate or track information, or neither
-if length(job.dataStruct)<channel || isempty(job.dataStruct{channel})
+if length(job.dataStruct)<channel || ~isfield(job.dataStruct{channel},'initCoord')
   refChan = job.options.coordSystemChannel;
 else
   refChan = channel;
