@@ -29,6 +29,8 @@ opts.coordMode{4} = 'none';
 opts.coordSystem = 'plate'; % Possible values: plate, image, com, none
 opts.coordSystemChannel = 1;
 
+opts.tasks = 1:9;
+
 %Chromatic shift information
 chrShift.result = repmat({zeros(1,6)},4,4);
 chrShift.jobset = repmat({[]},4,4);
