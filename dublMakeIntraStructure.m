@@ -13,7 +13,8 @@ if nargin<1 || isempty(paired)
   paired = 1;
 end
 
-intraStruct.dublVersion = 'DubL 1.0.0';
+intraStruct.kitVersion = kitVersion;
+intraStruct.label = [];
 
 % make substructures for all pair-derived measurements
 direction = struct('P',[],'AP',[],'N',[],'S',[]);
@@ -48,17 +49,15 @@ end
 % produce same again for plate coordinate system
 plate = microscope;
 if paired
-  plate.raw.twist         = twist;
-  plate.depthFilter.twist = twist;
+  plate.twist         = twist;
   plate.sisterCentreSpeed = sisterCentreSpeed;
   plate.plateThickness    = plateThickness;
   
-    intraStruct.direction = direction;
+  intraStruct.direction = direction;
 end
-    intraStruct.microscope = microscope;
-    intraStruct.plate = plate;
-    intraStruct.intensity = intensity;
-    
+  intraStruct.microscope = microscope;
+  intraStruct.plate = plate;
+  intraStruct.intensity = intensity;  
 end
     
     

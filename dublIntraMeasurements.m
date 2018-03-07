@@ -38,7 +38,7 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %       spots to be included in the data collection.
 %
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 % default options
 opts.centralise = 1;
@@ -90,14 +90,14 @@ numExpts = numExpts1;
 %% Pre-processing output structure
 
 % find whether any movies have paired spots
-paired = 0;
-if opts.paired
+paired = opts.paired;
+if paired
   for iExpt = 1:numExpts
     for iMov = 1:length(movies{iExpt})
       paired = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'sisterList');
-      if paired; break; end
+      if ~paired; break; end
     end
-    if paired; break; end
+    if ~paired; break; end
   end
 end
 if selType==3
@@ -117,10 +117,6 @@ for iExpt = 1:numExpts
     if ints; break; end
   end
   if ints; break; end  
-end
-if ints && size(movies{1}{1}.dataStruct{opts.channels(1)}.spotInt.intensity,2)==1 
-    opts.intRefMarker = 'self';
-    kitLog('Movies do not contain intensity information relative to each other channel. Converting to self-measurement.');
 end
 
 if isempty(opts.prevMeas)
@@ -195,6 +191,14 @@ for iExpt = 1:numExpts
         mCentMeds = [0 0 0];
       end
       
+      % get spotInts
+      if ints
+        sIinner = dSinner.spotInt;
+        innerBg = dSinner.cellInt.back;
+        sIouter = dSouter.spotInt;
+        outerBg = dSouter.cellInt.back;
+      end
+      
       if paired
         
         % check whether a sisterList is present, and if it contains any sisters
@@ -220,6 +224,9 @@ for iExpt = 1:numExpts
         end
         
         for iSis = iSubset
+            
+            % construct sister pair label
+            label = sprintf('%02d%02d%03d',iExpt,iMov,iSis);
             
             % start counter for storing data
             c=1;
@@ -254,20 +261,14 @@ for iExpt = 1:numExpts
             if all(isnan(trackIDs))
                 continue;
             end
-            
-            % get spotInts
-            if ints
-              sIinner = dSinner.spotInt;
-              innerBg = dSinner.cellInt.back;
-              sIouter = dSouter.spotInt;
-              outerBg = dSouter.cellInt.back;
-            end
 
             %% Kinetochore positions
             
             % get microscope coordinates, and plane coordinates if present
             mCoordsInner = nan(nFrames,6);
             mCoordsOuter = nan(nFrames,6);
+            pCoordsInner = nan(nFrames,6);
+            pCoordsOuter = nan(nFrames,6);
             for iFrame = 1:nFrames
                 for iTrk = 1:2
                     % track one stored in (:,1:3), two in (:,4:6)
@@ -278,18 +279,24 @@ for iExpt = 1:numExpts
                         % check whether or not this movie has a planeFit
                         if plane
                             % rotate coordinates into plane
-                            pFinner = dSinner.planeFit;
-                            if ~isempty(pFinner(iFrame).planeVectors)
-                                coordSystem = pFinner(iFrame).planeVectors;
-                                pCoordsInner(iFrame,1:3) = (coordSystem\(mCoordsInner(iFrame,1:3)'))';
-                                pCoordsInner(iFrame,4:6) = (coordSystem\(mCoordsInner(iFrame,4:6)'))';
-                                pCoordsOuter(iFrame,1:3) = (coordSystem\(mCoordsOuter(iFrame,1:3)'))';
-                                pCoordsOuter(iFrame,4:6) = (coordSystem\(mCoordsOuter(iFrame,4:6)'))';
+                            pF = dSinner.planeFit;
+                            if ~isempty(pF(iFrame).planeVectors)
+                                coordSystem = pF(iFrame).planeVectors;
+                                pCoordsInner(iFrame,:) = mCoordsInner(iFrame,:) - repmat(pF.planeOrigin,1,2);
+                                pCoordsOuter(iFrame,:) = mCoordsOuter(iFrame,:) - repmat(pF.planeOrigin,1,2);
+                                
+                                pCoordsInner(iFrame,1:3) = (coordSystem\(pCoordsInner(iFrame,1:3)'))';
+                                pCoordsInner(iFrame,4:6) = (coordSystem\(pCoordsInner(iFrame,4:6)'))';
+                                pCoordsOuter(iFrame,1:3) = (coordSystem\(pCoordsOuter(iFrame,1:3)'))';
+                                pCoordsOuter(iFrame,4:6) = (coordSystem\(pCoordsOuter(iFrame,4:6)'))';
                             end
                         end
                     end
                 end
             end
+            
+            % put data into string format
+            newData(c,:) = {'label',label}; c=c+1;
             
             % get microscope coordinates of each spot
             mCoords_x = [mCoordsInner(:,[1 4]) mCoordsOuter(:,[1 4])];
@@ -357,9 +364,9 @@ for iExpt = 1:numExpts
               else
                 newData(c,:) = {'plate.raw.swivel.kMT',[]}; c=c+1;
               end
-              newData(c,:) = {'plate.raw.twist.y',plateData.twist_y}; c=c+1;
-              newData(c,:) = {'plate.raw.twist.z',plateData.twist_z}; c=c+1;
-              newData(c,:) = {'plate.raw.twist.threeD',plateData.twist_3D}; c=c+1;
+              newData(c,:) = {'plate.twist.y',plateData.twist_y}; c=c+1;
+              newData(c,:) = {'plate.twist.z',plateData.twist_z}; c=c+1;
+              newData(c,:) = {'plate.twist.threeD',plateData.twist_3D}; c=c+1;
               newData(c,:) = {'plate.sisterCentreSpeed',plateData.sisCentreSpeed}; c=c+1;
 
               % get plate thickness measurements
@@ -412,9 +419,6 @@ for iExpt = 1:numExpts
               else
                 newData(c,:) = {'plate.depthFilter.swivel.kMT',[]}; c=c+1;
               end
-              newData(c,:) = {'plate.depthFilter.twist.y',plateData.twist_y.*nanmax(satisfies,[],2)}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.twist.z',plateData.twist_z.*nanmax(satisfies,[],2)}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.twist.threeD',plateData.twist_3D.*nanmax(satisfies,[],2)}; c=c+1;
             end
             
             % get intensities if required
@@ -514,44 +518,32 @@ for iExpt = 1:numExpts
         end % sisters
         
       else
-        
+          
           % start counter for storing data
           c=1;
-          
-          % get dataStructs
-          dSinner = theseMovies{iMov}.dataStruct{chanVect(1)};
-          dSouter = theseMovies{iMov}.dataStruct{chanVect(2)};
-          % get initCoords
-          iCinner = dSinner.initCoord;
-          iCouter = dSouter.initCoord;
-          % get spotInts
-          if ints
-              sIinner = dSinner.spotInt;
-              innerBg = dSinner.cellInt.back;
-              sIouter = dSouter.spotInt;
-              outerBg = dSouter.cellInt.back;
-          end
           
           % if no sisters given, go through all sisters in movie
           switch selType
             case 0 % no spot selection
                 spotIDs = 1:size(iCinner(1).allCoord,1);
-                if isfield(dSinner,'trackList')
-                    trackIDs = 1:length(dSinner(1).trackList);
-                else
-                    trackIDs = spotIDs;
-                end
             case 1 % using spots/tracks
                 trackIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
                 spotIDs = cat(2,dSinner.trackList(trackIDs).featIndx);
             case 3 % using initCoord
-                trackIDs = 1:length(dSinner(1).trackList);
                 spotIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
           end
           nSpots = length(spotIDs);
           if nSpots == 0
               continue
           end
+          
+          % construct spot label
+          for iSpot = 1:nSpots
+            labels(iSpot,:) = sprintf('%02d%02d%03d',iExpt,iMov,iSpot);
+          end
+          
+          % put data into string format
+          newData(c,:) = {'label',labels}; c=c+1;
           
           %% Kinetochore positions
           
@@ -561,9 +553,9 @@ for iExpt = 1:numExpts
           % check whether or not this movie has a planeFit
           if plane
               % rotate coordinates into plane
-              pFinner = dSinner.planeFit;
-              if ~isempty(pFinner(1).planeVectors)
-                  coordSystem = pFinner(1).planeVectors;
+              pF = dSinner.planeFit;
+              if ~isempty(pF(1).planeVectors)
+                  coordSystem = pF(1).planeVectors;
                   pCoordsInner = (coordSystem\(mCoordsInner'))';
                   pCoordsOuter = (coordSystem\(mCoordsOuter'))';
               end
