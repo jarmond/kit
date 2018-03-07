@@ -73,7 +73,7 @@ end
 %% Image and coordinate acquisition
 
 % open movie
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
 
 % get coordinate system and plot channels
 coordSysChan = job.options.coordSystemChannel;
@@ -131,16 +131,16 @@ centrePxl = round(centrePoint);
 
 mapChans = opts.channelMap;
 if opts.transpose
-    dims = [2 1];
-else
     dims = [1 2];
+else
+    dims = [2 1];
 end
 
 %% RGB image production
 
 % predesignation of images
-rgbImg = zeros([job.cropSize(dims), 3]);
-rgbImgCS = zeros([job.cropSize(dims)*opts.subpixelate, 3]);
+rgbImg = zeros([job.ROI.cropSize(dims), 3]);
+rgbImgCS = zeros([job.ROI.cropSize(dims)*opts.subpixelate, 3]);
             
 if opts.zoom
     % calculate spread about the centre pixels
@@ -156,7 +156,7 @@ end
 for c = plotChans
     
     % read stack
-    img = kitReadImageStack(reader,md,timePoint,c,job.crop,0);
+    img = kitReadImageStack(reader,md,timePoint,c,job.ROI.crop,0);
     
     % max project over 5 z-slices around point
     if opts.zProject == 1
