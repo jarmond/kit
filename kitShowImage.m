@@ -174,11 +174,11 @@ end
 
 % produce structure to hold images, dependent on transposing
 if opts.transpose
-    rgbImg = zeros([cropSize(fliplr(opts.coords)), 3]);
-    rgbImgShift = zeros([cropSize(fliplr(opts.coords))*opts.subpixelate, 3]);
-else
     rgbImg = zeros([cropSize(opts.coords), 3]);
     rgbImgShift = zeros([cropSize(opts.coords)*opts.subpixelate, 3]);
+else
+    rgbImg = zeros([cropSize(fliplr(opts.coords)), 3]);
+    rgbImgShift = zeros([cropSize(fliplr(opts.coords))*opts.subpixelate, 3]);
 end
 
 % get images for each channel
