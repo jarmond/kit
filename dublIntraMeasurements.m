@@ -19,6 +19,12 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %       measurements will be defined by the channel orientation in the
 %       neighbourSpots section of options.
 %
+%    intRefMarker: {'self'}, 'inner' or 'outer'. The marker around which
+%       intensity measurements are measured. 'self' means intensity
+%       measurements are measured about it's own spot centre, while 'inner'
+%       and 'outer' mean intensity measurements are measured about the
+%       inner or outer kinetochore marker, respectively.
+%
 %    paired: 0 or {1}. Whether or not to take paired measurements, or raw
 %       spot-by-spot measurements.
 %
@@ -35,8 +41,9 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 % Copyright (c) 2017 C. A. Smith
 
 % default options
-opts.centralise = 0;
+opts.centralise = 1;
 opts.channels = [1 2];
+opts.intRefMarker = 'self';
 opts.paired = 1;
 opts.prevMeas = [];
 opts.spotSelection = [];
@@ -60,10 +67,12 @@ if isempty(opts.spotSelection)
 elseif isstruct(opts.spotSelection) && isfield(opts.spotSelection,'dataType')
   subset = opts.spotSelection.selection;
   switch opts.spotSelection.dataType
-    case 'spots'
+    case 'spots' %tracks
       selType = 1;
     case 'sisters'
       selType = 2;
+    case 'initCoord'
+      selType = 3;
   end
 else
   kitLog('Provided spotSelection structure was not derived from kitSelectData. No selection will be imposed.');
@@ -78,7 +87,6 @@ if numExpts1 ~= numExpts2
 end
 numExpts = numExpts1;
 
-
 %% Pre-processing output structure
 
 % find whether any movies have paired spots
@@ -92,6 +100,15 @@ if opts.paired
     if paired; break; end
   end
 end
+if selType==3
+    if paired
+        subset = opts.spotSelection.selection;
+        selType = 1;
+    else
+        subset = opts.spotSelection.rawSelection;
+    end
+end
+    
 %check whether or not there is intensity information
 ints = 0;
 for iExpt = 1:numExpts
@@ -100,6 +117,10 @@ for iExpt = 1:numExpts
     if ints; break; end
   end
   if ints; break; end  
+end
+if ints && size(movies{1}{1}.dataStruct{opts.channels(1)}.spotInt.intensity,2)==1 
+    opts.intRefMarker = 'self';
+    kitLog('Movies do not contain intensity information relative to each other channel. Converting to self-measurement.');
 end
 
 if isempty(opts.prevMeas)
@@ -152,7 +173,28 @@ for iExpt = 1:numExpts
         noSpot = [noSpot; iExpt movNum];
         continue
       end
-        
+      
+      % get basic metadata
+      nFrames = theseMovies{iMov}.metadata.nFrames;
+      pixelSize = theseMovies{iMov}.metadata.pixelSize;
+      % check if there is a plate fit
+      plane = (isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit) && ~isempty(dSinner.planeFit.planeVectors));
+      
+      % get initCoord structures
+      iCinner = dSinner.initCoord;
+      iCouter = dSouter.initCoord;
+      
+      % get xyz correction for centralisation
+      if opts.centralise
+        deltaxyz = [];
+        for iFrame = 1:nFrames
+          deltaxyz = [deltaxyz; iCouter(iFrame).allCoord(:,1:3)-iCinner(iFrame).allCoord(:,1:3)];
+        end
+        mCentMeds = nanmedian(deltaxyz);
+      else
+        mCentMeds = [0 0 0];
+      end
+      
       if paired
         
         % check whether a sisterList is present, and if it contains any sisters
@@ -172,6 +214,11 @@ for iExpt = 1:numExpts
                 iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
         end
 
+        % check that there are sisters
+        if isempty(dSinner.sisterList(1).trackPairs)
+            continue
+        end
+        
         for iSis = iSubset
             
             % start counter for storing data
@@ -180,23 +227,34 @@ for iExpt = 1:numExpts
             % get sisterLists
             sLinner = dSinner.sisterList(iSis);
             sLouter = dSouter.sisterList(iSis);
-            % check that there are sisters
-            if isempty(dSinner.sisterList(1).trackPairs)
-                continue
-            end
-            
-            % get basic metadata
-            nFrames = theseMovies{iMov}.metadata.nFrames;
-            pixelSize = theseMovies{iMov}.metadata.pixelSize;
             
             % get trackID and spotIDs, make spotIDs nan if deselected
             trackIDs = dSinner.sisterList(1).trackPairs(iSis,1:2);
             spotIDs = nan(nFrames,2);
             for iTrack = 1:2
-                if selType~=1 || ismember(trackIDs(iTrack),theseTracks)
+                if selType~=1 %none or sisters
                     spotIDs(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).featIndx;
-                end
+                else %tracks
+                    if ismember(trackIDs(iTrack),theseTracks)
+                        spotIDs(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).featIndx;
+                    else
+                        trackIDs(iTrack) = NaN;
+                        switch iTrack
+                            case 1
+                                sLinner.coords1(:,1:3) = NaN;
+                                sLouter.coords1(:,1:3) = NaN;
+                            case 2
+                                sLinner.coords2(:,1:3) = NaN;
+                                sLouter.coords2(:,1:3) = NaN;
+                        end
+                    end
+                end 
             end
+            % if both spots skipped
+            if all(isnan(trackIDs))
+                continue;
+            end
+            
             % get spotInts
             if ints
               sIinner = dSinner.spotInt;
@@ -205,64 +263,57 @@ for iExpt = 1:numExpts
               outerBg = dSouter.cellInt.back;
             end
 
-            % get initCoords for these tracks
-            for iTime = 1:nFrames
-                if ~isnan(spotIDs(iTime,1))
-                    iCinner.coords1(iTime,:) = dSinner.initCoord(iTime).allCoord(spotIDs(iTime,1),:);
-                    iCouter.coords1(iTime,:) = dSouter.initCoord(iTime).allCoord(spotIDs(iTime,1),:);
-                else
-                    iCinner.coords1(iTime,:) = NaN(1,6);
-                    iCouter.coords1(iTime,:) = NaN(1,6);
-                end
-                if ~isnan(spotIDs(iTime,2))
-                    iCinner.coords2(iTime,:) = dSinner.initCoord(iTime).allCoord(spotIDs(iTime,2),:);
-                    iCouter.coords2(iTime,:) = dSouter.initCoord(iTime).allCoord(spotIDs(iTime,2),:);
-                else
-                    iCinner.coords2(iTime,:) = NaN(1,6);
-                    iCouter.coords2(iTime,:) = NaN(1,6);
-                end
-            end
-
             %% Kinetochore positions
-
-            % get microscope coordinates of each spot
-            micrCoordsInner = [iCinner.coords1(:,1:3) iCinner.coords2(:,1:3)];
-            micrCoordsOuter = [iCouter.coords1(:,1:3) iCouter.coords2(:,1:3)];
-            micrCoord1_x = [iCinner.coords1(:,1) iCouter.coords1(:,1)];
-            micrCoord1_y = [iCinner.coords1(:,2) iCouter.coords1(:,2)];
-            micrCoord1_z = [iCinner.coords1(:,3) iCouter.coords1(:,3)];
-            micrCoord2_x = [iCinner.coords2(:,1) iCouter.coords2(:,1)];
-            micrCoord2_y = [iCinner.coords2(:,2) iCouter.coords2(:,2)];
-            micrCoord2_z = [iCinner.coords2(:,3) iCouter.coords2(:,3)];
-            % put data into string format
-            newData(c,:) = {'microscope.coords.x',[micrCoord1_x micrCoord2_x]}; c=c+1;
-            newData(c,:) = {'microscope.coords.y',[micrCoord1_y micrCoord2_y]}; c=c+1;
-            newData(c,:) = {'microscope.coords.z',[micrCoord1_z micrCoord2_z]}; c=c+1;
             
-            if isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit)
-              plate = 1;
-            else
-              plate = 0;
+            % get microscope coordinates, and plane coordinates if present
+            mCoordsInner = nan(nFrames,6);
+            mCoordsOuter = nan(nFrames,6);
+            for iFrame = 1:nFrames
+                for iTrk = 1:2
+                    % track one stored in (:,1:3), two in (:,4:6)
+                    rng = (3*(iTrk-1)+1):3*iTrk;
+                    if ~isnan(spotIDs(iFrame,iTrk))
+                        mCoordsInner(iFrame,rng) = iCinner(iFrame).allCoord(spotIDs(iFrame,iTrk),1:3);
+                        mCoordsOuter(iFrame,rng) = iCouter(iFrame).allCoord(spotIDs(iFrame,iTrk),1:3) - mCentMeds;
+                        % check whether or not this movie has a planeFit
+                        if plane
+                            % rotate coordinates into plane
+                            pFinner = dSinner.planeFit;
+                            if ~isempty(pFinner(iFrame).planeVectors)
+                                coordSystem = pFinner(iFrame).planeVectors;
+                                pCoordsInner(iFrame,1:3) = (coordSystem\(mCoordsInner(iFrame,1:3)'))';
+                                pCoordsInner(iFrame,4:6) = (coordSystem\(mCoordsInner(iFrame,4:6)'))';
+                                pCoordsOuter(iFrame,1:3) = (coordSystem\(mCoordsOuter(iFrame,1:3)'))';
+                                pCoordsOuter(iFrame,4:6) = (coordSystem\(mCoordsOuter(iFrame,4:6)'))';
+                            end
+                        end
+                    end
+                end
             end
-            if plate
+            
+            % get microscope coordinates of each spot
+            mCoords_x = [mCoordsInner(:,[1 4]) mCoordsOuter(:,[1 4])];
+            mCoords_y = [mCoordsInner(:,[2 5]) mCoordsOuter(:,[2 5])];
+            mCoords_z = [mCoordsInner(:,[3 6]) mCoordsOuter(:,[3 6])];
+            % put data into string format
+            newData(c,:) = {'microscope.coords.x',mCoords_x(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'microscope.coords.y',mCoords_y(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'microscope.coords.z',mCoords_z(:,[1 3 2 4])}; c=c+1;
+            
+            if plane
               % get plate coordinates of each spot
-              plateCoordsInner = [sLinner.coords1(:,1:3) sLinner.coords2(:,1:3)];
-              plateCoordsOuter = [sLouter.coords1(:,1:3) sLouter.coords2(:,1:3)];
-              plateCoord1_x = [sLinner.coords1(:,1) sLouter.coords1(:,1)];
-              plateCoord1_y = [sLinner.coords1(:,2) sLouter.coords1(:,2)];
-              plateCoord1_z = [sLinner.coords1(:,3) sLouter.coords1(:,3)];
-              plateCoord2_x = [sLinner.coords2(:,1) sLouter.coords2(:,1)];
-              plateCoord2_y = [sLinner.coords2(:,2) sLouter.coords2(:,2)];
-              plateCoord2_z = [sLinner.coords2(:,3) sLouter.coords2(:,3)];
+              pCoords_x = [pCoordsInner(:,[1 4]) pCoordsOuter(:,[1 4])];
+              pCoords_y = [pCoordsInner(:,[2 5]) pCoordsOuter(:,[2 5])];
+              pCoords_z = [pCoordsInner(:,[3 6]) pCoordsOuter(:,[3 6])];
               % put data into string format
-              newData(c,:) = {'plate.coords.x',[plateCoord1_x plateCoord2_x]}; c=c+1;
-              newData(c,:) = {'plate.coords.y',[plateCoord1_y plateCoord2_y]}; c=c+1;
-              newData(c,:) = {'plate.coords.z',[plateCoord1_z plateCoord2_z]}; c=c+1;
+              newData(c,:) = {'plate.coords.x',pCoords_x(:,[1 3 2 4])}; c=c+1;
+              newData(c,:) = {'plate.coords.y',pCoords_y(:,[1 3 2 4])}; c=c+1;
+              newData(c,:) = {'plate.coords.z',pCoords_z(:,[1 3 2 4])}; c=c+1;
             end
             
             %% Inter- and intra-kinetochore measurements
             
-            micrData = pairedMeasurements(micrCoordsInner,micrCoordsOuter,0,opts.centralise);
+            micrData = pairedMeasurements(mCoordsInner,mCoordsOuter,0);
             % put data into string format
             newData(c,:) = {'microscope.sisSep.x',micrData.sisSep_x}; c=c+1;
             newData(c,:) = {'microscope.sisSep.y',micrData.sisSep_y}; c=c+1;
@@ -284,8 +335,8 @@ for iExpt = 1:numExpts
               newData(c,:) = {'microscope.raw.swivel.kMT',[]}; c=c+1;
             end
             
-            if plate
-              plateData = pairedMeasurements(plateCoordsInner,plateCoordsOuter,1,opts.centralise);
+            if plane
+              plateData = pairedMeasurements(pCoordsInner,pCoordsOuter,1);
               % put data into string format
               newData(c,:) = {'plate.sisSep.x',plateData.sisSep_x}; c=c+1;
               newData(c,:) = {'plate.sisSep.y',plateData.sisSep_y}; c=c+1;
@@ -346,7 +397,7 @@ for iExpt = 1:numExpts
             else
               newData(c,:) = {'microscope.depthFilter.swivel.kMT',[]}; c=c+1;
             end
-            if plate
+            if plane
               newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
               newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
               newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
@@ -368,11 +419,46 @@ for iExpt = 1:numExpts
             
             % get intensities if required
             if ints
-              %intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
-              intsInnerMean = [sIinner(trackIDs(1)).intensity(:)-innerBg sIinner(trackIDs(2)).intensity(:)-innerBg];
-              intsInnerMax  = [sIinner(trackIDs(1)).intensity_max(:)-innerBg sIinner(trackIDs(2)).intensity_max(:)-innerBg];
-              intsOuterMean = [sIouter(trackIDs(1)).intensity(:)-innerBg sIouter(trackIDs(2)).intensity(:)-innerBg];
-              intsOuterMax  = [sIouter(trackIDs(1)).intensity_max(:)-innerBg sIouter(trackIDs(2)).intensity_max(:)-innerBg];
+              switch opts.intRefMarker
+                  case 'self'
+                    if size(sIinner.intensity,2)==1 
+                        temp = cat(2,sIinner.intensity);
+                        intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                        temp = cat(2,sIinner.intensity_max);
+                        intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                        temp = cat(2,sIouter.intensity);
+                        intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                        temp = cat(2,sIouter.intensity_max);
+                        intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    else
+                        temp = cat(2,sIinner.intensity(:,chanVect(1)));
+                        intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                        temp = cat(2,sIinner.intensity_max(:,chanVect(1)));
+                        intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                        temp = cat(2,sIouter.intensity(:,chanVect(2)));
+                        intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                        temp = cat(2,sIouter.intensity_max(:,chanVect(2)));
+                        intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    end
+                  case 'inner'
+                    temp = cat(2,sIinner.intensity(:,chanVect(1)));
+                    intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    temp = cat(2,sIinner.intensity_max(:,chanVect(1)));
+                    intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    temp = cat(2,sIinner.intensity(:,chanVect(2)));
+                    intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    temp = cat(2,sIinner.intensity_max(:,chanVect(2)));
+                    intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                  case 'outer'
+                    temp = cat(2,sIouter.intensity(:,chanVect(1)));
+                    intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    temp = cat(2,sIouter.intensity_max(:,chanVect(1)));
+                    intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    temp = cat(2,sIouter.intensity(:,chanVect(2)));
+                    intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+                    temp = cat(2,sIouter.intensity_max(:,chanVect(2)));
+                    intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+              end
               % put data into string format
               newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
               newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
@@ -387,12 +473,10 @@ for iExpt = 1:numExpts
             % get direction of movement
             direc = [];
             for iTrack = 1:2
-              if ~isempty(dSinner.trackList(trackIDs(iTrack)).direction)
-                  if selType==1 && ~ismember(trackIDs(iTrack),theseTracks)
-                    direc(:,iTrack) = nan(nFrames,1);
-                  else
-                    direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
-                  end
+              if ~isnan(trackIDs(iTrack)) && ~isempty(dSinner.trackList(trackIDs(iTrack)).direction)
+                direc(:,iTrack) = dSinner.trackList(trackIDs(iTrack)).direction;
+              else
+                direc(:,iTrack) = nan(nFrames,1);
               end
             end
             direc(end+1,:) = NaN;
@@ -419,47 +503,13 @@ for iExpt = 1:numExpts
             dirLabel = {'P','AP','S','N'};
             for iDir = 1:4
                 eval(['newData(c,:) = {''direction.' dirLabel{iDir} ''',direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.x.' dirLabel{iDir} ''',micrData.delta_x.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.y.' dirLabel{iDir} ''',micrData.delta_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.z.' dirLabel{iDir} ''',micrData.delta_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.twoD.' dirLabel{iDir} ''',micrData.delta_2D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.delta.threeD.' dirLabel{iDir} ''',micrData.delta_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.swivel.y.' dirLabel{iDir} ''',micrData.swivel_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.swivel.z.' dirLabel{iDir} ''',micrData.swivel_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.raw.swivel.threeD.' dirLabel{iDir} ''',micrData.swivel_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.x.' dirLabel{iDir} ''',micrData.delta_x.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.y.' dirLabel{iDir} ''',micrData.delta_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.z.' dirLabel{iDir} ''',micrData.delta_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.twoD.' dirLabel{iDir} ''',micrData.delta_2D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.delta.threeD.' dirLabel{iDir} ''',micrData.delta_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.swivel.y.' dirLabel{iDir} ''',micrData.swivel_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.swivel.z.' dirLabel{iDir} ''',micrData.swivel_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                eval(['newData(c,:) = {''microscope.depthFilter.swivel.threeD.' dirLabel{iDir} ''',micrData.swivel_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                if plate
-                  eval(['newData(c,:) = {''plate.raw.delta.x.' dirLabel{iDir} ''',plateData.delta_x.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.y.' dirLabel{iDir} ''',plateData.delta_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.z.' dirLabel{iDir} ''',plateData.delta_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.twoD.' dirLabel{iDir} ''',plateData.delta_2D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.delta.threeD.' dirLabel{iDir} ''',plateData.delta_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.swivel.y.' dirLabel{iDir} ''',plateData.swivel_y.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.swivel.z.' dirLabel{iDir} ''',plateData.swivel_z.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.raw.swivel.threeD.' dirLabel{iDir} ''',plateData.swivel_3D.*direc_' dirLabel{iDir} '}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.x.' dirLabel{iDir} ''',plateData.delta_x.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.y.' dirLabel{iDir} ''',plateData.delta_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.z.' dirLabel{iDir} ''',plateData.delta_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.twoD.' dirLabel{iDir} ''',plateData.delta_2D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.delta.threeD.' dirLabel{iDir} ''',plateData.delta_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.swivel.y.' dirLabel{iDir} ''',plateData.swivel_y.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.swivel.z.' dirLabel{iDir} ''',plateData.swivel_z.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                  eval(['newData(c,:) = {''plate.depthFilter.swivel.threeD.' dirLabel{iDir} ''',plateData.swivel_3D.*direc_' dirLabel{iDir} '.*satisfies}; c=c+1;']);
-                end
             end
         
             % compile new data with original
             allData = combineStrForms(allData,newData);
             
             % clear some data to ensure no overlap on next loop
-            clear spotIDs iCinner iCouter newData direc
+            clear spotIDs newData direc
         
         end % sisters
         
@@ -480,77 +530,103 @@ for iExpt = 1:numExpts
               innerBg = dSinner.cellInt.back;
               sIouter = dSouter.spotInt;
               outerBg = dSouter.cellInt.back;
-              nSpots = length(sIinner);
           end
           
-          % get basic metadata
-          nFrames = theseMovies{iMov}.metadata.nFrames;
-          pixelSize = theseMovies{iMov}.metadata.pixelSize;
+          % if no sisters given, go through all sisters in movie
+          switch selType
+            case 0 % no spot selection
+                spotIDs = 1:size(iCinner(1).allCoord,1);
+                if isfield(dSinner,'trackList')
+                    trackIDs = 1:length(dSinner(1).trackList);
+                else
+                    trackIDs = spotIDs;
+                end
+            case 1 % using spots/tracks
+                trackIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                spotIDs = cat(2,dSinner.trackList(trackIDs).featIndx);
+            case 3 % using initCoord
+                trackIDs = 1:length(dSinner(1).trackList);
+                spotIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+          end
+          nSpots = length(spotIDs);
+          if nSpots == 0
+              continue
+          end
           
           %% Kinetochore positions
           
-          % predefine various variables
-          micrCoordsInner = []; micrCoordsOuter = [];
-          micrCoord_x = []; micrCoord_y = []; micrCoord_z = [];
-          
-          for iFrame = 1:nFrames
-            % get microscope coordinates of each spot
-            micrCoordsInner = [micrCoordsInner; iCinner(iFrame).allCoord(:,1:3)];
-            micrCoordsOuter = [micrCoordsOuter; iCouter(iFrame).allCoord(:,1:3)];
-            micrCoord_x = [micrCoord_x; [iCinner(iFrame).allCoord(:,1) iCouter(iFrame).allCoord(:,1)]];
-            micrCoord_y = [micrCoord_y; [iCinner(iFrame).allCoord(:,2) iCouter(iFrame).allCoord(:,2)]];
-            micrCoord_z = [micrCoord_z; [iCinner(iFrame).allCoord(:,3) iCouter(iFrame).allCoord(:,3)]];
+          % get microscope coordinates, and plane coordinates if present
+          mCoordsInner = iCinner(1).allCoord(spotIDs,1:3);
+          mCoordsOuter = iCouter(1).allCoord(spotIDs,1:3) - repmat(mCentMeds,nSpots,1);
+          % check whether or not this movie has a planeFit
+          if plane
+              % rotate coordinates into plane
+              pFinner = dSinner.planeFit;
+              if ~isempty(pFinner(1).planeVectors)
+                  coordSystem = pFinner(1).planeVectors;
+                  pCoordsInner = (coordSystem\(mCoordsInner'))';
+                  pCoordsOuter = (coordSystem\(mCoordsOuter'))';
+              end
           end
+            
+          % get microscope coordinates of each spot
+          mCoords_x = [mCoordsInner(:,1) mCoordsOuter(:,1)];
+          mCoords_y = [mCoordsInner(:,2) mCoordsOuter(:,2)];
+          mCoords_z = [mCoordsInner(:,3) mCoordsOuter(:,3)];
           % put data into string format
-          newData(c,:) = {'microscope.coords.x',micrCoord_x}; c=c+1;
-          newData(c,:) = {'microscope.coords.y',micrCoord_y}; c=c+1;
-          newData(c,:) = {'microscope.coords.z',micrCoord_z}; c=c+1;
+          newData(c,:) = {'microscope.coords.x',mCoords_x}; c=c+1;
+          newData(c,:) = {'microscope.coords.y',mCoords_y}; c=c+1;
+          newData(c,:) = {'microscope.coords.z',mCoords_z}; c=c+1;
             
-          if isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit)
-            plate = 1;
-            pFinner = dSinner.planeFit; pFouter = dSouter.planeFit;
-          else
-            plate = 0;
-          end
-          if plate
-            
-            % predefine various variables
-            plateCoordsInner = []; plateCoordsOuter = [];
-            plateCoord_x = []; plateCoord_y = []; plateCoord_z = [];
-          
-            for iFrame = 1:nFrames
-              % get microscope coordinates of each spot
-              plateCoordsInner = [plateCoordsInner; pFinner(iFrame).rotatedCoord(:,1:3)];
-              plateCoordsOuter = [plateCoordsOuter; pFouter(iFrame).rotatedCoord(:,1:3)];
-              plateCoord_x = [plateCoord_x; [pFinner(iFrame).rotatedCoord(:,1) pFouter(iFrame).rotatedCoord(:,1)]];
-              plateCoord_y = [plateCoord_y; [pFinner(iFrame).rotatedCoord(:,2) pFouter(iFrame).rotatedCoord(:,2)]];
-              plateCoord_z = [plateCoord_z; [pFinner(iFrame).rotatedCoord(:,3) pFouter(iFrame).rotatedCoord(:,3)]];
+          if plane
+              % get plate coordinates of each spot
+              pCoords_x = [pCoordsInner(:,1) pCoordsOuter(:,1)];
+              pCoords_y = [pCoordsInner(:,2) pCoordsOuter(:,2)];
+              pCoords_z = [pCoordsInner(:,3) pCoordsOuter(:,3)];
               % put data into string format
-              newData(c,:) = {'plate.coords.x',plateCoord_x}; c=c+1;
-              newData(c,:) = {'plate.coords.y',plateCoord_y}; c=c+1;
-              newData(c,:) = {'plate.coords.z',plateCoord_z}; c=c+1;
-            end
+              newData(c,:) = {'plate.coords.x',pCoords_x}; c=c+1;
+              newData(c,:) = {'plate.coords.y',pCoords_y}; c=c+1;
+              newData(c,:) = {'plate.coords.z',pCoords_z}; c=c+1;
           end
           
           % get intensities if required
           if ints
-            intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
-            for iSpot = 1:nSpots
-              intsInnerMean = [intsInnerMean; sIinner(iSpot).intensity(:)-innerBg];
-              intsInnerMax = [intsInnerMax; sIinner(iSpot).intensity_max(:)-innerBg];
-              intsOuterMean = [intsOuterMean; sIouter(iSpot).intensity(:)-outerBg];
-              intsOuterMax = [intsOuterMax; sIouter(iSpot).intensity_max(:)-outerBg];
+            switch opts.intRefMarker
+                case 'self'
+                    if size(sIinner.intensity,2)==1 
+                        intsInnerMean = cat(2,sIinner.intensity(spotIDs,:)) - innerBg;
+                        intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,:)) - innerBg;
+                        intsOuterMean = cat(2,sIouter.intensity(spotIDs,:)) - outerBg;
+                        intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,:)) - outerBg;
+                    else
+                        intsInnerMean = cat(2,sIinner.intensity(spotIDs,chanVect(1))) - innerBg;
+                        intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(1))) - innerBg;
+                        intsOuterMean = cat(2,sIouter.intensity(spotIDs,chanVect(2))) - outerBg;
+                        intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(2))) - outerBg;
+                    end
+                case 'inner'
+                    intsInnerMean = cat(2,sIinner.intensity(spotIDs,chanVect(1))) - innerBg;
+                    intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(1))) - innerBg;
+                    intsOuterMean = cat(2,sIinner.intensity(spotIDs,chanVect(2))) - outerBg;
+                    intsOuterMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(2))) - outerBg;
+                case 'outer'
+                    intsInnerMean = cat(2,sIouter.intensity(spotIDs,chanVect(1))) - innerBg;
+                    intsInnerMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(1))) - innerBg;
+                    intsOuterMean = cat(2,sIouter.intensity(spotIDs,chanVect(2))) - outerBg;
+                    intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(2))) - outerBg;
             end
             % put data into string format
             newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
             newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
             newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
             newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+            newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
+            newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
           end
           
           %% Inter- and intra-kinetochore measurements
             
-          micrData = soloMeasurements(micrCoordsInner,micrCoordsOuter,opts.centralise);
+          micrData = soloMeasurements(mCoordsInner,mCoordsOuter);
           % put data into string format
           newData(c,:) = {'microscope.raw.delta.x.all',micrData.delta_x}; c=c+1;
           newData(c,:) = {'microscope.raw.delta.y.all',micrData.delta_y}; c=c+1;
@@ -558,8 +634,8 @@ for iExpt = 1:numExpts
           newData(c,:) = {'microscope.raw.delta.twoD.all',micrData.delta_2D}; c=c+1;
           newData(c,:) = {'microscope.raw.delta.threeD.all',micrData.delta_3D}; c=c+1;
           
-          if plate
-            plateData = soloMeasurements(plateCoordsInner,plateCoordsOuter,opts.centralise);
+          if plane
+            plateData = soloMeasurements(pCoordsInner,pCoordsOuter);
             % put data into string format
             newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
             newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
@@ -580,7 +656,7 @@ for iExpt = 1:numExpts
             newData(c,:) = {'microscope.depthFilter.delta.twoD.all',micrData.delta_2D.*satisfies}; c=c+1;
             newData(c,:) = {'microscope.depthFilter.delta.threeD.all',micrData.delta_3D.*satisfies}; c=c+1;
             
-            if plate
+            if plane
               newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
               newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
               newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
@@ -590,6 +666,7 @@ for iExpt = 1:numExpts
           
           % compile new data with original
           allData = combineStrForms(allData,newData);  
+          clear newData spotIDs
             
       end % paired
     end % movies     
@@ -621,13 +698,10 @@ if ~isempty(noSis)
 end
 fprintf('\n');
 
-function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,centralise)
+function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
     
     if nargin<3 || isempty(plate)
         plate = 0;
-    end
-    if nargin<4 || isempty(centralise)
-        centralise = 0;
     end
         
     %% Inter-kinetochore: separation, twist, and velocities
@@ -676,15 +750,6 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,central
     % coordinate-specific delta
     delta1_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
     delta2_xyz = coordsOuter(:,4:6) - coordsInner(:,4:6);
-    if centralise
-        medVal = nanmedian([delta1_xyz;delta2_xyz]);
-        for iCoord=1:3
-            coordsOuter(:,iCoord) = coordsOuter(:,iCoord) - medVal(iCoord);
-            coordsOuter(:,iCoord+3) = coordsOuter(:,iCoord+3) - medVal(iCoord);
-        end
-        delta1_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
-        delta2_xyz = coordsOuter(:,4:6) - coordsInner(:,4:6);
-    end
     
     measurements.delta_x = [delta1_xyz(:,1) delta2_xyz(:,1)];
     measurements.delta_y = [delta1_xyz(:,2) delta2_xyz(:,2)];
@@ -751,21 +816,10 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate,central
 
 end %pairedMeasurements subfunction
 
-function measurements = soloMeasurements(coordsInner,coordsOuter,centralise)
-    
-    if nargin<3 || isempty(centralise)
-        centralise = 0;
-    end
+function measurements = soloMeasurements(coordsInner,coordsOuter)
     
     % coordinate-specific delta
     delta_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
-    if centralise
-        medVal = nanmedian(delta_xyz);
-        for iCoord=1:3
-            coordsOuter(:,iCoord) = coordsOuter(:,iCoord) - medVal(iCoord);
-        end
-        delta_xyz = coordsOuter(:,1:3) - coordsInner(:,1:3);
-    end
     
     measurements.delta_x = delta_xyz(:,1);
     measurements.delta_y = delta_xyz(:,2);
