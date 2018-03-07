@@ -207,11 +207,16 @@ end
 elapsed = toc(tstart);
 for c = sort([channels neighChans])
   kitLog('Gather diagnostics in channel %d',c);
-  job = kitDiagnostics(job,c,elapsed);
-  fprintf('Diagnostics for channel %d\n', c);
-  fprintf('-------------------------\n', c);
-  kitPrintDiagnostics(job.dataStruct{c},opts.jobProcess);
-  fprintf('-------------------------\n', c);
+  if isfield(job.dataStruct{c},'failed') && job.dataStruct{c}.failed || ~isfield(job.dataStruct{c},'initCoord')
+    fprintf('Tracking for channel %d failed\n', c);
+    fprintf('-----------------------------\n', c);
+  else
+    job = kitDiagnostics(job,c,elapsed);
+    fprintf('Diagnostics for channel %d\n', c);
+    fprintf('-------------------------\n', c);
+    kitPrintDiagnostics(job.dataStruct{c},opts.jobProcess);
+    fprintf('-------------------------\n', c);
+  end
 end
 fprintf('\n')
 job = kitSaveJob(job);
