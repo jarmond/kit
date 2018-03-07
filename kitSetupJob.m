@@ -345,6 +345,8 @@ function hs = createControls()
       taby = taby-h;
       hs.csDistanceText = label(hs.tabs{tabID},'Min spot separation (um)',[labx taby labw h],tinyfont);
       hs.csDistance = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
+  else
+      hs.chromaticShift.Value = 0;
   end
   
   if ~strcmp(hs.mode,'chrshift')
@@ -536,7 +538,9 @@ function updateControls(jobset)
   detectModeCB();
   refineModeCB();
   neighbourChCB();
-  chromaticShiftCB();
+%   if ~strcmp(hs.mode,'chrshift')
+%     chromaticShiftCB();
+%   end
   
 end
 
@@ -673,7 +677,7 @@ function cropROICB(hObj,event)
         jobset.ROI(r).cropSize = cropSize(j,:);
       end
     end
-    hwait = waitbar(i/length(v),waitmsg);
+    waitbar(i/length(v),hwait,waitmsg);
   end
   populateROIBox();
   close(hwait);
