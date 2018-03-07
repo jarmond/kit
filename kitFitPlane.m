@@ -92,7 +92,7 @@ rankNNearestNeighbors = 10;
 minConsecFrames = min(5,nTimePoints-1);
 
 % minimum number of spots to attempt to fit plane to
-minSpotsInFrame = 3;
+minSpotsInFrame = 10;
 
 %determine whether to use 2D projection instead of 3D
 %the 2D approximation only works in late prometaphase and metaphase
@@ -123,7 +123,6 @@ else
     'correctionMu',0,'nSpots',0,'initAmp',[],'amp',[]);
   spotsFound = 0;
 end
-nSpots = cat(1,initCoord.nSpots);
 
 %assign dimensionality for fit
 probDim = 3 - use2D;
@@ -162,6 +161,9 @@ goodFrames1 = [];
 potFrames = [];
 for t=1:nTimePoints
   
+  % Get number of spots.
+  nSpots = size(initCoord(t).allCoord,1);
+    
   % Make an initial outlier detection.
   if spotsFound && nSpots(t) < minSpotsInFrame
     % No spots. Set origin to 0.
