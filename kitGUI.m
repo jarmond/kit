@@ -24,7 +24,7 @@ end
 
 jobProcessValues = {'2D/3D and time','2D/3D only','Chromatic shift'}; % in GUI
 jobProcessValuesJS = {'zandt','zonly','chrshift'}; % in jobset
-coordSystemValues = {'Plate','Image moments','Centre of mass'};
+coordSystemValues = {'Metaphase plate','Image moments','Centre of mass'};
 coordSystemValuesJS = {'plate','image','com'};
 spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual','Neighbour','None'};
 spotDetectValuesJS = {'histcut','adaptive','wavelet','manual','neighbour','none'};
@@ -68,43 +68,50 @@ function hs = createControls()
   %% ROI selection
   x = 2.5;
   w = colwidth(1);
+  h = 1.5;
+  lh = 1.5*h;
   toplabely = figh-2;
   % Movies
-  hs.openBtn = button(hs.fig,'Open existing...',[x toplabely-0.5 20 2],@openExistingCB);
-  hs.movies = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 0.52*figh w 0.34*figh],'Max',inf,'Min',0,'FontSize',smallfont);
+  y = toplabely-1;
+  hs.openBtn = button(hs.fig,'Open existing jobset',[x y 25 lh],@openExistingCB);
+  y = y-lh;
+  t = label(hs.fig,'1. Movie and ROI selection',[x y w 1.5],14);
+  t.FontWeight = 'bold';
+  hs.movies = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 0.52*figh w 0.285*figh],'Max',inf,'Min',0,'FontSize',smallfont);
   hs.movies.String = jobset.movieFiles;
   % undocumentedmatlab.com hack to add horizontal scrollbars
   jScrollPane = findjobj(hs.movies);
   jScrollPane.setHorizontalScrollBarPolicy(32);
 
-  hs.movieDirectory = editbox(hs.fig,'',[x 0.91*figh w 1.7]);
+  y = y-lh;
+  hs.movieDirectory = editbox(hs.fig,'',[20 y w-(20-x) h]);
   hs.movieDirectory.Enable = 'inactive';
   hs.movieDirectory.String = jobset.movieDirectory;
-  hs.selectDirectory = button(hs.fig,'Select directory',[w-15 0.865*figh 17.5 2],@selectDirectoryCB);
-  hs.labelAvail = label(hs.fig,'Available movies:',[x 0.865*figh 20 1.5]);
+  hs.selectDirectory = button(hs.fig,'Select directory',[x y 17.5 lh],@selectDirectoryCB);
+  y = y-h;
+  hs.labelAvail = label(hs.fig,'Available movies:',[x y 20 h]);
 
   % ROIs
-  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 3 w 0.415*figh],'Callback',@roisCB);
+  label(hs.fig,'ROIs:',[x 0.48*figh 20 1.5]);
+  hs.cropROI = button(hs.fig,'Add crop',[x 1+0.415*figh 13.5 2],@addROICB);
+  hs.fullROI = button(hs.fig,'Add full',[x+13.9 1+0.415*figh 13.5 2],@skipROICB);
+  hs.deleteROI = button(hs.fig,'Delete',[x+13.9*2 1+0.415*figh 13.5 2],@deleteROICB);
+  hs.viewROI = button(hs.fig,'View',[x+13.9*3 1+0.415*figh 13.5 2],@viewROICB);
+  hs.ROIs = uicontrol(hs.fig,'Style','listbox','Units','characters','Position',[x 1 w 0.415*figh],'Callback',@roisCB);
   hs.ROIs.Min = 1;
   % undocumentedmatlab.com hack to add horizontal scrollbars
   jScrollPane = findjobj(hs.ROIs);
   jScrollPane.setHorizontalScrollBarPolicy(32);
 
-  label(hs.fig,'ROIs:',[x 0.48*figh 20 1.5]);
-  hs.cropROI = button(hs.fig,'Add crop',[x 1 13.5 2],@addROICB);
-  hs.fullROI = button(hs.fig,'Add full',[x+13.9 1 13.5 2],@skipROICB);
-  hs.deleteROI = button(hs.fig,'Delete',[x+13.9*2 1 13.5 2],@deleteROICB);
-  hs.viewROI = button(hs.fig,'View',[x+13.9*3 1 13.5 2],@viewROICB);
-
   %% Process setup
   x = colwidth(1) + 5;
   w = colwidth(2);
   h = 2;
-  t = label(hs.fig,'Process setup',[x toplabely 20 1.5],14);
+  t = label(hs.fig,'2. Process setup',[x toplabely 20 1.5],14);
   t.FontWeight = 'bold';
   y = toplabely-2;
   % Job process
-  label(hs.fig,'Job process',[x y 14 1.5]);
+  label(hs.fig,'Process type',[x y 14 1.5]);
   hs.jobProc = popup(hs.fig,jobProcessValues,[x+21 y 22 1.5],@jobProcessCB);
   y = y-h;
   % Coordinate system
@@ -118,99 +125,33 @@ function hs = createControls()
   hs.coordSysCh{1}.Value = 1;
   hs.coordSysChNum = 1;
   % Channel modes
-  h = 9;
+  h = 6;
   b = y-h-0.5;
   for i=1:3
-    p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
-    hs.spotMode{i} = popup(p,spotDetectValues,[22 6 0.45*w 1.5],@spotModeCB);
-    hs.spotModeText{i} = label(p,'Spot detection',[1 6 20 1.5]);
-
-    hs.refineMode{i} = popup(p,spotRefineValues,[22 4 0.45*w 1.5],@refineModeCB);
-    hs.refineModeText{i} = label(p,'Spot refinement',[1 4 20 1.5]);
     
-    hs.zSliceText{i} = label(p,'z-slice limits',[1 2 w/2-2 1.5],10);
-    hs.zSliceText{i}.HorizontalAlignment = 'center';
-    hs.tPointsText{i} = label(p,'Time-point limits',[w/2+1 2 w/2-2 1.5],10);
-    hs.tPointsText{i}.HorizontalAlignment = 'center';
-    editw = 0.1*w;
-    editx = 1;
-    hs.zStackMinText{i} = label(p,'Min',[editx 0.5 4 1.5],10);
-    editx = editx+4.5;
-    hs.zStackMin{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
-    editx = editw+editx+0.5;
-    hs.zStackMaxText{i} = label(p,'Max',[editx 0.5 4 1.5],10);
-    editx = editx+4.5;
-    hs.zStackMax{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
-    editx = editw+editx+3;
-    hs.tPointsMinText{i} = label(p,'Min',[editx 0.5 4 1.5],10);
-    editx = editx+4.5;
-    hs.tPointsMin{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
-    editx = editw+editx+0.5;
-    hs.tPointsMaxText{i} = label(p,'Max',[editx 0.5 4 1.5],10);
-    editx = editx+4.5;
-    hs.tPointsMax{i} = editbox(p,[],[editx 0.5 editw 1.5],10);
+    p = uipanel(hs.fig,'Units','characters','Position',[x b-(i-1)*h w h],'FontSize',12,'Title',['Channel ' num2str(i)]);
+    hs.spotMode{i} = popup(p,spotDetectValues,[22 3 0.45*w 1.5],@spotModeCB);
+    hs.spotModeText{i} = label(p,'Spot detection',[1 3 20 1.5]);
+
+    hs.refineMode{i} = popup(p,spotRefineValues,[22 1 0.45*w 1.5],@refineModeCB);
+    hs.refineModeText{i} = label(p,'Spot refinement',[1 1 20 1.5]);
     
   end
 
-  % b = b-2*h;
-  % Tasks
-  % tasks = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
-  % h = 1.75;
-  % panelh = h*(1+length(tasks));
-  % p = uipanel(hs.fig,'Units','characters','Position',[x b-panelh w panelh],'FontSize',12,'Title','Tasks');
-  % for i=1:length(tasks)
-  %    hs.tasks{i} = checkbox(p,tasks{i},[1 panelh-h*(i+1) 30 h]);
-  %    hs.tasks{i}.Value = hs.tasks{i}.Max;
-  % end
-  % b = b-panelh;
-
-  %% Options - Tracking options, column 1
+  %% Options - General options, column 1
   x = sum(colwidth(1:2)) + 8;
   w = 35;
-  t = label(hs.fig,'Options',[x toplabely 20 1.5],14);
+  t = label(hs.fig,'3. Options',[x toplabely 20 1.5],14);
   t.FontWeight = 'bold';
   h = 1.5;
   lh = 1.5*h; % large height
   y = toplabely-lh;
-  hs.trackOptionsText = label(hs.fig,'Tracking options',[x y 20 1.5],12);
-  hs.trackOptionsText.FontWeight = 'bold';
-  y = y-h;
-  hs.autoRadii = checkbox(hs.fig,'Calculate search radii from dt',[x y w h],@autoRadiiCB,10);
+  t = label(hs.fig,'Spot detection & refinement',[x y 30 1.5],12);
+  t.FontWeight = 'bold';
   y = y-h;
   labelw = 0.75*w;
   editw = 0.2*w;
   editx = x+w-editw;
-  hs.autoRadiidtText = label(hs.fig,'Frame dt',[x y labelw h],10);
-  hs.autoRadiidt = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-h;
-  hs.autoRadiiAvgDispText = label(hs.fig,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
-  % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
-  hs.autoRadiiAvgDisp = editbox(hs.fig,num2str(0.06),[editx y editw h],10);
-  y = y-h;
-  hs.minSearchRadiusText = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
-  hs.minSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-h;
-  hs.maxSearchRadiusText = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
-  hs.maxSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
-
-  y = y-h;
-  hs.useSisterAlignment = checkbox(hs.fig,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
-  y = y-h;
-  % Adjust text box pos for multiple lines.
-  hs.maxSisterAlignmentAngleText = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
-  hs.maxSisterAlignmentAngle = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-lh;
-  hs.maxSisterDistText = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
-  hs.maxSisterDist = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-lh;
-  hs.minSisterTrackOverlapText = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
-  hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-lh;
-  
-  %% Options - General options, column 1
-  t = label(hs.fig,'General options',[x y 20 1.5],12);
-  t.FontWeight = 'bold';
-  y = y-h;
   label(hs.fig,'Min spots per frame',[x y labelw h],10);
   hs.minSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
@@ -237,17 +178,45 @@ function hs = createControls()
   y = y-h;
   hs.alphaAchText{3} = label(hs.fig,'Ch.3',[x+labelw-3 y-0.15 4 h],10);
   hs.alphaA{3} = editbox(hs.fig,[],[editx y editw h],10);
-%   y = y-h;
-%   hs.deconvolve = checkbox(hs.fig,'Deconvolve movies',[x y w h],@deconvolveCB,10);
-%   y = y-h;
-%   hs.psfBtn = button(hs.fig,'Select PSF',[x y labelw/2 h],@psfBtnCB,10);
-%   hs.psfFile = editbox(hs.fig,'',[x+labelw/2+2 y colwidth(3)-labelw/2-2 h],10);
-%   
+  y = y-lh;
+  
+  %% Options - Tracking options, column 1
+  hs.trackOptionsText = label(hs.fig,'Tracking',[x y 20 1.5],12);
+  hs.trackOptionsText.FontWeight = 'bold';
+  y = y-h;
+  hs.autoRadii = checkbox(hs.fig,'Calculate search radii from dt',[x y w h],@autoRadiiCB,10);
+  y = y-h;
+  hs.autoRadiidtText = label(hs.fig,'Frame dt',[x y labelw h],10);
+  hs.autoRadiidt = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  hs.autoRadiiAvgDispText = label(hs.fig,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
+  % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
+  hs.autoRadiiAvgDisp = editbox(hs.fig,num2str(0.06),[editx y editw h],10);
+  y = y-h;
+  hs.minSearchRadiusText = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
+  hs.minSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-h;
+  hs.maxSearchRadiusText = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
+  hs.maxSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
+
+  y = y-h;
+  hs.useSisterAlignment = checkbox(hs.fig,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
+  y = y-h;
+  % Adjust text box pos for multiple lines.
+  hs.maxSisterAlignmentAngleText = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
+  hs.maxSisterAlignmentAngle = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-lh;
+  hs.maxSisterDistText = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
+  hs.maxSisterDist = editbox(hs.fig,[],[editx y editw h],10);
+  y = y-lh;
+  hs.minSisterTrackOverlapText = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
+  hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
+  
   %% Execution
   h = 2;
   y = 1+4.5*h;
   labelw = 0.5*w;
-  t = label(hs.fig,'Execution',[x y labelw 1.5],14);
+  t = label(hs.fig,'4. Execution',[x y labelw 1.5],14);
   t.FontWeight = 'bold';
   lh = 1.5*h;
   y = y-lh;
@@ -271,7 +240,7 @@ function hs = createControls()
   h = 1.5;
   lh = 1.5*h;
   y = toplabely-lh;
-  hs.chrShiftOptionsText = label(hs.fig,'Chromatic shift options',[x y w 1.5],12);
+  hs.chrShiftOptionsText = label(hs.fig,'Chromatic shift',[x y w 1.5],12);
   hs.chrShiftOptionsText.FontWeight = 'bold';
   y = y-h;
   labelw = 0.75*w;
@@ -322,7 +291,7 @@ function hs = createControls()
   y = y-lh;
   
   %% Options - Neighbour spot-detection options, column 2
-  t = label(hs.fig,'Neighbour spot-detection options',[x y w 1.5],12);
+  t = label(hs.fig,'Neighbour spot detection',[x y w 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
   hs.neighbourMaskShapeText = label(hs.fig,'Mask shape',[x y labelw h],10);
@@ -347,7 +316,7 @@ function hs = createControls()
   y = y-3*h-lh;
   
   %% Options - Intensity options, column 2
-  t = label(hs.fig,'Intensity measurement options',[x y w 1.5],12);
+  t = label(hs.fig,'Intensity measurement',[x y w 1.5],12);
   t.FontWeight = 'bold';
   y = y-h;
   label(hs.fig,'Measure in channels...',[x y labelw h],10);
@@ -428,19 +397,15 @@ function updateControls(jobset)
   if isfield(jobset,'psfFile')
     hs.psfFile.String = jobset.psfFile;
   end
-%   if opts.deconvolve
-%     hs.deconvolve.Value = hs.deconvolve.Max; % On
-%     hs.psfBtn.Enable = 'on';
-%     hs.psfFile.Enable = 'on';
-%   else
-%     hs.deconvolve.Value = hs.deconvolve.Min; % Off.
-%     hs.psfBtn.Enable = 'off';
-%     hs.psfFile.Enable = 'off';
-%   end
   hs.chromaticShift.Value = any(~cellfun('isempty',opts.chrShift.jobset(:)));
   hs.minChrShiftSpots.String = num2str(opts.chrShift.minSpots);
   if ~isempty(opts.chrShift.jobset{1,2})
     hs.ch1to2.String = opts.chrShift.jobset{1,2};
+    if ~exist(hs.ch1to2.String,'file')
+      kitLog('Chromatic shift jobset for channel 1 to 2 not found: %s',hs.ch1to2.String);
+      kitLog('Please relocate this jobset:');
+      ch1to2CB();
+    end
     hs.ch1to2_ch1num.Enable = 'on';
     hs.ch1to2_ch2num.Enable = 'on';
     hs.ch1to2_ch1num.String = num2str(opts.chrShift.chanOrder{1,2}(1));
@@ -454,6 +419,11 @@ function updateControls(jobset)
   end
   if ~isempty(opts.chrShift.jobset{1,3})
     hs.ch1to2.String = opts.chrShift.jobset{1,3};
+    if ~exist(hs.ch1to3.String,'file')
+      kitLog('Chromatic shift jobset for channel 1 to 3 not found: %s',hs.ch1to2.String);
+      kitLog('Please relocate this jobset:');
+      ch1to3CB();
+    end
     hs.ch1to3_ch1num.Enable = 'on';
     hs.ch1to3_ch3num.Enable = 'on';
     hs.ch1to3_ch1num.String = num2str(opts.chrShift.chanOrder{1,3}(1));
@@ -467,6 +437,11 @@ function updateControls(jobset)
   end
   if ~isempty(opts.chrShift.jobset{2,3})
     hs.ch2to3.String = opts.chrShift.jobset{2,3};
+    if ~exist(hs.ch2to3.String,'file')
+      kitLog('Chromatic shift jobset for channel 2 to 3 not found: %s',hs.ch1to2.String);
+      kitLog('Please relocate this jobset:');
+      ch2to3CB();
+    end
     hs.ch2to3_ch2num.Enable = 'on';
     hs.ch2to3_ch3num.Enable = 'on';
     hs.ch2to3_ch2num.String = num2str(opts.chrShift.chanOrder{2,3}(1));
@@ -1247,16 +1222,6 @@ function updateJobset()
   for i=1:3
     opts.spotMode{i} = spotDetectValuesJS{handles.spotMode{i}.Value};
     opts.coordMode{i} = spotRefineValuesJS{handles.refineMode{i}.Value};
-    if isempty(handles.tPointsMin{i}.String) || isempty(handles.tPointsMax{i}.String)
-      opts.neighbourSpots.timePoints{i} = [];
-    else
-      opts.neighbourSpots.timePoints{i} = str2double(handles.tPointsMin{i}.String):str2double(handles.tPointsMax{i}.String);
-    end
-    if isempty(handles.zStackMin{i}.String) || isempty(handles.zStackMax{i}.String)
-      opts.neighbourSpots.zSlices{i} = [];
-    else
-      opts.neighbourSpots.zSlices{i} = str2double(handles.zStackMin{i}.String):str2double(handles.zStackMax{i}.String);
-    end
   end
   if handles.autoRadii.Value
     opts.autoRadiidt = str2double(handles.autoRadiidt.String);
@@ -1341,10 +1306,10 @@ end
 
 function cellResult = getChromaticShiftResults(chrShift)
   cellResult = chrShift.result;
-  for i = 1:3
-    for j = 1:3
+  for i = 1:2
+    for j = (i+1):3
       jS = chrShift.jobset{i,j};
-	  if i>=j || isempty(jS) || strcmp(jS,'Unknown source'); continue; end
+	  if i==j || isempty(jS) || strcmp(jS,'Unknown source'); continue; end
       jS = kitLoadJobset(jS);
       neighFilt = chrShift.neighbourFilter;
       intFilt = chrShift.intensityFilter/100;
