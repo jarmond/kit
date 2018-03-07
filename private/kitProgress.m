@@ -31,5 +31,5 @@ elseif nargin < 2 || etime(currentClock, lastUpdate) > updateInterval
       fprintf(repmat('\b',1,length(msg)+1));
     end
     fprintf('%s\n',msg);
-    lastUpdate = currentClock;
 end
+lastUpdate = currentClock;
