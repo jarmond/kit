@@ -197,7 +197,7 @@ end
 
 % Churchman falls over with outliers - remove them.
 chdelta3D = delta3D;
-outs = isoutlier(chdelta3D,'mean');
+outs = findoutliers(chdelta3D);
 chdelta3D = chdelta3D(~outs);
 
 mean   = nanmean(chdelta3D)*1000;
@@ -207,7 +207,7 @@ nch3D      = sum(~isnan(chdelta3D));
 
 % Churchman falls over with outliers - remove them.
 chdelta2D = delta2D;
-outs = isoutlier(chdelta2D,'mean');
+outs = findoutliers(chdelta2D);
 chdelta2D = chdelta2D(~outs);
 
 mean   = nanmean(chdelta2D)*1000;
@@ -327,4 +327,21 @@ allStats = table(Median,Mean,StdDev,StdErr,n,'RowNames',statsList);
 fprintf('\n');
 disp(allStats);
 
+end
+
+%% Sub-functions
+
+function outs = findoutliers(data)
+  if nargin<1 || isempty(data)
+    return
+  end
+  if verLessThan('matlab','9.2')
+    nTests = length(data);
+    outs = zeros(nTests,1);
+    for iTest = 1:nTests
+      outs(iTest) = ttest2(data,data(iTest),'alpha',0.0455);
+    end    
+  else
+    outs = isoutlier(data,'mean');
+  end
 end

@@ -111,73 +111,33 @@ for iExpt = 1:nExpts
   
   % sort the data
   thisData = sort(data{iExpt});
+  
+  % find outliers (default is two standard deviations)
+  outliers = findoutliers(thisData);
+  outData = thisData(outliers);
+  
+  % update data to remove outliers
+  thisData = thisData(~outliers);
   % get basic statistics
-%   data_mean = nanmean(thisData);
   data_median = nanmedian(thisData);
   data_25pc = prctile(thisData,25);
   data_75pc = prctile(thisData,75);
-  
-  % find which datapoints are considered upper outliers
-  testData = thisData(thisData>data_75pc);
-  nTests = length(testData);
-  if nTests > 0
-    c=0; stop=0;
-    while ~stop && c < nTests
-      c=c+1;
-      stop = ttest2(thisData,testData(c),'alpha',opts.outlierP);
-    end
-    if stop
-      lastInlier = testData(c-1);
-      upperOutliers = testData(c:end);
-    else
-      lastInlier = testData(nTests);
-      upperOutliers = [];
-    end
-  else
-    lastInlier = thisData(end);
-    upperOutliers = [];
-  end
-  
-  % find which datapoints are considered lower outliers
-  testData = thisData(thisData<data_25pc);
-  nTests = length(testData);
-  if nTests > 0
-      c=nTests+1; stop=0;
-      while ~stop && c > 1
-        c=c-1;
-        stop = ttest2(thisData,testData(c),'alpha',opts.outlierP);
-      end
-      if stop
-        firstInlier = testData(c+1);
-        lowerOutliers = testData(1:c);
-      else
-        firstInlier = testData(1);
-        lowerOutliers = [];
-      end
-  else
-    firstInlier = thisData(1);
-    lowerOutliers = [];
-  end
-  
-  % update data to remove outliers
-  thisData = thisData(thisData>=firstInlier & thisData<=lastInlier);
-  data_mean = nanmean(thisData);
+  data_mean = nanmean(thisData);  
       
   rectangle('Position',[xData-0.25 data_25pc 0.5 data_75pc-data_25pc])
   % plot the medians and means
   line([xData-0.25 xData+0.25],[data_median data_median],'Color',CC(iExpt,:))
   scatter(xData,data_mean,'+','MarkerEdgeColor',CC(iExpt,:))
   % draw whiskers
-  line([xData xData],[data_75pc  lastInlier],'Color','k')  
-  line([xData xData],[data_25pc firstInlier],'Color','k')
+  line([xData xData],[data_75pc max(thisData)],'Color','k')
+  line([xData xData],[data_25pc min(thisData)],'Color','k')
   
   % plot outliers
   if opts.showOutliers
-    scatter(ones(length(lowerOutliers),1)*xData, lowerOutliers,'x','MarkerEdgeColor','k')
-    scatter(ones(length(upperOutliers),1)*xData, upperOutliers,'x','MarkerEdgeColor','k')
+    scatter(ones(length(outData),1)*xData, outData,'x','MarkerEdgeColor','k')
   else
-    line([xData-0.05 xData+0.05],[firstInlier firstInlier],'Color','k')
-    line([xData-0.05 xData+0.05],[lastInlier lastInlier],'Color','k')
+    line([xData-0.05 xData+0.05],[min(thisData) min(thisData)],'Color','k')
+    line([xData-0.05 xData+0.05],[max(thisData) max(thisData)],'Color','k')
   end
   
 end
@@ -195,4 +155,21 @@ ylabel(opts.yLabel)
 set(gca,'XTick',1:nExpts)
 set(gca,'XTickLabel',legends)
 
+end
+
+%% Sub-functions
+
+function outs = findoutliers(data)
+  if nargin<1 || isempty(data)
+    return
+  end
+  if verLessThan('matlab','9.2')
+    nTests = length(data);
+    outs = zeros(nTests,1);    
+    for iTest = 1:nTests
+      outs(iTest) = ttest2(data,data(iTest),'alpha',0.0455);
+    end
+  else
+    outs = isoutlier(data,'mean');
+  end
 end

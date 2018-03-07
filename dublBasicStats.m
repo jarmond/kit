@@ -285,7 +285,7 @@ switch opts.stat
         end
         
         % Churchman falls over with outliers - remove them.
-        outs = isoutlier(delta3D,'mean');
+        outs = findoutliers(delta3D);
         delta3D = delta3D(~outs);
         
         mean   = nanmean(delta3D)*1000;
@@ -331,7 +331,7 @@ switch opts.stat
         end
         
         % Churchman falls over with outliers - remove them.
-        outs = isoutlier(delta2D,'mean');
+        outs = findoutliers(delta2D);
         delta2D = delta2D(~outs);
         
         mean   = nanmean(delta2D)*1000;
@@ -647,4 +647,21 @@ end
 
 fprintf('\n')
 
+end
+
+%% Sub-functions
+
+function outs = findoutliers(data)
+  if nargin<1 || isempty(data)
+    return
+  end
+  if verLessThan('matlab','9.2')
+    nTests = length(data);
+    outs = zeros(nTests,1);
+    for iTest = 1:nTests
+      outs(iTest) = ttest2(data,data(iTest),'alpha',0.0455);
+    end    
+  else
+    outs = isoutlier(data,'mean');
+  end
 end
