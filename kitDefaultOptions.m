@@ -62,7 +62,7 @@ opts.debug = debug;
 
 % Maki options.
 opts.minSpotsPerFrame = 20;
-opts.maxSpotsPerFrame = 1000;
+opts.maxSpotsPerFrame = 150;
 opts.betterBackground = 0; % 1 == mask signal before taking background.
 opts.fitCloud = 0; % 1 == use max evector as normal axis.
 opts.robustStats = 0;
