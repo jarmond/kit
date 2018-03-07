@@ -109,7 +109,11 @@ function hs = createControls(desc)
   hs.spotFilterBtn = button(hs.fig,'Spot filtering',[x y btnw btnh],@filterSpotsCB);
   x = x+btnw+ddx;
   hs.cellFilterBtn = button(hs.fig,'Cell filtering',[x y btnw btnh],@filterCellsCB);
-  hs.cellFilterBtn.Enable = 'off';
+  x = x+btnw+ddx;
+  hs.sisterPairingBtn = button(hs.fig,'Sister pairing',[x y btnw btnh],@sisterPairingCB);
+  x = x+btnw+ddx;
+  hs.categoriesBtn = button(hs.fig,'Categorise spots',[x y btnw btnh],@categoriseCB);
+  hs.categoriesBtn.Enable = 'off';
   y = y-lh;
   
   % Analysis tools sub-title.
@@ -132,6 +136,9 @@ function hs = createControls(desc)
   x = x+(btnw+ddx);
   hs.dublBtn = button(hs.fig,'DubL analysis',[x y btnw btnh],@dublCB);
   hs.dublBtn.Enable = 'off';
+  x = x+(btnw+ddx);
+  hs.intensityBtn = button(hs.fig,'Intensity analysis',[x y btnw btnh],@intensityCB);
+  hs.intensityBtn.Enable = 'off';
   
   % Close button.
   x = figw-btnw-dx; y = 1;
@@ -175,6 +182,7 @@ function newRunCB(hObj,event)
   maxMovLen = 55;
   filename = strshorten(filename,maxMovLen);
   hs.jobsetLab.String = filename;
+  hs.runBtn.String = 'Run';
   % back up all information
   hs.jobset = jobset;
   handles = hs;
@@ -282,6 +290,26 @@ function filterCellsCB(hObj,event)
   set(guiObj,'Enable','inactive');
   
   kitFilterCells(hs.jobset);
+  
+  % Re-activate GUI.
+  set(guiObj,'Enable','on');
+  
+end
+
+function sisterPairingCB(hObj,event)
+  hs = handles;
+  % check if a jobset is loaded
+  if ~isfield(hs,'jobset') || isempty(hs.jobset)
+    errorbox('No job yet created or loaded.')
+    return
+  end
+  kitLog('Starting manual pairing of sister kinetochores')
+  
+  % Turn off the GUI during processing.
+  guiObj=findobj(handles.fig,'Enable','on');
+  set(guiObj,'Enable','inactive');
+  
+  kitManualPairSisters(hs.jobset);
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
