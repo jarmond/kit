@@ -150,11 +150,14 @@ end
 if ismember(6,tasks)
   % Find neighbouring 3D spot coordinates per frame.
   for c = neighChans
-    kitLog('Finding particle coordinates in channel %d',c);
-    job = kitFindCoords(job, reader, c);
+    if ismember(1,tasks)
+      kitLog('Finding particle coordinates in channel %d',c);
+      job = kitFindCoords(job, reader, c);
+    end
     if ismember(2,tasks)
       % Transform coordinates into plane.
       kitLog('Transforming coordinates in channel %d to plane from channel %d',c,planeChan);
+      planeChan = job.options.coordSystemChannel;
       job.dataStruct{c}.planeFit = job.dataStruct{planeChan}.planeFit;
       job.dataStruct{c} = kitFitPlane(job,reader,job.dataStruct{c},c,1);
     end
