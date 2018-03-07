@@ -611,6 +611,10 @@ function runCB(hObj,event)
     end
     datdir = handles.jobsetdir{iCond}.String;
     
+    % get condition information
+    condlabel{iCond} = handles.condlabel{iCond}.String;
+    normcond(iCond) = handles.normConds{iCond}.Value;
+    
     % get intensities per condition, using wither data type
     switch type
       
@@ -660,11 +664,6 @@ function runCB(hObj,event)
   end
   kitLog('Intensities compiled across all conditions');
   
-  for iCond = 1:nConds
-    % get condition information
-    condlabel{iCond} = handles.condlabel{iCond}.String;
-    normcond(iCond) = handles.normConds{iCond}.Value;
-  end
   % get condition information for plotting
   normcond = find(normcond);
   plotstyle = handles.plotStyle;
