@@ -160,7 +160,7 @@ for iExpt = 1:nExpts
     
     % Get number of datapoints and adjust legends.
     nPoints = length(data{iExpt});
-    legends{iExpt} = sprintf('%s (n=%i)',legends{iExpt},nPoints);
+    opts.legends{iExpt} = sprintf('%s (n=%i)',opts.legends{iExpt},nPoints);
 end
 
 %% Plotting data

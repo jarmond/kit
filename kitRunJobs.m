@@ -91,7 +91,7 @@ end
 
 % Copy out job info for each movie.
 jobs = cell(nROIs,1);
-for i=1:nROIs
+for i= options.subset
   if options.existing
     jobs{i} = kitLoadJob(jobset,i);
     % Copy over any new options.
