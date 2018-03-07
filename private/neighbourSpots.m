@@ -25,7 +25,7 @@ chanPos = find(options.neighbourSpots.channelOrientation==channel);
 chanOrient = (chanPos>refChanPos);
 
 % get list of frames over which to look for neighbours
-if isempty(options.neighbourSpots.timePoints{channel});
+if isempty(options.neighbourSpots.timePoints{channel})
     timePoints = 1:nFrames;
 else
     timePoints = options.neighbourSpots.timePoints{channel};
@@ -40,7 +40,7 @@ timePoints = setxor(emptyFrames,1:nFrames); % final list of frames
 timePoints = timePoints(:)'; % ensure is a row vector - setxor has undergone a change over MATLAB versions
 
 %get number of z-slices
-if isempty(options.neighbourSpots.zSlices{channel});
+if isempty(options.neighbourSpots.zSlices{channel})
     zSlices = 1:nPlanes;
 else
     zSlices = options.neighbourSpots.zSlices{channel};
@@ -57,8 +57,8 @@ if ~strcmp(options.jobProcess,'chrshift')
  
   % find frames with and without plane fit
   framesNoPlane = [];
-  for iFrame = 1:nFrames;
-    if isempty(planeFit(iFrame).plane);
+  for iFrame = 1:nFrames
+    if isempty(planeFit(iFrame).plane)
       framesNoPlane = [framesNoPlane iFrame];
     end
   end
@@ -133,7 +133,7 @@ switch options.jobProcess
     spots = repmat({[]},nFrames,1);
     spotIDs = repmat({[]},nFrames,1);
 
-    for iSisPair = 1:nSisters;
+    for iSisPair = 1:nSisters
 
         % get sisterList, and its track and spot IDs
         sisList = refSisterList(iSisPair);
@@ -201,7 +201,7 @@ switch options.jobProcess
                 % make sure that the mask doesn't extend over image
                 % boundaries
                 if coords(1)-2*r>0 && coords(1)+2*r<=imageSizeX && ...
-                    coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY;
+                    coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY
 
                   % get intensity values of mask-derived spot vicinity
                   imageMask = mask .* image(coords(1)-r:coords(1)+r, ...
@@ -245,7 +245,7 @@ switch options.jobProcess
     spots = {[]};
     spotIDs = {[]};
 
-    for iSpot = 1:nSpots;
+    for iSpot = 1:nSpots
 
       % get coordinate information, then transpose
       % (the results of MMF are transposed, so need to be transposed back)
@@ -266,8 +266,8 @@ switch options.jobProcess
         % make sure that the mask doesn't extend over image
         % boundaries
         if coords(1)-2*r>0 && coords(1)+2*r<=imageSizeX && ...
-            coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY;
-
+            coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY
+        
           % get intensity values of mask-derived spot vicinity
           imageMask = mask .* image(coords(1)-r:coords(1)+r, ...
             coords(2)-r:coords(2)+r, coords(3));
@@ -281,15 +281,17 @@ switch options.jobProcess
         locMax1DIndx = find(imageMask==nanmax(imageMask(:)));
         if isempty(locMax1DIndx)
           continue
+        elseif length(locMax1DIndx)>1
+          locMax1DIndx = locMax1DIndx(1); % IDEALLY SHOULD BE THE SPOT CLOSEST TO THE ORIGINAL SPOT
         end
-
+        
         [locMaxCrd(1),locMaxCrd(2),locMaxCrd(3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx);
         % correct coordinates to full image
         locMaxCrd(1) = locMaxCrd(1)+coords(1)-(r+1);
         locMaxCrd(2) = locMaxCrd(2)+coords(2)-(r+1);
         locMaxCrd(3) = coords(3);
 
-        if locMaxCrd(1)>imageSizeX || locMaxCrd(2)>imageSizeY || locMaxCrd(3)>imageSizeZ;
+        if locMaxCrd(1)>imageSizeX || locMaxCrd(2)>imageSizeY || locMaxCrd(3)>imageSizeZ
           continue
         end
 
