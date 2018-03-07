@@ -87,7 +87,8 @@ rankNNearestNeighbors = 10;
 
 % minimal number of consecutive frames in a movie that have stable enough
 % eigenvectors for plane rotation estimation
-minConsecFrames = 5;
+nTimePoints = job.metadata.nFrames;
+minConsecFrames = min(5,nTimePoints-1);
 
 % minimum number of spots to attempt to fit plane to
 minSpotsInFrame = 3;
@@ -110,7 +111,6 @@ else
 end
 
 % Get coordinates.
-nTimePoints = job.metadata.nFrames;
 if isfield(dataStruct,'initCoord')
   initCoord = dataStruct.initCoord;
   spotsFound = 1;
