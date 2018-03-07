@@ -18,7 +18,7 @@ chrShift = job.options.chrShift.result{job.options.coordSystemChannel,channel};
 chrShift = chrShift(1:3)./metadata.pixelSize(1:3);
 initCoord = job.dataStruct{refChan}.initCoord;
 planeFit = job.dataStruct{refChan}.planeFit;
-if strcmp(job.options.jobProcess,'zonly') && ~isfield(job.dataStruct{refChan},'trackList')
+if nFrames==1 || ~isfield(job.dataStruct{refChan},'trackList')
   useTracks = 0;
   nKTs = size(initCoord(1).allCoord,1);
 else
@@ -85,7 +85,11 @@ maskWarning=0;
 %% Get intensities
 
 % read whole movie
-movie = kitReadWholeMovie(reader, metadata, channel, job.ROI.crop);
+if length(job.ROI)>1
+  movie = kitReadWholeMovie(reader, metadata, channel, job.ROI(job.index).crop);
+else
+  movie = kitReadWholeMovie(reader, metadata, channel, job.ROI.crop);
+end
 
 prog = kitProgress(0);
 for t=1:nFrames
@@ -120,7 +124,7 @@ for t=1:nFrames
         pixIdx = j;
       end
         
-      if pixIdx > 0 && pixIdx < size(initCoord(t).allCoordPix,1)
+      if ismember(pixIdx,1:nKTs)
         % Read off intensity in radius r around spot.
         pixCoords = initCoord(t).allCoordPix(pixIdx,[2 1 3]);
 
