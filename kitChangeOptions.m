@@ -518,8 +518,8 @@ function updateControls(opts)
   hs.mmfAddSpots.Value = opts.mmf.addSpots;
   hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
   hs.clusterSeparation.String = num2str(opts.mmf.clusterSeparation);
-  hs.oneBigCluster.Value = ~opts.mmf.neBigCluster;
-  for iChan=1:3;
+  hs.oneBigCluster.Value = ~opts.mmf.oneBigCluster;
+  for iChan=1:3
     hs.alphaA{iChan}.String = num2str(opts.mmf.alphaA(iChan));
     hs.alphaD{iChan}.String = num2str(opts.mmf.alphaD(iChan));
     hs.alphaF{iChan}.String = num2str(opts.mmf.alphaF(iChan));
