@@ -15,11 +15,13 @@ function dublBasicStats(intraStructure,varargin)
 %    depthFilter: 0 or {1}. Whether or not to give depth-filtered
 %       measurements of intra-measurements.
 %
-%    stat: {'delta3D'} or one of the following:
+%    stat: {''} or one of the following:
 %           - 'delta3D'
 %           - 'delta2D'
 %           - 'delta1D'
 %           - 'deltaXYZ'
+%           - 'delta3D-church'
+%           - 'delta2D-church'
 %           - 'sisSep3D'
 %           - 'sisSep2D'
 %           - 'sisSepXYZ'
@@ -33,17 +35,18 @@ function dublBasicStats(intraStructure,varargin)
 %       The statistic to be printed to screen. If no statistic is provided,
 %       the user will be prompted.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 
 % default options
-opts.coordSystem = 'plate';
+opts.coordSystem = 'microscope';
 opts.depthFilter = 1;
 opts.stat = '';
 % get user options
 opts = processOptions(opts,varargin{:});
 
 statsList = {'delta3D' ,'delta2D' ,'delta1D'  ,'deltaXYZ',...
+             'delta3D-church','delta2D-church',...
              'sisSep3D','sisSep2D','sisSepXYZ',...
              'twist3D' ,'twistYZ' ,...
              'swivel3D','swivelYZ','swivelKMT',...
@@ -57,23 +60,47 @@ if ~ismember(opts.stat,statsList)
     result = input(prompt);
     opts.stat = statsList{result};
 end
+isall = isfield(intraStructure.microscope.raw.delta.threeD,'all');
+
+if strcmp(opts.coordSystem,'plate')
+    if (isall && isempty(intraStructure.plate.raw.delta.threeD.all)) || (~isall && isempty(intraStructure.plate.raw.delta.threeD))
+        kitLog('No plane fit in movies in intraMeasurements. Converting coordinate system to ''microscope''');
+        opts.coordSystem = 'microscope';
+    end
+end
 
 switch opts.stat
 
     case 'delta3D'
-        
+            
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    delta3D = intraStructure.plate.depthFilter.delta.threeD.all(:);
+                    if isall
+                        delta3D = intraStructure.plate.depthFilter.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.plate.depthFilter.delta.threeD(:);
+                    end
                 else
-                    delta3D = intraStructure.plate.raw.delta.threeD.all(:);
+                    if isall
+                        delta3D = intraStructure.plate.raw.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.plate.raw.delta.threeD(:);
+                    end
                 end
             case 'microscope'
                 if opts.depthFilter
-                    delta3D = intraStructure.microscope.depthFilter.delta.threeD.all(:);
+                    if isall
+                        delta3D = intraStructure.microscope.depthFilter.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.microscope.depthFilter.delta.threeD(:);
+                    end
                 else
-                    delta3D = intraStructure.microscope.raw.delta.threeD.all(:);
+                    if isall
+                        delta3D = intraStructure.microscope.raw.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.microscope.raw.delta.threeD(:);
+                    end
                 end
         end
         
@@ -94,15 +121,31 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    delta2D = intraStructure.plate.depthFilter.delta.twoD.all(:);
+                    if isall
+                        delta2D = intraStructure.plate.depthFilter.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.plate.depthFilter.delta.twoD(:);
+                    end
                 else
-                    delta2D = intraStructure.plate.raw.delta.twoD.all(:);
+                    if isall
+                        delta2D = intraStructure.plate.raw.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.plate.raw.delta.twoD(:);
+                    end
                 end
             case 'microscope'
                 if opts.depthFilter
-                    delta2D = intraStructure.microscope.depthFilter.delta.twoD.all(:);
+                    if isall
+                        delta2D = intraStructure.microscope.depthFilter.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.microscope.depthFilter.delta.twoD(:);
+                    end
                 else
-                    delta2D = intraStructure.microscope.raw.delta.twoD.all(:);
+                    if isall
+                        delta2D = intraStructure.microscope.raw.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.microscope.raw.delta.twoD(:);
+                    end
                 end
         end
 
@@ -152,23 +195,47 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    deltaXYZ(:,1) = intraStructure.plate.depthFilter.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.plate.depthFilter.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.plate.depthFilter.delta.z.all(:);
+                    if isall
+                        deltaXYZ(:,1) = intraStructure.plate.depthFilter.delta.x.all(:);
+                        deltaXYZ(:,2) = intraStructure.plate.depthFilter.delta.y.all(:);
+                        deltaXYZ(:,3) = intraStructure.plate.depthFilter.delta.z.all(:);
+                    else
+                        deltaXYZ(:,1) = intraStructure.plate.depthFilter.delta.x(:);
+                        deltaXYZ(:,2) = intraStructure.plate.depthFilter.delta.y(:);
+                        deltaXYZ(:,3) = intraStructure.plate.depthFilter.delta.z(:);
+                    end
                 else
-                    deltaXYZ(:,1) = intraStructure.plate.raw.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.plate.raw.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.plate.raw.delta.z.all(:);
+                    if isall
+                        deltaXYZ(:,1) = intraStructure.plate.raw.delta.x.all(:);
+                        deltaXYZ(:,2) = intraStructure.plate.raw.delta.y.all(:);
+                        deltaXYZ(:,3) = intraStructure.plate.raw.delta.z.all(:);
+                    else
+                        deltaXYZ(:,1) = intraStructure.plate.raw.delta.x(:);
+                        deltaXYZ(:,2) = intraStructure.plate.raw.delta.y(:);
+                        deltaXYZ(:,3) = intraStructure.plate.raw.delta.z(:);
+                    end
                 end
             case 'microscope'
                 if opts.depthFilter
-                    deltaXYZ(:,1) = intraStructure.microscope.depthFilter.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.microscope.depthFilter.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.microscope.depthFilter.delta.z.all(:);
+                    if isall
+                        deltaXYZ(:,1) = intraStructure.microscope.depthFilter.delta.x.all(:);
+                        deltaXYZ(:,2) = intraStructure.microscope.depthFilter.delta.y.all(:);
+                        deltaXYZ(:,3) = intraStructure.microscope.depthFilter.delta.z.all(:);
+                    else
+                        deltaXYZ(:,1) = intraStructure.microscope.depthFilter.delta.x(:);
+                        deltaXYZ(:,2) = intraStructure.microscope.depthFilter.delta.y(:);
+                        deltaXYZ(:,3) = intraStructure.microscope.depthFilter.delta.z(:);
+                    end
                 else
-                    deltaXYZ(:,1) = intraStructure.microscope.raw.delta.x.all(:);
-                    deltaXYZ(:,2) = intraStructure.microscope.raw.delta.y.all(:);
-                    deltaXYZ(:,3) = intraStructure.microscope.raw.delta.z.all(:);
+                    if isall
+                        deltaXYZ(:,1) = intraStructure.microscope.raw.delta.x.all(:);
+                        deltaXYZ(:,2) = intraStructure.microscope.raw.delta.y.all(:);
+                        deltaXYZ(:,3) = intraStructure.microscope.raw.delta.z.all(:);
+                    else
+                        deltaXYZ(:,1) = intraStructure.microscope.raw.delta.x(:);
+                        deltaXYZ(:,2) = intraStructure.microscope.raw.delta.y(:);
+                        deltaXYZ(:,3) = intraStructure.microscope.raw.delta.z(:);
+                    end
                 end
         end
     
@@ -184,6 +251,98 @@ switch opts.stat
         fprintf('    std err = [%.2f, %.2f, %.2f] nm\n',stdErr(1),stdErr(2),stdErr(3))
         fprintf('    std dev = [%.2f, %.2f, %.2f] nm\n',stdDev(1),stdDev(2),stdDev(3))
     
+    case 'delta3D-church'
+        
+        switch opts.coordSystem
+            case 'plate'
+                if opts.depthFilter
+                    if isall
+                        delta3D = intraStructure.plate.depthFilter.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.plate.depthFilter.delta.threeD(:);
+                    end
+                else
+                    if isall
+                        delta3D = intraStructure.plate.raw.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.plate.raw.delta.threeD(:);
+                    end
+                end
+            case 'microscope'
+                if opts.depthFilter
+                    if isall
+                        delta3D = intraStructure.microscope.depthFilter.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.microscope.depthFilter.delta.threeD(:);
+                    end
+                else
+                    if isall
+                        delta3D = intraStructure.microscope.raw.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.microscope.raw.delta.threeD(:);
+                    end
+                end
+        end
+        
+        % Churchman falls over with outliers - remove them.
+        outs = isoutlier(delta3D,'mean');
+        delta3D = delta3D(~outs);
+        
+        mean   = nanmean(delta3D)*1000;
+        stdDev = nanstd(delta3D)*1000;
+        n      = sum(~isnan(delta3D));
+        [church,~] = MLp3D(delta3D*1000,[mean stdDev]);
+        
+        fprintf('\nChurchman-corrected 3D delta measurements (n = %i):\n\n',n)
+        fprintf('    mean    = %.2f nm\n',church(1))
+        fprintf('    std dev = %.2f nm\n',church(2)) 
+        
+    case 'delta2D-church'
+        
+        switch opts.coordSystem
+            case 'plate'
+                if opts.depthFilter
+                    if isall
+                        delta2D = intraStructure.plate.depthFilter.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.plate.depthFilter.delta.twoD(:);
+                    end
+                else
+                    if isall
+                        delta2D = intraStructure.plate.raw.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.plate.raw.delta.twoD(:);
+                    end
+                end
+            case 'microscope'
+                if opts.depthFilter
+                    if isall
+                        delta2D = intraStructure.microscope.depthFilter.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.microscope.depthFilter.delta.twoD(:);
+                    end
+                else
+                    if isall
+                        delta2D = intraStructure.microscope.raw.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.microscope.raw.delta.twoD(:);
+                    end
+                end
+        end
+        
+        % Churchman falls over with outliers - remove them.
+        outs = isoutlier(delta2D,'mean');
+        delta2D = delta2D(~outs);
+        
+        mean   = nanmean(delta2D)*1000;
+        stdDev = nanstd(delta2D)*1000;
+        n      = sum(~isnan(delta2D));
+        [church,~] = MLp2D(delta2D*1000,[mean stdDev]);
+        
+        fprintf('\nChurchman-corrected 2D delta measurements (n = %i):\n\n',n)
+        fprintf('    mean    = %.2f nm\n',church(1))
+        fprintf('    std dev = %.2f nm\n',church(2)) 
+        
     case 'sisSep3D'
         
         switch opts.coordSystem
@@ -193,17 +352,17 @@ switch opts.stat
                 sisSep3D = intraStructure.microscope.sisSep.threeD(:);
         end
         
-        median = nanmedian(sisSep3D)*1000;
-        mean   = nanmean(sisSep3D)*1000;
-        stdErr = nanserr(sisSep3D)*1000;
-        stdDev = nanstd(sisSep3D)*1000;
+        median = nanmedian(sisSep3D);
+        mean   = nanmean(sisSep3D);
+        stdErr = nanserr(sisSep3D);
+        stdDev = nanstd(sisSep3D);
         n      = min(sum(~isnan(sisSep3D)));
 
         fprintf('\n3D sister separation measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f nm\n',median)
-        fprintf('    mean    = %.2f nm\n',mean)
-        fprintf('    std err = %.2f nm\n',stdErr)
-        fprintf('    std dev = %.2f nm\n',stdDev)
+        fprintf('    median  = %.2f um\n',median)
+        fprintf('    mean    = %.2f um\n',mean)
+        fprintf('    std err = %.2f um\n',stdErr)
+        fprintf('    std dev = %.2f um\n',stdDev)
         
     case 'sisSep2D'
             
@@ -214,17 +373,17 @@ switch opts.stat
                 sisSep2D = intraStructure.microscope.sisSep.twoD(:);
         end
         
-        median = nanmedian(sisSep2D)*1000;
-        mean   = nanmean(sisSep2D)*1000;
-        stdErr = nanserr(sisSep2D)*1000;
-        stdDev = nanstd(sisSep2D)*1000;
+        median = nanmedian(sisSep2D);
+        mean   = nanmean(sisSep2D);
+        stdErr = nanserr(sisSep2D);
+        stdDev = nanstd(sisSep2D);
         n      = min(sum(~isnan(sisSep2D)));
 
         fprintf('\n2D sister separation measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f nm\n',median)
-        fprintf('    mean    = %.2f nm\n',mean)
-        fprintf('    std err = %.2f nm\n',stdErr)
-        fprintf('    std dev = %.2f nm\n',stdDev)
+        fprintf('    median  = %.2f um\n',median)
+        fprintf('    mean    = %.2f um\n',mean)
+        fprintf('    std err = %.2f um\n',stdErr)
+        fprintf('    std dev = %.2f um\n',stdDev)
         
     case 'sisSepXYZ'
         
@@ -239,17 +398,17 @@ switch opts.stat
                 sisSepXYZ(:,3) = intraStructure.microscope.sisSep.z(:);
         end
 
-        median = nanmedian(sisSepXYZ)*1000;
-        mean   = nanmean(sisSepXYZ)*1000;
-        stdErr = nanserr(sisSepXYZ)*1000;
-        stdDev = nanstd(sisSepXYZ)*1000;
+        median = nanmedian(sisSepXYZ);
+        mean   = nanmean(sisSepXYZ);
+        stdErr = nanserr(sisSepXYZ);
+        stdDev = nanstd(sisSepXYZ);
         n      = min(sum(~isnan(sisSepXYZ)));
 
         fprintf('\nX, Y and Z sister separation measurements (n = %i):\n\n',n)
-        fprintf('    median  = [%.2f, %.2f, %.2f] nm\n',median(1),median(2),median(3))
-        fprintf('    mean    = [%.2f, %.2f, %.2f] nm\n',mean(1),mean(2),mean(3))
-        fprintf('    std err = [%.2f, %.2f, %.2f] nm\n',stdErr(1),stdErr(2),stdErr(3))
-        fprintf('    std dev = [%.2f, %.2f, %.2f] nm\n',stdDev(1),stdDev(2),stdDev(3))
+        fprintf('    median  = [%.2f, %.2f, %.2f] um\n',median(1),median(2),median(3))
+        fprintf('    mean    = [%.2f, %.2f, %.2f] um\n',mean(1),mean(2),mean(3))
+        fprintf('    std err = [%.2f, %.2f, %.2f] um\n',stdErr(1),stdErr(2),stdErr(3))
+        fprintf('    std dev = [%.2f, %.2f, %.2f] um\n',stdDev(1),stdDev(2),stdDev(3))
 
     case 'twist3D'
         
@@ -299,15 +458,31 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    swivel3D = intraStructure.plate.depthFilter.swivel.threeD.all(:);
+                    if isall
+                        swivel3D = intraStructure.plate.depthFilter.swivel.threeD.all(:);
+                    else
+                        swivel3D = intraStructure.plate.depthFilter.swivel.threeD(:);
+                    end
                 else
-                    swivel3D = intraStructure.plate.raw.swivel.threeD.all(:);
+                    if isall
+                        swivel3D = intraStructure.plate.raw.swivel.threeD.all(:);
+                    else
+                        swivel3D = intraStructure.plate.raw.swivel.threeD(:);
+                    end
                 end
             case 'microscope'
                 if opts.depthFilter
-                    swivel3D = intraStructure.microscope.depthFilter.swivel.threeD.all(:);
+                    if isall
+                        swivel3D = intraStructure.microscope.depthFilter.swivel.threeD.all(:);
+                    else
+                        swivel3D = intraStructure.microscope.depthFilter.swivel.threeD(:);
+                    end
                 else
-                    swivel3D = intraStructure.microscope.raw.swivel.threeD.all(:);
+                    if isall
+                        swivel3D = intraStructure.microscope.raw.swivel.threeD.all(:);
+                    else
+                        swivel3D = intraStructure.microscope.raw.swivel.threeD(:);
+                    end
                 end
         end
         
@@ -357,19 +532,39 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                    swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.z.all(:);
+                    if isall
+                        swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.y.all(:);
+                        swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.z.all(:);
+                    else
+                        swivelYZ(:,1) = intraStructure.plate.depthFilter.swivel.y(:);
+                        swivelYZ(:,2) = intraStructure.plate.depthFilter.swivel.z(:);
+                    end
                 else
-                    swivelYZ(:,1) = intraStructure.plate.raw.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.plate.raw.swivel.z.all(:);
+                    if isall
+                        swivelYZ(:,1) = intraStructure.plate.raw.swivel.y.all(:);
+                        swivelYZ(:,2) = intraStructure.plate.raw.swivel.z.all(:);
+                    else
+                        swivelYZ(:,1) = intraStructure.plate.raw.swivel.y(:);
+                        swivelYZ(:,2) = intraStructure.plate.raw.swivel.z(:);
+                    end
                 end
             case 'microscope'
                 if opts.depthFilter
-                    swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.z.all(:);
+                    if isall
+                        swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.y.all(:);
+                        swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.z.all(:);
+                    else
+                        swivelYZ(:,1) = intraStructure.microscope.depthFilter.swivel.y(:);
+                        swivelYZ(:,2) = intraStructure.microscope.depthFilter.swivel.z(:);
+                    end
                 else
-                    swivelYZ(:,1) = intraStructure.microscope.raw.swivel.y.all(:);
-                    swivelYZ(:,2) = intraStructure.microscope.raw.swivel.z.all(:);
+                    if isall
+                        swivelYZ(:,1) = intraStructure.microscope.raw.swivel.y.all(:);
+                        swivelYZ(:,2) = intraStructure.microscope.raw.swivel.z.all(:);
+                    else
+                        swivelYZ(:,1) = intraStructure.microscope.raw.swivel.y(:);
+                        swivelYZ(:,2) = intraStructure.microscope.raw.swivel.z(:);
+                    end
                 end
         end
     
@@ -390,7 +585,11 @@ switch opts.stat
         ints(:,1) = intraStructure.intensity.mean.inner(:);
         ints(:,2) = intraStructure.intensity.mean.outer(:);
         if opts.depthFilter
-            filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            if isall
+                filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            else
+                filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD(:));
+            end
             ints(repmat(filt,1,2)) = NaN;
         end
         
@@ -401,17 +600,21 @@ switch opts.stat
         n      = min(sum(~isnan(ints)));
 
         fprintf('\nRaw inner- and outer-marker intensity measurements (n = %i):\n\n',n)
-        fprintf('    median  = [%.2f, %.2f] au\n',median(1),median(2))
-        fprintf('    mean    = [%.2f, %.2f] au\n',mean(1),mean(2))
-        fprintf('    std err = [%.2f, %.2f] au\n',stdErr(1),stdErr(2))
-        fprintf('    std dev = [%.2f, %.2f] au\n',stdDev(1),stdDev(2))
+        fprintf('    median  = [%.4f, %.4f] au\n',median(1),median(2))
+        fprintf('    mean    = [%.4f, %.4f] au\n',mean(1),mean(2))
+        fprintf('    std err = [%.4f, %.4f] au\n',stdErr(1),stdErr(2))
+        fprintf('    std dev = [%.4f, %.4f] au\n',stdDev(1),stdDev(2))
         
     case 'normInts'
         
         ints(:,1) = intraStructure.intensity.mean.inner(:);
         ints(:,2) = intraStructure.intensity.mean.outer(:);
         if opts.depthFilter
-            filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            if isall
+                filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD.all(:));
+            else
+                filt = ~isnan(intraStructure.plate.depthFilter.delta.threeD(:));
+            end
             ints(repmat(filt,1,2)) = NaN;
         end
         normInts = ints;
@@ -425,16 +628,16 @@ switch opts.stat
         n      = min(sum(~isnan(normInts)));
 
         fprintf('\nInner-normalised outer-marker intensity measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f au\n',median(2))
-        fprintf('    mean    = %.2f au\n',mean(2))
-        fprintf('    std err = %.2f au\n',stdErr(2))
-        fprintf('    std dev = %.2f au\n',stdDev(2))
+        fprintf('    median  = %.4f au\n',median(2))
+        fprintf('    mean    = %.4f au\n',mean(2))
+        fprintf('    std err = %.4f au\n',stdErr(2))
+        fprintf('    std dev = %.4f au\n',stdDev(2))
         fprintf('\n');
         fprintf('\nOuter-normalised inner-marker intensity measurements (n = %i):\n\n',n)
-        fprintf('    median  = %.2f au\n',median(1))
-        fprintf('    mean    = %.2f au\n',mean(1))
-        fprintf('    std err = %.2f au\n',stdErr(1))
-        fprintf('    std dev = %.2f au\n',stdDev(1))
+        fprintf('    median  = %.4f au\n',median(1))
+        fprintf('    mean    = %.4f au\n',mean(1))
+        fprintf('    std err = %.4f au\n',stdErr(1))
+        fprintf('    std dev = %.4f au\n',stdDev(1))
         
     otherwise
         
