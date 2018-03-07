@@ -22,11 +22,6 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %    paired: 0 or {1}. Whether or not to take paired measurements, or raw
 %       spot-by-spot measurements.
 %
-%    spotSelection: {[]} or output from kitSelectData. A structure
-%       containing a selection of either sister pair or track IDs per
-%       movie, for each experiment. Allows for only specific sisters or
-%       spots to be included in the data collection.
-%
 %    verbose: {0} or 1. Whether or not to print progress to command line.
 %
 %
@@ -36,7 +31,6 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 opts.centralise = 1;
 opts.channels = [1 2];
 opts.paired = 1;
-opts.spotSelection = [];
 opts.verbose = 0;
 % user options
 opts = processOptions(opts,varargin{:});
@@ -53,30 +47,6 @@ end
 
 % find number of movies
 nExpts = length(movies);
-
-% check whether or not a correct spotSelection has been provided
-if isempty(opts.spotSelection)
-    spotSel = 0;
-else
-    if ~iscell(opts.spotSelection)
-        opts.spotSelection = {opts.spotSelection};
-    end
-    if ~isfield(opts.spotSelection{1},'dataType')
-        spotSel = 0;
-        if opts.verbose
-            kitLog('Spot selection provided not produced using kitSelectData. Providing full dataset.')
-        end
-    else
-        spotSel = 1;
-    end
-    testn = length(opts.spotSelection);
-    if testn ~= nExpts
-        spotSel = 0;
-        if opts.verbose
-            kitLog('Spot selection contains only %i experiments, whereas %i are required. Providing full dataset.',nExpts,testn);
-        end
-    end
-end
 
 % find whether any movies have paired spots
 paired = 0;
@@ -98,6 +68,7 @@ allData = struct2strForm(allData);
 noDS = [];
 noSpot = [];
 noSis = [];
+skip = [];
 
 % form experiment label
 labprfx = 'expt0';
@@ -132,6 +103,12 @@ for iExpt = 1:nExpts
       
       % get the movie index
       movNum = theseMovies{iMov}.index;
+      % check whether or not this cell has been selected for analysis
+      if isfield(theseMovies{iMov},'keep') && ~theseMovies{iMov}.keep
+        skip = [skip; iExpt movNum];
+        continue
+      end
+      
       % check whether there is data in this movie
       if ~isfield(theseMovies{iMov},'dataStruct')
         noDS = [noDS; iExpt movNum];
@@ -157,6 +134,9 @@ for iExpt = 1:nExpts
       nFrames = theseMovies{iMov}.metadata.nFrames;
       nSpots = size(iCinner(1).allCoord,1);
       
+      % check whether there is a plane fit
+      plane = (isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit));
+      
       % get xyz correction for centralisation
       if opts.centralise
         deltaxyz = [];
@@ -167,27 +147,6 @@ for iExpt = 1:nExpts
         mCentMeds = nanmedian(deltaxyz);
       else
         mCentMeds = [0 0 0];
-      end
-      
-      % check whether or not this movie has a planeFit
-      if isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit)
-        plane = 1;
-        
-        % get planeFits
-        pFinner = dSinner.planeFit;
-        pFouter = dSouter.planeFit;
-        
-        % produce centralisation median structures by rotating
-        pCentMeds = repmat(mCentMeds,nFrames,1);
-        for iFrame = 1:nFrames
-          if ~isempty(pFinner(iFrame).planeVectors)
-            coordSystem = pFinner(iFrame).planeVectors;
-            pCentMeds(iFrame,:) = (coordSystem\mCentMeds')';
-          end
-        end
-        
-      else
-        plane = 0;
       end
       
       % get experiment label
@@ -204,21 +163,6 @@ for iExpt = 1:nExpts
         % get trackIDs
         trackIDs = dSinner.sisterList(1).trackPairs(:,1:2);
         
-        % convert spotSelection to spotIdx if required
-        if spotSel
-            % find the selected indices
-            keepIDs = opts.spotSelection{iExpt}(:,1)==iMov;
-            keepIDs = opts.spotSelection{iExpt}(keepIDs,2);
-            if strcmp(opts.spotSelection{iExpt}.dataType,'sisters')
-                % if sisters, get the trackIDs
-                trackIDs = trackIDs(keepIDs,:);
-            else
-                % convert all IDs not included to NaNs
-                rmIDs = ~ismember(trackIDs,keepIDs);
-                trackIDs(rmIDs) = NaN;
-            end
-        end
-        
         % get number of sisters (two tracks per sister)
         nSisters = size(trackIDs,1);
         
@@ -229,9 +173,9 @@ for iExpt = 1:nExpts
             sIouter = dSouter.spotInt;
             outerBg = dSouter.cellInt.back;
         else
-            sIinner = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            sIinner = repmat(struct('intensity_mean',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
             innerBg = nan(nFrames,1);
-            sIouter = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            sIouter = repmat(struct('intensity_mean',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
             outerBg = nan(nFrames,1);
         end
         
@@ -259,20 +203,25 @@ for iExpt = 1:nExpts
             % get microscope coordinates, and plane coordinates if present
             mCoordsInner = nan(nFrames,6);
             mCoordsOuter = nan(nFrames,6);
-            if plane
-                pCoordsInner = nan(nFrames,6);
-                pCoordsOuter = nan(nFrames,6);
-            end
+            pCentMeds = repmat(mCentMeds,nFrames,1);
             for iFrame = 1:nFrames
                 for iTrk = 1:2
                     % track one stored in (:,1:3), two in (:,4:6)
                     rng = (3*(iTrk-1)+1):3*iTrk;
-                    if ~isnan(spotIDs(iFrame,1))
+                    if ~isnan(spotIDs(iFrame,iTrk))
                         mCoordsInner(iFrame,rng) = iCinner(iFrame).allCoord(spotIDs(iFrame,iTrk),1:3);
                         mCoordsOuter(iFrame,rng) = iCouter(iFrame).allCoord(spotIDs(iFrame,iTrk),1:3) - mCentMeds;
+                        % check whether or not this movie has a planeFit
                         if plane
-                            pCoordsInner(iFrame,rng) = pFinner(iFrame).rotatedCoord(spotIDs(iFrame,iTrk),1:3);
-                            pCoordsOuter(iFrame,rng) = pFouter(iFrame).rotatedCoord(spotIDs(iFrame,iTrk),1:3) - pCentMeds;
+                            % rotate coordinates into plane
+                            pFinner = dSinner.planeFit;
+                            if ~isempty(pFinner(iFrame).planeVectors)
+                                coordSystem = pFinner(iFrame).planeVectors;
+                                pCoordsInner(iFrame,1:3) = (coordSystem\(mCoordsInner(iFrame,1:3)'))';
+                                pCoordsInner(iFrame,4:6) = (coordSystem\(mCoordsInner(iFrame,4:6)'))';
+                                pCoordsOuter(iFrame,1:3) = (coordSystem\(mCoordsOuter(iFrame,1:3)'))';
+                                pCoordsOuter(iFrame,4:6) = (coordSystem\(mCoordsOuter(iFrame,4:6)'))';
+                            end
                         end
                     end
                 end
@@ -471,9 +420,9 @@ for iExpt = 1:nExpts
             
             % get intensities if required
             for iFrame = 1:nFrames
-              intsInnerMean = [sIinner(iFrame).intensity(trackIDs(iSis,1))-innerBg     sIinner(iFrame).intensity(trackIDs(iSis,2))-innerBg];
+              intsInnerMean = [sIinner(iFrame).intensity_mean(trackIDs(iSis,1))-innerBg     sIinner(iFrame).intensity_mean(trackIDs(iSis,2))-innerBg];
               intsInnerMax  = [sIinner(iFrame).intensity_max(trackIDs(iSis,1))-innerBg sIinner(iFrame).intensity_max(trackIDs(iSis,2))-innerBg];
-              intsOuterMean = [sIouter(iFrame).intensity(trackIDs(iSis,1))-outerBg     sIouter(iFrame).intensity(trackIDs(iSis,2))-outerBg];
+              intsOuterMean = [sIouter(iFrame).intensity_mean(trackIDs(iSis,1))-outerBg     sIouter(iFrame).intensity_mean(trackIDs(iSis,2))-outerBg];
               intsOuterMax  = [sIouter(iFrame).intensity_max(trackIDs(iSis,1))-outerBg sIouter(iFrame).intensity_max(trackIDs(iSis,2))-outerBg];
             end
             % put data into string format
@@ -558,9 +507,9 @@ for iExpt = 1:nExpts
             sIouter = dSouter.spotInt;
             outerBg = dSouter.cellInt.back;
           else
-            sIinner = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            sIinner = repmat(struct('intensity_mean',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
             innerBg = nan(nFrames,1);
-            sIouter = repmat(struct('intensity',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
+            sIouter = repmat(struct('intensity_mean',nan(nFrames,1),'intensity_max',nan(nFrames,1)),1,nSpots);
             outerBg = nan(nFrames,1);
           end
           
@@ -628,9 +577,9 @@ for iExpt = 1:nExpts
           % get intensities
           intsInnerMean=[]; intsInnerMax=[]; intsOuterMean=[]; intsOuterMax=[];
           for iFrame = 1:nFrames
-            intsInnerMean = [intsInnerMean; sIinner(iFrame).intensity(:)-innerBg];
+            intsInnerMean = [intsInnerMean; sIinner(iFrame).intensity_mean(:)-innerBg];
             intsInnerMax = [intsInnerMax;   sIinner(iFrame).intensity_max(:)-innerBg];
-            intsOuterMean = [intsOuterMean; sIouter(iFrame).intensity(:)-outerBg];
+            intsOuterMean = [intsOuterMean; sIouter(iFrame).intensity_mean(:)-outerBg];
             intsOuterMax = [intsOuterMax;   sIouter(iFrame).intensity_max(:)-outerBg];
           end
           % put data into string format
@@ -638,7 +587,9 @@ for iExpt = 1:nExpts
           newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
           newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
           newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
-          
+          newData(c,:) = {'intensity.bg.inner',innerBg}; c=c+1;
+          newData(c,:) = {'intensity.bg.outer',outerBg}; c=c+1;
+            
       %% Inter- and intra-kinetochore measurements
 
       mData = soloMeasurements(micrCoordsInner,micrCoordsOuter);
@@ -696,7 +647,9 @@ compiledIntra = strForm2struct(allData);
 compiledIntra.exptLabel = num2cell(compiledIntra.exptLabel,2);
 compiledIntra.options.channels = opts.channels;
 compiledIntra.options.paired = paired;
-compiledIntra.options.plate = plane;
+if ~isempty(compiledIntra.exptLabel)
+  compiledIntra.options.plate = plane;
+end
 
 %% Output any error information
 
@@ -719,6 +672,12 @@ if ~isempty(noSis)
     fprintf('    Exp %i, Mov %i\n',noSis(iCell,1),noSis(iCell,2));
   end
   fprintf('\n');
+end
+if ~isempty(skip)
+  fprintf('\nThe following cells were selected by the user to be ignored in analysis:\n');
+  for iCell = 1:size(skip,1)
+    fprintf('    Exp %i, Mov %i\n',skip(iCell,1),skip(iCell,2));
+  end
 end
 
 function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
