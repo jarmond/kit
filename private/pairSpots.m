@@ -20,13 +20,19 @@ cropRange = 1.25*repmat(opts.maxSisSep,1,3)./pixelSize;
 cropRange = round(cropRange);
 chrShift = job.options.chrShift.result;
 % find chrShift rounded to nearest pixel
-pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},3),'UniformOutput',0);
+pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},4),'UniformOutput',0);
 
 %% GET IMAGE AND COORDINATE INFORMATION
 
+% check whether cell has been filtered out by user
+if isfield(job,'keep') && ~job.keep
+  kitLog('User selected this movie to be ignored in analysis. Skipping movie.');
+  coords = [];
+  coordsPix = [];
+  skip = 1;
 % get coordinates in both µm and pixels
 % check whether or not this movie has a dataStruct
-if ~isfield(job,'dataStruct')
+elseif ~isfield(job,'dataStruct')
   kitLog('No dataStruct present. Skipping movie.');
   coords = [];
   coordsPix = [];
@@ -44,8 +50,8 @@ elseif isfield(job.dataStruct{opts.plotChan},'failed') && job.dataStruct{opts.pl
   coordsPix = [];
   skip = 1;
 else
-  coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[2 1 3]);
-  coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[2 1 3]);
+  coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[1 2 3]);
+  coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[1 2 3]);
   skip = 0;
 end
 nCoords = size(coords,1);
@@ -63,50 +69,25 @@ if ~isempty(coords)
   if opts.redo
     pairedIdx = [];
     sisterIdxArray = [];
-    defaultIdx = 1:nCoords;
+    unallocatedIdx = 1:nCoords;
   else
     % get list of featIdx from current sisterList
     sisterIdxArray = job.dataStruct{opts.plotChan}.sisterList(1).trackPairs(:,1:2);
     pairedIdx = sisterIdxArray(:)';
-    defaultIdx = setdiff(1:nCoords,pairedIdx(:));
+    unallocatedIdx = setdiff(1:nCoords,pairedIdx(:));
   end
   unpairedIdx = [];
   doublePairingIdx = [];
-    
+  
   % produce image file
-  fullImg = zeros([cropSize(1:2),3]);
+  fullImg = zeros([cropSize([2 1]) 3]);
   for iChan = opts.imageChans
     img(:,:,:,iChan) = kitReadImageStack(reader, md, 1, iChan, crop, 0);
     fullImg(:,:,chanOrder(iChan)) = max(img(:,:,:,iChan),[],3); % full z-project
     irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
     fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
   end
-
-  % produce figure environment
-  figure(1)
-  clf
-  plotTitle = sprintf('Check cell orientation\nPress: y to continue, n to skip, q to quit.');
-  if length(opts.imageChans) == 1
-    imshow(fullImg(:,:,chanOrder(opts.imageChans)));
-    title(plotTitle,'FontSize',14)
-  else
-    imshow(fullImg)
-    title(plotTitle,'FontSize',14)
-  end
-  [~,~,buttonPress] = ginput(1);
-
-  if buttonPress == 110 %110 corresponds to user pressing n key
-    unallocatedIdx = [];
-  elseif buttonPress == 121 %121 corresponds to user pressing y key
-    unallocatedIdx = defaultIdx;
-    kitLog('Cell accepted. Continuing with pairing of sisters.');
-  elseif buttonPress == 113 %113 corresponds to user pressing q key
-    userStatus = 'userPaused';
-    return
-  else
-    unallocatedIdx = defaultIdx;
-    kitLog('Another key other than y, n or q pressed. Continuing with kinetochore pairing.');
-  end
+  
   % preconfigure progress information
   prog = kitProgress(0);
   
@@ -114,8 +95,6 @@ else
   % if not coords, make unallocatedIdx empty to avoid running spot finding
   unallocatedIdx = [];
   sisterIdxArray = [];
-  prog = kitProgress(1);
-
 end
 
 plotTitle = sprintf('Locate the white cross'' sister.\nClick on an: unallocated (g), ignored (y) or pre-paired (r) cross.\nPress backspace if none applicable.');
@@ -123,7 +102,7 @@ plotTitle = sprintf('Locate the white cross'' sister.\nClick on an: unallocated 
 while ~isempty(unallocatedIdx)
     
     % give progress information
-    nRemaining = size(unallocatedIdx,2);
+    nRemaining = length(unallocatedIdx);
     prog = kitProgress((nCoords-nRemaining)/nCoords,prog);
     
     % take the earliest spotIdx
@@ -154,16 +133,17 @@ while ~isempty(unallocatedIdx)
     
     % IMAGE PROCESSING
     % predesignate cropImg structure
-    coordRange = [max(1,centreCoords(1)-cropRange(1)) min(centreCoords(1)+cropRange(1),cropSize(1));...
-                  max(1,centreCoords(2)-cropRange(2)) min(centreCoords(2)+cropRange(2),cropSize(2));...
+    coordRange = [max(1,centreCoords(2)-cropRange(2)) min(centreCoords(2)+cropRange(2),cropSize(2));...
+                  max(1,centreCoords(1)-cropRange(1)) min(centreCoords(1)+cropRange(1),cropSize(1));...
                   max(1,centreCoords(3)-opts.zProjRange) min(centreCoords(3)+opts.zProjRange,cropSize(3))];
     cropImg = zeros(coordRange(1,2)-coordRange(1,1)+1,...
                     coordRange(2,2)-coordRange(2,1)+1,...
                     3);
     
 	% plot image in figure 1
-    figure(1)
+    f = figure(1);
     clf
+    set(f,'Position',[100 100 800 600]);
                 
     switch opts.mode
         
@@ -192,13 +172,13 @@ while ~isempty(unallocatedIdx)
             % PLOTTING ZOOMED COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(2) - coordRange(2,1)+1, iCoordsPix(1) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,1) - coordRange(2,1)+1, iCoordsPix(:,2) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
-            scatter(unallCoordsPix(:,2) - coordRange(2,1)+1, unallCoordsPix(:,1) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
+            scatter(unallCoordsPix(:,1) - coordRange(2,1)+1, unallCoordsPix(:,2) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
             % unpaired in yellow
-            scatter(unpairedCoordsPix(:,2) - coordRange(2,1)+1, unpairedCoordsPix(:,1) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
+            scatter(unpairedCoordsPix(:,1) - coordRange(2,1)+1, unpairedCoordsPix(:,2) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
             % paired in red
-            scatter(pairedCoordsPix(:,2) - coordRange(2,1)+1, pairedCoordsPix(:,1) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1.25);
+            scatter(pairedCoordsPix(:,1) - coordRange(2,1)+1, pairedCoordsPix(:,2) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1.25);
         
         case 'full'
         
@@ -220,13 +200,13 @@ while ~isempty(unallocatedIdx)
             % PLOTTING COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(2),iCoordsPix(1),'xw','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,1),iCoordsPix(:,2),'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
-            scatter(unallCoordsPix(:,2),unallCoordsPix(:,1),'xg','sizeData',200,'LineWidth',1.25);
+            scatter(unallCoordsPix(:,1),unallCoordsPix(:,2),'xg','sizeData',200,'LineWidth',1.25);
             % unpaired in yellow
-            scatter(unpairedCoordsPix(:,2),unpairedCoordsPix(:,1),'xy','sizeData',200,'LineWidth',1.25);
+            scatter(unpairedCoordsPix(:,1),unpairedCoordsPix(:,2),'xy','sizeData',200,'LineWidth',1.25);
             % paired in red
-            scatter(pairedCoordsPix(:,2),pairedCoordsPix(:,1),'xr','sizeData',200,'LineWidth',1.25);
+            scatter(pairedCoordsPix(:,1),pairedCoordsPix(:,2),'xr','sizeData',200,'LineWidth',1.25);
         
         case 'dual'
             
@@ -248,13 +228,13 @@ while ~isempty(unallocatedIdx)
             % PLOTTING COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(2),iCoordsPix(1),'xw','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,1),iCoordsPix(:,2),'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
-            scatter(unallCoordsPix(:,2),unallCoordsPix(:,1),'xg','sizeData',200,'LineWidth',1.25);
-            % unpaired in yellow
-            scatter(unpairedCoordsPix(:,2),unpairedCoordsPix(:,1),'xy','sizeData',200,'LineWidth',1.25);
-            % paired in red
-            scatter(pairedCoordsPix(:,2),pairedCoordsPix(:,1),'xr','sizeData',200,'LineWidth',1.25);
+%             scatter(unallCoordsPix(:,1),unallCoordsPix(:,2),'xg','sizeData',200,'LineWidth',1.25);
+%             % unpaired in yellow
+%             scatter(unpairedCoordsPix(:,1),unpairedCoordsPix(:,2),'xy','sizeData',200,'LineWidth',1.25);
+%             % paired in red
+%             scatter(pairedCoordsPix(:,1),pairedCoordsPix(:,2),'xr','sizeData',200,'LineWidth',1.25);
             
             subplot(2,4,[1,2,5,6])
             % get zoomed image
@@ -275,13 +255,13 @@ while ~isempty(unallocatedIdx)
             % PLOTTING ZOOMED COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(2) - coordRange(2,1)+1, iCoordsPix(1) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,1) - coordRange(2,1)+1, iCoordsPix(:,2) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
-            scatter(unallCoordsPix(:,2) - coordRange(2,1)+1, unallCoordsPix(:,1) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
+            scatter(unallCoordsPix(:,1) - coordRange(2,1)+1, unallCoordsPix(:,2) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
             % unpaired in yellow
-            scatter(unpairedCoordsPix(:,2) - coordRange(2,1)+1, unpairedCoordsPix(:,1) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
+            scatter(unpairedCoordsPix(:,1) - coordRange(2,1)+1, unpairedCoordsPix(:,2) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
             % paired in red
-            scatter(pairedCoordsPix(:,2) - coordRange(2,1)+1, pairedCoordsPix(:,1) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
+            scatter(pairedCoordsPix(:,1) - coordRange(2,1)+1, pairedCoordsPix(:,2) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
             
     end
     
@@ -289,14 +269,14 @@ while ~isempty(unallocatedIdx)
     % USER INPUT AND SISTER-SISTER PAIRING
     
     % uses a crosshair to allow user to provide a pair of coordinates
-    [userY,userX,key] = ginput(1);
+    [userX,userY,key] = ginput(1);
     
     
     if ismember(key,1:3)
         
         % correct user-provided information if zoomed
         if any(strcmp(opts.mode,{'dual','zoom'}))
-            userX = userX + coordRange(1,1)-1; userY = userY + coordRange(2,1)-1;
+            userX = userX + coordRange(2,1)-1; userY = userY + coordRange(1,1)-1;
         end
         
         % find the user-selected cross
@@ -359,8 +339,6 @@ while ~isempty(unallocatedIdx)
     
 end
 
-prog = kitProgress(1,prog);
-
 userStatus = 'completed';
 if skip; return; end
 
@@ -403,7 +381,8 @@ for iChan = opts.coordChans
       for iSis = 1:size(sisterIdxArray,1)
         sisterList(iSis).coords1 = rotCoords(sisterIdxArray(iSis,1),:);
         sisterList(iSis).coords2 = rotCoords(sisterIdxArray(iSis,2),:);
-        sisterList(iSis).distances = sqrt(sum((sisterList(iSis).coords1 - sisterList(iSis).coords2).^2,2));
+        sisterList(iSis).distances(:,1) = sqrt(sum((sisterList(iSis).coords1(:,1:3) - sisterList(iSis).coords2(:,1:3)).^2,2));
+        sisterList(iSis).distances(:,2) = sqrt(sum((sisterList(iSis).coords1(:,4:6) - sisterList(iSis).coords2(:,4:6)).^2,2));
       end
     else
       for iSis = 1:size(sisterIdxArray,1)
@@ -413,7 +392,7 @@ for iChan = opts.coordChans
       end
     end
     
-    if size(sisterIdxArray,1)==0
+    if isempty(sisterIdxArray)
       % assign in the case no sisters found
       tracks = emptyTracks;
     end
@@ -447,11 +426,7 @@ for iChan = opts.coordChans
                  
     job.dataStruct{iChan}.tracks = tracks;
     job.dataStruct{iChan}.sisterList = sisterList;
-    if isfield(job.dataStruct{iChan},'planeFit')
-      job = kitExtractTracks(job,iChan);
-    else
-      job.dataStruct{iChan}.trackList = [];
-    end
+    job = kitExtractTracks(job,iChan);
     
 end
 
@@ -463,8 +438,9 @@ end
    
 function distIdx = getNNdistIdx(coords,origIdx,otherIdx,maxSisSep)
 
+    otherIdx = setdiff(otherIdx,origIdx);
     nnDists = createDistanceMatrix(coords(origIdx,:),coords(otherIdx,:));
-    nnCoords = (nnDists < maxSisSep & nnDists > 0);
+    nnCoords = (nnDists < maxSisSep);
     distIdx = otherIdx(nnCoords);
     
 end
