@@ -20,6 +20,8 @@ function dublBasicStats(intraStructure,varargin)
 %           - 'delta2D'
 %           - 'delta1D'
 %           - 'deltaXYZ'
+%           - 'delta3D-church'
+%           - 'delta2D-church'
 %           - 'sisSep3D'
 %           - 'sisSep2D'
 %           - 'sisSepXYZ'
@@ -37,13 +39,14 @@ function dublBasicStats(intraStructure,varargin)
 
 
 % default options
-opts.coordSystem = 'plate';
+opts.coordSystem = 'microscope';
 opts.depthFilter = 1;
 opts.stat = '';
 % get user options
 opts = processOptions(opts,varargin{:});
 
 statsList = {'delta3D' ,'delta2D' ,'delta1D'  ,'deltaXYZ',...
+             'delta3D-church','delta2D-church',...
              'sisSep3D','sisSep2D','sisSepXYZ',...
              'twist3D' ,'twistYZ' ,...
              'swivel3D','swivelYZ','swivelKMT',...
@@ -211,6 +214,46 @@ switch opts.stat
         fprintf('    mean    = [%.2f, %.2f, %.2f] nm\n',mean(1),mean(2),mean(3))
         fprintf('    std err = [%.2f, %.2f, %.2f] nm\n',stdErr(1),stdErr(2),stdErr(3))
         fprintf('    std dev = [%.2f, %.2f, %.2f] nm\n',stdDev(1),stdDev(2),stdDev(3))
+        
+    case 'delta3D-church'
+        
+        switch opts.coordSystem
+            case 'plate'
+                if opts.depthFilter
+                    delta3D = intraStructure.plate.depthFilter.delta.threeD(:);
+                else
+                    delta3D = intraStructure.plate.raw.delta.threeD(:);
+                end
+            case 'microscope'
+                if opts.depthFilter
+                    delta3D = intraStructure.microscope.depthFilter.delta.threeD(:);
+                else
+                    delta3D = intraStructure.microscope.raw.delta.threeD(:);
+                end
+            case 'sisters'
+                if opts.depthFilter
+                    delta3D = intraStructure.sisters.depthFilter.delta.threeD(:);
+                else
+                    delta3D = intraStructure.sisters.raw.delta.threeD(:);
+                end
+        end
+        
+        % Churchman falls over with outliers - remove them.
+        outs = isoutlier(delta3D,'mean');
+        delta3D = delta3D(~outs);
+        
+        mean   = nanmean(delta3D)*1000;
+        stdDev = nanstd(delta3D)*1000;
+        n      = sum(~isnan(delta3D));
+        [church,~] = MLp3D(delta3D*1000,[mean stdDev],[],0);
+        
+        fprintf('\nChurchman-corrected 3D delta measurements (n = %i):\n\n',n)
+        fprintf('    mean    = %.2f nm\n',church(1))
+        fprintf('    std dev = %.2f nm\n',church(2))
+        
+    case 'delta2D-church'
+        
+        
     
     case 'sisSep3D'
         
