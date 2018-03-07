@@ -19,8 +19,8 @@ if nargin<2
     case 'chrshift'
       tasks = [1,6];
   end
-  if any(job.options.intensity.execute)
-    tasks(end+1) = 9;
+  if ~any(job.options.intensity.execute)
+    tasks = setdiff(tasks,9);
   end
 end
 % 1: finding spots
