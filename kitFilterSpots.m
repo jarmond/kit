@@ -41,28 +41,39 @@ while ~handles.stop
     iChan = handles.chanID;
 
     % check whether there is any data contained within this movie
-    if ~isfield(job{iMov},'dataStruct') || ~isfield(job{iMov}.dataStruct{iChan},'failed') || job{iMov}.dataStruct{iChan}.failed
+    if ~isfield(job{iMov},'dataStruct') || length(job{iMov}.dataStruct)<iChan || ...
+            ~isfield(job{iMov}.dataStruct{iChan},'failed') || job{iMov}.dataStruct{iChan}.failed
+        handles.movID = handles.movID+1;
+        if handles.movID > handles.nMovs
+          handles.stop = 1;
+        end
         continue
     end
     % get dataStruct
     dS = job{iMov}.dataStruct{iChan};
     % get the full initCoord and spotInt
     iC = dS.initCoord;
-    sI = dS.spotInt;
     % get IDs for all spots not previously filtered
     nonNaNs = find(~isnan(iC.allCoord(:,1)));
     
     % back up the full initCoord and spotInt
     if isfield(dS,'rawData')
       iC = dS.rawData.initCoord;
-      sI = dS.rawData.spotInt;
+      if isfield(dS.rawData,'spotInt')
+        sI = dS.rawData.spotInt;
+      end
+    elseif isfield(dS,'spotInt')
+        sI = dS.spotInt;
     end
     raw.initCoord = iC;
-    raw.spotInt = sI;
+    if exist('sI','var')
+        raw.spotInt = sI;
+    end
     dS.rawData = raw;
+    job{iMov}.dataStruct{iChan} = dS;
     
     % get number of spots
-    nSpots = length(dS.initCoord.allCoord);
+    nSpots = size(dS.initCoord.allCoord,1);
     handles.nSpots = nSpots;
 
     % show all spots - defined using tracks
@@ -141,30 +152,42 @@ while ~handles.stop
     end
 
     % process the list
-    for jChan = handles.chans
-      if ~isempty(rmvList)
+    if ~isempty(rmvList)
+      for jChan = handles.chans
         % push all removed spots to NaNs
-        nRmvs = length(rmvList);
         dS = job{iMov}.dataStruct{jChan};
-        iC = dS.initCoord; sI = dS.spotInt;
+        iC = dS.initCoord;
         % push to initCoord
         iC.allCoord(rmvList,:) = NaN;
         iC.allCoordPix(rmvList,:) = NaN;
-        iC.nSpots = iC.nSpots-nRmvs;
+        iC.nSpots = sum(~isnan(iC.allCoord(:,1)));
         iC.amp(rmvList,:) = NaN;
         iC.bg(rmvList,:) = NaN;
+        
+        % back up results
+        dS.initCoord = iC;
+        job{iMov}.dataStruct{jChan} = dS;
+      end
+    
+      % process the list
+      for jChan = find(job{iMov}.options.intensity.execute)
+        % push all removed spots to NaNs
+        dS = job{iMov}.dataStruct{jChan};
+        sI = dS.spotInt;
         % push to spotInt
         sI.intensity_mean(rmvList,:) = NaN;
         sI.intensity_median(rmvList,:) = NaN;
         sI.intensity_min(rmvList,:) = NaN;
         sI.intensity_max(rmvList,:) = NaN;
         sI.intensity_ratio(rmvList,:) = NaN;
+        
+        % back up results
+        dS.spotInt = sI;
+        job{iMov}.dataStruct{jChan} = dS;
       end
-
-      % back up results
-      dS.initCoord = iC; dS.spotInt = sI;
-      job{iMov}.dataStruct{jChan} = dS;
+      
     end
+    
     % save results
     job{iMov} = kitSaveJob(job{iMov});
 
@@ -178,6 +201,9 @@ end
 
 kitLog('Manual filtering complete.');
 
+% Re-run plane fitting for jobset with new filtered data.
+kitLog('Re-fitting planes to filtered data.');
+kitRunJob(jobset,'existing',1,'tasks',[2 6]);
 
 %% Callback functions
 
