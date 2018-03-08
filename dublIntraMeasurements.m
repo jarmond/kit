@@ -108,16 +108,6 @@ if selType==3
         subset = opts.spotSelection.rawSelection;
     end
 end
-    
-%check whether or not there is intensity information
-ints = 0;
-for iExpt = 1:numExpts
-  for iMov = 1:length(movies{iExpt})
-    ints = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'spotInt');
-    if ints; break; end
-  end
-  if ints; break; end  
-end
 
 if isempty(opts.prevMeas)
     
@@ -192,11 +182,15 @@ for iExpt = 1:numExpts
       end
       
       % get spotInts
+      ints = (isfield(dSinner,'spotInt') && isfield(dSouter,'spotInt'));
       if ints
         sIinner = dSinner.spotInt;
         innerBg = dSinner.cellInt.back;
         sIouter = dSouter.spotInt;
         outerBg = dSouter.cellInt.back;
+      else
+        innerBg = nan(nFrames,1);
+        outerBg = nan(nFrames,1);
       end
       
       if paired
@@ -312,11 +306,15 @@ for iExpt = 1:numExpts
               pCoords_x = [pCoordsInner(:,[1 4]) pCoordsOuter(:,[1 4])];
               pCoords_y = [pCoordsInner(:,[2 5]) pCoordsOuter(:,[2 5])];
               pCoords_z = [pCoordsInner(:,[3 6]) pCoordsOuter(:,[3 6])];
-              % put data into string format
-              newData(c,:) = {'plate.coords.x',pCoords_x(:,[1 3 2 4])}; c=c+1;
-              newData(c,:) = {'plate.coords.y',pCoords_y(:,[1 3 2 4])}; c=c+1;
-              newData(c,:) = {'plate.coords.z',pCoords_z(:,[1 3 2 4])}; c=c+1;
+            else
+              pCoords_x = nan(size(mCoords_x));
+              pCoords_y = nan(size(mCoords_y));
+              pCoords_z = nan(size(mCoords_z));
             end
+            % put data into string format
+            newData(c,:) = {'plate.coords.x',pCoords_x(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'plate.coords.y',pCoords_y(:,[1 3 2 4])}; c=c+1;
+            newData(c,:) = {'plate.coords.z',pCoords_z(:,[1 3 2 4])}; c=c+1;
             
             %% Inter- and intra-kinetochore measurements
             
@@ -342,47 +340,44 @@ for iExpt = 1:numExpts
               newData(c,:) = {'microscope.raw.swivel.kMT',[]}; c=c+1;
             end
             
-            if plane
-              plateData = pairedMeasurements(pCoordsInner,pCoordsOuter,1);
-              % put data into string format
-              newData(c,:) = {'plate.sisSep.x',plateData.sisSep_x}; c=c+1;
-              newData(c,:) = {'plate.sisSep.y',plateData.sisSep_y}; c=c+1;
-              newData(c,:) = {'plate.sisSep.z',plateData.sisSep_z}; c=c+1;
-              newData(c,:) = {'plate.sisSep.twoD',plateData.sisSep_2D}; c=c+1;
-              newData(c,:) = {'plate.sisSep.threeD',plateData.sisSep_3D}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.z.all',plateData.delta_z}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.oneD',plateData.delta_1D}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.twoD.all',plateData.delta_2D}; c=c+1;
-              newData(c,:) = {'plate.raw.delta.threeD.all',plateData.delta_3D}; c=c+1;
-              newData(c,:) = {'plate.raw.swivel.y.all',plateData.swivel_y}; c=c+1;
-              newData(c,:) = {'plate.raw.swivel.z.all',plateData.swivel_z}; c=c+1;
-              newData(c,:) = {'plate.raw.swivel.threeD.all',plateData.swivel_3D}; c=c+1;
-              if isfield(plateData,'swivel_kMT')
-                newData(c,:) = {'plate.raw.swivel.kMT',plateData.swivel_kMT}; c=c+1;
-              else
-                newData(c,:) = {'plate.raw.swivel.kMT',[]}; c=c+1;
-              end
-              newData(c,:) = {'plate.twist.y',plateData.twist_y}; c=c+1;
-              newData(c,:) = {'plate.twist.z',plateData.twist_z}; c=c+1;
-              newData(c,:) = {'plate.twist.threeD',plateData.twist_3D}; c=c+1;
-              newData(c,:) = {'plate.sisterCentreSpeed',plateData.sisCentreSpeed}; c=c+1;
-
-              % get plate thickness measurements
-              sisCentre_x = [];
-              if length(dSinner.sisterList) == 1
-                plateThickness = nan(1,nFrames);
-              else
-                for jSis = 1:length(dSinner.sisterList)
-                  sisCentre_x = [sisCentre_x nanmean([dSinner.sisterList(jSis).coords1(:,1) dSinner.sisterList(jSis).coords2(:,1)],2)];
-                end
-                plateThickness = nanstd(sisCentre_x,[],2);
-              end
-              % put data into string format
-              newData(c,:) = {'plate.plateThickness',plateThickness}; c=c+1;
-            
+            plateData = pairedMeasurements(pCoordsInner,pCoordsOuter,1);
+            % put data into string format
+            newData(c,:) = {'plate.sisSep.x',plateData.sisSep_x}; c=c+1;
+            newData(c,:) = {'plate.sisSep.y',plateData.sisSep_y}; c=c+1;
+            newData(c,:) = {'plate.sisSep.z',plateData.sisSep_z}; c=c+1;
+            newData(c,:) = {'plate.sisSep.twoD',plateData.sisSep_2D}; c=c+1;
+            newData(c,:) = {'plate.sisSep.threeD',plateData.sisSep_3D}; c=c+1;
+            newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
+            newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
+            newData(c,:) = {'plate.raw.delta.z.all',plateData.delta_z}; c=c+1;
+            newData(c,:) = {'plate.raw.delta.oneD',plateData.delta_1D}; c=c+1;
+            newData(c,:) = {'plate.raw.delta.twoD.all',plateData.delta_2D}; c=c+1;
+            newData(c,:) = {'plate.raw.delta.threeD.all',plateData.delta_3D}; c=c+1;
+            newData(c,:) = {'plate.raw.swivel.y.all',plateData.swivel_y}; c=c+1;
+            newData(c,:) = {'plate.raw.swivel.z.all',plateData.swivel_z}; c=c+1;
+            newData(c,:) = {'plate.raw.swivel.threeD.all',plateData.swivel_3D}; c=c+1;
+            if isfield(plateData,'swivel_kMT')
+              newData(c,:) = {'plate.raw.swivel.kMT',plateData.swivel_kMT}; c=c+1;
+            else
+              newData(c,:) = {'plate.raw.swivel.kMT',[]}; c=c+1;
             end
+            newData(c,:) = {'plate.twist.y',plateData.twist_y}; c=c+1;
+            newData(c,:) = {'plate.twist.z',plateData.twist_z}; c=c+1;
+            newData(c,:) = {'plate.twist.threeD',plateData.twist_3D}; c=c+1;
+            newData(c,:) = {'plate.sisterCentreSpeed',plateData.sisCentreSpeed}; c=c+1;
+
+            % get plate thickness measurements
+            sisCentre_x = [];
+            if length(dSinner.sisterList) == 1
+              plateThickness = nan(1,nFrames);
+            else
+              for jSis = 1:length(dSinner.sisterList)
+                sisCentre_x = [sisCentre_x nanmean([dSinner.sisterList(jSis).coords1(:,1) dSinner.sisterList(jSis).coords2(:,1)],2)];
+              end
+              plateThickness = nanstd(sisCentre_x,[],2);
+            end
+            % put data into string format
+            newData(c,:) = {'plate.plateThickness',plateThickness}; c=c+1;
 
             %% Quality control
             
@@ -404,73 +399,100 @@ for iExpt = 1:numExpts
             else
               newData(c,:) = {'microscope.depthFilter.swivel.kMT',[]}; c=c+1;
             end
-            if plane
-              newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.oneD',plateData.delta_1D.*prod(satisfies,2)}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.twoD.all',plateData.delta_2D.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.threeD.all',plateData.delta_3D.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.swivel.y.all',plateData.swivel_y.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.swivel.z.all',plateData.swivel_z.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.swivel.threeD.all',plateData.swivel_3D.*satisfies}; c=c+1;
-              if isfield(plateData,'swivel_kMT')
-                newData(c,:) = {'plate.depthFilter.swivel.kMT',plateData.swivel_kMT.*satisfies}; c=c+1;
-              else
-                newData(c,:) = {'plate.depthFilter.swivel.kMT',[]}; c=c+1;
-              end
+            newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.delta.oneD',plateData.delta_1D.*prod(satisfies,2)}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.delta.twoD.all',plateData.delta_2D.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.delta.threeD.all',plateData.delta_3D.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.swivel.y.all',plateData.swivel_y.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.swivel.z.all',plateData.swivel_z.*satisfies}; c=c+1;
+            newData(c,:) = {'plate.depthFilter.swivel.threeD.all',plateData.swivel_3D.*satisfies}; c=c+1;
+            if isfield(plateData,'swivel_kMT')
+              newData(c,:) = {'plate.depthFilter.swivel.kMT',plateData.swivel_kMT.*satisfies}; c=c+1;
+            else
+              newData(c,:) = {'plate.depthFilter.swivel.kMT',[]}; c=c+1;
             end
             
-            % get intensities if required
-            if ints
-              switch opts.intRefMarker
-                  case 'self'
-                    if size(sIinner.intensity,2)==1 
-                        temp = cat(2,sIinner.intensity);
-                        intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                        temp = cat(2,sIinner.intensity_max);
-                        intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                        temp = cat(2,sIouter.intensity);
-                        intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                        temp = cat(2,sIouter.intensity_max);
-                        intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    else
-                        temp = cat(2,sIinner.intensity(:,chanVect(1)));
-                        intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                        temp = cat(2,sIinner.intensity_max(:,chanVect(1)));
-                        intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                        temp = cat(2,sIouter.intensity(:,chanVect(2)));
-                        intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                        temp = cat(2,sIouter.intensity_max(:,chanVect(2)));
-                        intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    end
-                  case 'inner'
-                    temp = cat(2,sIinner.intensity(:,chanVect(1)));
-                    intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIinner.intensity_max(:,chanVect(1)));
-                    intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIinner.intensity(:,chanVect(2)));
-                    intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIinner.intensity_max(:,chanVect(2)));
-                    intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                  case 'outer'
-                    temp = cat(2,sIouter.intensity(:,chanVect(1)));
-                    intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity_max(:,chanVect(1)));
-                    intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity(:,chanVect(2)));
-                    intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity_max(:,chanVect(2)));
-                    intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+          % get intensities if required
+          intsInnerMean = nan(nFrames,2);
+          intsOuterMean = nan(nFrames,2);
+          intsInnerMax = nan(nFrames,2);
+          intsOuterMax = nan(nFrames,2);
+          if ints
+            if size(sIinner.intensity,2)==1
+              for iFrame = 1:nFrames
+                % inner mean int
+                temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
+                intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                % inner max int
+                temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
+                intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                % outer mean int
+                temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
+                intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                % outer max int
+                temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
+                intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
               end
-              % put data into string format
-              newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
-              newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
-              newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
-              newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
-              newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
-              newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
+            else
+              switch opts.intRefMarker
+                case 'self'
+                  for iFrame = 1:nFrames
+                    % inner mean int
+                    temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
+                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % inner max int
+                    temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
+                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % outer mean int
+                    temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
+                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    % outer max int
+                    temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
+                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                  end
+                case 'inner'
+                  for iFrame = 1:nFrames
+                    % inner mean int
+                    temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
+                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % inner max int
+                    temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
+                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % outer mean int, relative to inner
+                    temp = cat(2,sIinner(iFrame).intensity) - outerBg(iFrame,1);
+                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    % outer max int, relative to inner
+                    temp = cat(2,sIinner(iFrame).intensity_max) - outerBg(iFrame,1);
+                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                  end
+                case 'outer'
+                  for iFrame = 1:nFrames
+                    % inner mean int, relative to outer
+                    temp = cat(2,sIouter(iFrame).intensity) - innerBg(iFrame,1);
+                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % inner max int, relative to outer
+                    temp = cat(2,sIouter(iFrame).intensity_max) - innerBg(iFrame,1);
+                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % outer mean int
+                    temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
+                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    % outer max int
+                    temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
+                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                  end
+              end
             end
+          end %ints
+          
+          % put data into string format
+          newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+          newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+          newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+          newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+          newData(c,:) = {'intensity.bg.inner',repmat(innerBg,nFrames,1)}; c=c+1;
+          newData(c,:) = {'intensity.bg.outer',repmat(outerBg,nFrames,1)}; c=c+1;
             
             %% Directional information
             
@@ -571,50 +593,92 @@ for iExpt = 1:numExpts
           newData(c,:) = {'microscope.coords.z',mCoords_z}; c=c+1;
             
           if plane
-              % get plate coordinates of each spot
-              pCoords_x = [pCoordsInner(:,1) pCoordsOuter(:,1)];
-              pCoords_y = [pCoordsInner(:,2) pCoordsOuter(:,2)];
-              pCoords_z = [pCoordsInner(:,3) pCoordsOuter(:,3)];
-              % put data into string format
-              newData(c,:) = {'plate.coords.x',pCoords_x}; c=c+1;
-              newData(c,:) = {'plate.coords.y',pCoords_y}; c=c+1;
-              newData(c,:) = {'plate.coords.z',pCoords_z}; c=c+1;
+            % get plate coordinates of each spot
+            pCoords_x = [pCoordsInner(:,1) pCoordsOuter(:,1)];
+            pCoords_y = [pCoordsInner(:,2) pCoordsOuter(:,2)];
+            pCoords_z = [pCoordsInner(:,3) pCoordsOuter(:,3)];
+          else
+            % get plate coordinates of each spot
+            pCoords_x = nan(size(mCoords_x));
+            pCoords_y = nan(size(mCoords_y));
+            pCoords_z = nan(size(mCoords_z));
           end
+          % put data into string format
+          newData(c,:) = {'plate.coords.x',pCoords_x}; c=c+1;
+          newData(c,:) = {'plate.coords.y',pCoords_y}; c=c+1;
+          newData(c,:) = {'plate.coords.z',pCoords_z}; c=c+1;
           
           % get intensities if required
+          intsInnerMean = nan(nSpots,1);
+          intsOuterMean = nan(nSpots,1);
+          intsInnerMax = nan(nSpots,1);
+          intsOuterMax = nan(nSpots,1);
           if ints
-            switch opts.intRefMarker
+            if size(sIinner.intensity,2)==1
+              % inner mean int
+              temp = cat(2,sIinner.intensity) - innerBg;
+              intsInnerMean = temp(spotIDs,1);
+              % inner max int
+              temp = cat(2,sIinner.intensity_max) - innerBg;
+              intsInnerMax = temp(spotIDs,1);
+              % outer mean int
+              temp = cat(2,sIouter.intensity) - outerBg;
+              intsOuterMean = temp(spotIDs,1);
+              % outer max int
+              temp = cat(2,sIouter.intensity_max) - outerBg;
+              intsOuterMax = temp(spotIDs,1);
+            else
+              switch opts.intRefMarker
                 case 'self'
-                    if size(sIinner.intensity,2)==1 
-                        intsInnerMean = cat(2,sIinner.intensity(spotIDs,:)) - innerBg;
-                        intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,:)) - innerBg;
-                        intsOuterMean = cat(2,sIouter.intensity(spotIDs,:)) - outerBg;
-                        intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,:)) - outerBg;
-                    else
-                        intsInnerMean = cat(2,sIinner.intensity(spotIDs,chanVect(1))) - innerBg;
-                        intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(1))) - innerBg;
-                        intsOuterMean = cat(2,sIouter.intensity(spotIDs,chanVect(2))) - outerBg;
-                        intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(2))) - outerBg;
-                    end
+                  % inner mean int
+                  temp = cat(2,sIinner.intensity) - innerBg;
+                  intsInnerMean = temp(spotIDs,chanVect(1));
+                  % inner max int
+                  temp = cat(2,sIinner.intensity_max) - innerBg;
+                  intsInnerMax = temp(spotIDs,chanVect(1));
+                  % outer mean int
+                  temp = cat(2,sIouter.intensity) - outerBg;
+                  intsOuterMean = temp(spotIDs,chanVect(2));
+                  % outer max int
+                  temp = cat(2,sIouter.intensity_max) - outerBg;
+                  intsOuterMax = temp(spotIDs,chanVect(2));
                 case 'inner'
-                    intsInnerMean = cat(2,sIinner.intensity(spotIDs,chanVect(1))) - innerBg;
-                    intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(1))) - innerBg;
-                    intsOuterMean = cat(2,sIinner.intensity(spotIDs,chanVect(2))) - outerBg;
-                    intsOuterMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(2))) - outerBg;
+                  % inner mean int
+                  temp = cat(2,sIinner.intensity) - innerBg;
+                  intsInnerMean = temp(spotIDs,chanVect(1));
+                  % inner max int
+                  temp = cat(2,sIinner.intensity_max) - innerBg;
+                  intsInnerMax = temp(spotIDs,chanVect(1));
+                  % outer mean int, relative to inner
+                  temp = cat(2,sIinner.intensity) - outerBg;
+                  intsOuterMean = temp(spotIDs,chanVect(2));
+                  % outer max int, relative to inner
+                  temp = cat(2,sIinner.intensity_max) - outerBg;
+                  intsOuterMax = temp(spotIDs,chanVect(2));
                 case 'outer'
-                    intsInnerMean = cat(2,sIouter.intensity(spotIDs,chanVect(1))) - innerBg;
-                    intsInnerMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(1))) - innerBg;
-                    intsOuterMean = cat(2,sIouter.intensity(spotIDs,chanVect(2))) - outerBg;
-                    intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(2))) - outerBg;
+                  % inner mean int, relative to outer
+                  temp = cat(2,sIouter.intensity) - innerBg;
+                  intsInnerMean = temp(spotIDs,chanVect(1));
+                  % inner max int, relative to outer
+                  temp = cat(2,sIouter.intensity_max) - innerBg;
+                  intsInnerMax = temp(spotIDs,chanVect(1));
+                  % outer mean int
+                  temp = cat(2,sIouter.intensity) - outerBg;
+                  intsOuterMean = temp(spotIDs,chanVect(2));
+                  % outer max int
+                  temp = cat(2,sIouter.intensity_max) - outerBg;
+                  intsOuterMax = temp(spotIDs,chanVect(2));
+              end
             end
-            % put data into string format
-            newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
-            newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
-            newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
-            newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
-            newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
-            newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
-          end
+          end %ints
+          
+          % put data into string format
+          newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+          newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+          newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+          newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+          newData(c,:) = {'intensity.bg.inner',repmat(innerBg,nSpots,1)}; c=c+1;
+          newData(c,:) = {'intensity.bg.outer',repmat(outerBg,nSpots,1)}; c=c+1;
           
           %% Inter- and intra-kinetochore measurements
             
@@ -626,35 +690,32 @@ for iExpt = 1:numExpts
           newData(c,:) = {'microscope.raw.delta.twoD.all',micrData.delta_2D}; c=c+1;
           newData(c,:) = {'microscope.raw.delta.threeD.all',micrData.delta_3D}; c=c+1;
           
-          if plane
-            plateData = soloMeasurements(pCoordsInner,pCoordsOuter);
-            % put data into string format
-            newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.z.all',plateData.delta_z}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.twoD.all',plateData.delta_2D}; c=c+1;
-            newData(c,:) = {'plate.raw.delta.threeD.all',plateData.delta_3D}; c=c+1;
-          end
+          plateData = soloMeasurements(pCoordsInner,pCoordsOuter);
+          % put data into string format
+          newData(c,:) = {'plate.raw.delta.x.all',plateData.delta_x}; c=c+1;
+          newData(c,:) = {'plate.raw.delta.y.all',plateData.delta_y}; c=c+1;
+          newData(c,:) = {'plate.raw.delta.z.all',plateData.delta_z}; c=c+1;
+          newData(c,:) = {'plate.raw.delta.twoD.all',plateData.delta_2D}; c=c+1;
+          newData(c,:) = {'plate.raw.delta.threeD.all',plateData.delta_3D}; c=c+1;
           
           %% Quality control
             
-            % find which data satisfies the z-depth requirement
-            satisfies = +(abs(micrData.delta_z)<0.5*pixelSize(3));
-            satisfies(satisfies==0) = NaN;
-            % put all data into string format
-            newData(c,:) = {'microscope.depthFilter.delta.x.all',micrData.delta_x.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.y.all',micrData.delta_y.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.z.all',micrData.delta_z.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.twoD.all',micrData.delta_2D.*satisfies}; c=c+1;
-            newData(c,:) = {'microscope.depthFilter.delta.threeD.all',micrData.delta_3D.*satisfies}; c=c+1;
-            
-            if plane
-              newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.twoD.all',plateData.delta_2D.*satisfies}; c=c+1;
-              newData(c,:) = {'plate.depthFilter.delta.threeD.all',plateData.delta_3D.*satisfies}; c=c+1;
-            end
+          % find which data satisfies the z-depth requirement
+          satisfies = +(abs(micrData.delta_z)<0.5*pixelSize(3));
+          satisfies(satisfies==0) = NaN;
+          
+          % put all data into string format
+          newData(c,:) = {'microscope.depthFilter.delta.x.all',micrData.delta_x.*satisfies}; c=c+1;
+          newData(c,:) = {'microscope.depthFilter.delta.y.all',micrData.delta_y.*satisfies}; c=c+1;
+          newData(c,:) = {'microscope.depthFilter.delta.z.all',micrData.delta_z.*satisfies}; c=c+1;
+          newData(c,:) = {'microscope.depthFilter.delta.twoD.all',micrData.delta_2D.*satisfies}; c=c+1;
+          newData(c,:) = {'microscope.depthFilter.delta.threeD.all',micrData.delta_3D.*satisfies}; c=c+1;
+          
+          newData(c,:) = {'plate.depthFilter.delta.x.all',plateData.delta_x.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.y.all',plateData.delta_y.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.z.all',plateData.delta_z.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.twoD.all',plateData.delta_2D.*satisfies}; c=c+1;
+          newData(c,:) = {'plate.depthFilter.delta.threeD.all',plateData.delta_3D.*satisfies}; c=c+1;
           
           % compile new data with original
           allData = combineStrForms(allData,newData);  
@@ -690,10 +751,10 @@ if ~isempty(noSis)
 end
 fprintf('\n');
 
-function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
+function measurements = pairedMeasurements(coordsInner,coordsOuter,plane)
     
-    if nargin<3 || isempty(plate)
-        plate = 0;
+    if nargin<3 || isempty(plane)
+        plane = 0;
     end
         
     %% Inter-kinetochore: separation, twist, and velocities
@@ -712,7 +773,7 @@ function measurements = pairedMeasurements(coordsInner,coordsOuter,plate)
     sisSep_2D = sqrt(sum(sisSep_xyz(:,1:2).^2,2));
     measurements.sisSep_2D = sisSep_2D;
 
-    if plate
+    if plane
 
         % coordinate-specific twist
         twist_y = sisSep_xyz(:,2)./sisSep_xyz(:,1);
