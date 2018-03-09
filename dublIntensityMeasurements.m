@@ -101,20 +101,6 @@ if selType==3
         subset = opts.spotSelection.rawSelection;
     end
 end
-    
-%check whether or not there is intensity information
-ints = 0;
-for iExpt = 1:numExpts
-  for iMov = 1:length(movies{iExpt})
-    ints = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'spotInt');
-    if ints; break; end
-  end
-  if ints; break; end  
-end
-if ints && size(movies{1}{1}.dataStruct{opts.channels(1)}.spotInt.intensity,2)==1 
-    opts.intRefMarker = 'self';
-    kitLog('Movies do not contain intensity information relative to each other channel. Converting to self-measurement.');
-end
 
 if isempty(opts.prevMeas)
     
@@ -173,11 +159,17 @@ for iExpt = 1:numExpts
       % get basic metadata
       nFrames = theseMovies{iMov}.metadata.nFrames;
       
-      % get intensities
-      sIinner = dSinner.spotInt;
-      innerBg = dSinner.cellInt.back;
-      sIouter = dSouter.spotInt;
-      outerBg = dSouter.cellInt.back;
+      % get spotInts
+      ints = (isfield(dSinner,'spotInt') && isfield(dSouter,'spotInt'));
+      if ints
+        sIinner = dSinner.spotInt;
+        innerBg = dSinner.cellInt.back;
+        sIouter = dSouter.spotInt;
+        outerBg = dSouter.cellInt.back;
+      else
+        innerBg = nan(nFrames,1);
+        outerBg = nan(nFrames,1);
+      end
       
       if paired
         
@@ -201,85 +193,116 @@ for iExpt = 1:numExpts
         
         for iSis = iSubset
             
-            % construct sister pair label
-            label = sprintf('%02d%02d%03d',iExpt,iMov,iSis);
+          % construct sister pair label
+          label = sprintf('%02d%02d%03d',iExpt,iMov,iSis);
             
-            % start counter for storing data
-            c=1;
+          % start counter for storing data
+          c=1;
 
-            % get trackID and spotIDs, make spotIDs nan if deselected
-            trackIDs = refdS.sisterList(1).trackPairs(iSis,1:2);
-            spotIDs = nan(nFrames,2);
-            for iTrack = 1:2
-                if selType~=1 %none or sisters
-                    spotIDs(:,iTrack) = refdS.trackList(trackIDs(iTrack)).featIndx;
-                else %tracks
-                    if ismember(trackIDs(iTrack),theseTracks)
-                        spotIDs(:,iTrack) = refdS.trackList(trackIDs(iTrack)).featIndx;
-                    else
-                        trackIDs(iTrack) = NaN;
-                    end
-                end 
-            end
-            % if both spots skipped
-            if all(isnan(trackIDs))
-                continue
-            end
+          % get trackID and spotIDs, make spotIDs nan if deselected
+          trackIDs = refdS.sisterList(1).trackPairs(iSis,1:2);
+          spotIDs = nan(nFrames,2);
+          for iTrack = 1:2
+            if selType~=1 %none or sisters
+              spotIDs(:,iTrack) = refdS.trackList(trackIDs(iTrack)).featIndx;
+            else %tracks
+              if ismember(trackIDs(iTrack),theseTracks)
+                spotIDs(:,iTrack) = refdS.trackList(trackIDs(iTrack)).featIndx;
+              else
+                trackIDs(iTrack) = NaN;
+              end
+            end 
+          end
+          % if both spots skipped
+          if all(isnan(trackIDs))
+            continue
+          end
             
             % get intensities if required
-            switch opts.refMarker
-              case 'self'
-                if size(sIinner.intensity,2)==1 
-                    temp = cat(2,sIinner.intensity);
-                    intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIinner.intensity_max);
-                    intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity);
-                    intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity_max);
-                    intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                else
-                    temp = cat(2,sIinner.intensity(:,chanVect(1)));
-                    intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIinner.intensity_max(:,chanVect(1)));
-                    intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity(:,chanVect(2)));
-                    intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                    temp = cat(2,sIouter.intensity_max(:,chanVect(2)));
-                    intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                end
-              case 'inner'
-                temp = cat(2,sIinner.intensity(:,chanVect(1)));
-                intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                temp = cat(2,sIinner.intensity_max(:,chanVect(1)));
-                intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                temp = cat(2,sIinner.intensity(:,chanVect(2)));
-                intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                temp = cat(2,sIinner.intensity_max(:,chanVect(2)));
-                intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-              case 'outer'
-                temp = cat(2,sIouter.intensity(:,chanVect(1)));
-                intsInnerMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                temp = cat(2,sIouter.intensity_max(:,chanVect(1)));
-                intsInnerMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                temp = cat(2,sIouter.intensity(:,chanVect(2)));
-                intsOuterMean = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
-                temp = cat(2,sIouter.intensity_max(:,chanVect(2)));
-                intsOuterMax  = temp(spotIDs(~isnan(spotIDs)),:)-innerBg;
+          intsInnerMean = nan(nFrames,2);
+          intsOuterMean = nan(nFrames,2);
+          intsInnerMax = nan(nFrames,2);
+          intsOuterMax = nan(nFrames,2);
+          if ints
+            if size(sIinner.intensity,2)==1
+              for iFrame = 1:nFrames
+                % inner mean int
+                temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
+                intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                % inner max int
+                temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
+                intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                % outer mean int
+                temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
+                intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                % outer max int
+                temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
+                intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+              end
+            else
+              switch opts.refMarker
+                case 'self'
+                  for iFrame = 1:nFrames
+                    % inner mean int
+                    temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
+                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % inner max int
+                    temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
+                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % outer mean int
+                    temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
+                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    % outer max int
+                    temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
+                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                  end
+                case 'inner'
+                  for iFrame = 1:nFrames
+                    % inner mean int
+                    temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
+                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % inner max int
+                    temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
+                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % outer mean int, relative to inner
+                    temp = cat(2,sIinner(iFrame).intensity) - outerBg(iFrame,1);
+                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    % outer max int, relative to inner
+                    temp = cat(2,sIinner(iFrame).intensity_max) - outerBg(iFrame,1);
+                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                  end
+                case 'outer'
+                  for iFrame = 1:nFrames
+                    % inner mean int, relative to outer
+                    temp = cat(2,sIouter(iFrame).intensity) - innerBg(iFrame,1);
+                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % inner max int, relative to outer
+                    temp = cat(2,sIouter(iFrame).intensity_max) - innerBg(iFrame,1);
+                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    % outer mean int
+                    temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
+                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    % outer max int
+                    temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
+                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                  end
+              end
             end
-            % put data into string format
-            newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
-            newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
-            newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
-            newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
-            newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
-            newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
+          end %ints
+          
+          % put data into string format
+          newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
+          newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
+          newData(c,:) = {'intensity.max.inner',intsInnerMax}; c=c+1;
+          newData(c,:) = {'intensity.max.outer',intsOuterMax}; c=c+1;
+          newData(c,:) = {'intensity.bg.inner',repmat(innerBg,size(intsInnerMean,1),1)}; c=c+1;
+          newData(c,:) = {'intensity.bg.outer',repmat(outerBg,size(intsOuterMean,1),1)}; c=c+1;
         
-            % compile new data with original
-            allData = combineStrForms(allData,newData);
-            
-            % clear some data to ensure no overlap on next loop
-            clear spotIDs newData
+          % compile new data with original
+          allData = combineStrForms(allData,newData);
+          
+          % clear some data to ensure no overlap on next loop
+          clear spotIDs newData
         
         end % sisters
         
@@ -311,30 +334,68 @@ for iExpt = 1:numExpts
           newData(c,:) = {'label',labels}; c=c+1;
           
           % get intensities if required
-          switch opts.refMarker
-            case 'self'
-                if size(sIinner.intensity,2)==1 
-                    intsInnerMean = cat(2,sIinner.intensity(spotIDs,:)) - innerBg;
-                    intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,:)) - innerBg;
-                    intsOuterMean = cat(2,sIouter.intensity(spotIDs,:)) - outerBg;
-                    intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,:)) - outerBg;
-                else
-                    intsInnerMean = cat(2,sIinner.intensity(spotIDs,chanVect(1))) - innerBg;
-                    intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(1))) - innerBg;
-                    intsOuterMean = cat(2,sIouter.intensity(spotIDs,chanVect(2))) - outerBg;
-                    intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(2))) - outerBg;
-                end
-            case 'inner'
-                intsInnerMean = cat(2,sIinner.intensity(spotIDs,chanVect(1))) - innerBg;
-                intsInnerMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(1))) - innerBg;
-                intsOuterMean = cat(2,sIinner.intensity(spotIDs,chanVect(2))) - outerBg;
-                intsOuterMax  = cat(2,sIinner.intensity_max(spotIDs,chanVect(2))) - outerBg;
-            case 'outer'
-                intsInnerMean = cat(2,sIouter.intensity(spotIDs,chanVect(1))) - innerBg;
-                intsInnerMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(1))) - innerBg;
-                intsOuterMean = cat(2,sIouter.intensity(spotIDs,chanVect(2))) - outerBg;
-                intsOuterMax  = cat(2,sIouter.intensity_max(spotIDs,chanVect(2))) - outerBg;
-          end
+          intsInnerMean = nan(nSpots,1);
+          intsOuterMean = nan(nSpots,1);
+          intsInnerMax = nan(nSpots,1);
+          intsOuterMax = nan(nSpots,1);
+          if ints
+            if size(sIinner.intensity,2)==1
+              % inner mean int
+              temp = cat(2,sIinner.intensity) - innerBg;
+              intsInnerMean = temp(spotIDs,1);
+              % inner max int
+              temp = cat(2,sIinner.intensity_max) - innerBg;
+              intsInnerMax = temp(spotIDs,1);
+              % outer mean int
+              temp = cat(2,sIouter.intensity) - outerBg;
+              intsOuterMean = temp(spotIDs,1);
+              % outer max int
+              temp = cat(2,sIouter.intensity_max) - outerBg;
+              intsOuterMax = temp(spotIDs,1);
+            else
+              switch opts.refMarker
+                case 'self'
+                  % inner mean int
+                  temp = cat(2,sIinner.intensity) - innerBg;
+                  intsInnerMean = temp(spotIDs,chanVect(1));
+                  % inner max int
+                  temp = cat(2,sIinner.intensity_max) - innerBg;
+                  intsInnerMax = temp(spotIDs,chanVect(1));
+                  % outer mean int
+                  temp = cat(2,sIouter.intensity) - outerBg;
+                  intsOuterMean = temp(spotIDs,chanVect(2));
+                  % outer max int
+                  temp = cat(2,sIouter.intensity_max) - outerBg;
+                  intsOuterMax = temp(spotIDs,chanVect(2));
+                case 'inner'
+                  % inner mean int
+                  temp = cat(2,sIinner.intensity) - innerBg;
+                  intsInnerMean = temp(spotIDs,chanVect(1));
+                  % inner max int
+                  temp = cat(2,sIinner.intensity_max) - innerBg;
+                  intsInnerMax = temp(spotIDs,chanVect(1));
+                  % outer mean int, relative to inner
+                  temp = cat(2,sIinner.intensity) - outerBg;
+                  intsOuterMean = temp(spotIDs,chanVect(2));
+                  % outer max int, relative to inner
+                  temp = cat(2,sIinner.intensity_max) - outerBg;
+                  intsOuterMax = temp(spotIDs,chanVect(2));
+                case 'outer'
+                  % inner mean int, relative to outer
+                  temp = cat(2,sIouter.intensity) - innerBg;
+                  intsInnerMean = temp(spotIDs,chanVect(1));
+                  % inner max int, relative to outer
+                  temp = cat(2,sIouter.intensity_max) - innerBg;
+                  intsInnerMax = temp(spotIDs,chanVect(1));
+                  % outer mean int
+                  temp = cat(2,sIouter.intensity) - outerBg;
+                  intsOuterMean = temp(spotIDs,chanVect(2));
+                  % outer max int
+                  temp = cat(2,sIouter.intensity_max) - outerBg;
+                  intsOuterMax = temp(spotIDs,chanVect(2));
+              end
+            end
+          end %ints
           % put data into string format
           newData(c,:) = {'intensity.mean.inner',intsInnerMean}; c=c+1;
           newData(c,:) = {'intensity.mean.outer',intsOuterMean}; c=c+1;
