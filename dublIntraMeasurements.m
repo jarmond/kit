@@ -301,16 +301,10 @@ for iExpt = 1:numExpts
             newData(c,:) = {'microscope.coords.y',mCoords_y(:,[1 3 2 4])}; c=c+1;
             newData(c,:) = {'microscope.coords.z',mCoords_z(:,[1 3 2 4])}; c=c+1;
             
-            if plane
-              % get plate coordinates of each spot
-              pCoords_x = [pCoordsInner(:,[1 4]) pCoordsOuter(:,[1 4])];
-              pCoords_y = [pCoordsInner(:,[2 5]) pCoordsOuter(:,[2 5])];
-              pCoords_z = [pCoordsInner(:,[3 6]) pCoordsOuter(:,[3 6])];
-            else
-              pCoords_x = nan(size(mCoords_x));
-              pCoords_y = nan(size(mCoords_y));
-              pCoords_z = nan(size(mCoords_z));
-            end
+            % get plate coordinates of each spot
+            pCoords_x = [pCoordsInner(:,[1 4]) pCoordsOuter(:,[1 4])];
+            pCoords_y = [pCoordsInner(:,[2 5]) pCoordsOuter(:,[2 5])];
+            pCoords_z = [pCoordsInner(:,[3 6]) pCoordsOuter(:,[3 6])];
             % put data into string format
             newData(c,:) = {'plate.coords.x',pCoords_x(:,[1 3 2 4])}; c=c+1;
             newData(c,:) = {'plate.coords.y',pCoords_y(:,[1 3 2 4])}; c=c+1;
@@ -581,6 +575,10 @@ for iExpt = 1:numExpts
                   pCoordsInner = (coordSystem\(mCoordsInner'))';
                   pCoordsOuter = (coordSystem\(mCoordsOuter'))';
               end
+          else
+              % give empty datasets the size of microscopy coordinates
+              pCoordsInner = nan(size(mCoordsInner));
+              pCoordsOuter = nan(size(mCoordsOuter));
           end
             
           % get microscope coordinates of each spot
@@ -591,18 +589,11 @@ for iExpt = 1:numExpts
           newData(c,:) = {'microscope.coords.x',mCoords_x}; c=c+1;
           newData(c,:) = {'microscope.coords.y',mCoords_y}; c=c+1;
           newData(c,:) = {'microscope.coords.z',mCoords_z}; c=c+1;
-            
-          if plane
-            % get plate coordinates of each spot
-            pCoords_x = [pCoordsInner(:,1) pCoordsOuter(:,1)];
-            pCoords_y = [pCoordsInner(:,2) pCoordsOuter(:,2)];
-            pCoords_z = [pCoordsInner(:,3) pCoordsOuter(:,3)];
-          else
-            % get plate coordinates of each spot
-            pCoords_x = nan(size(mCoords_x));
-            pCoords_y = nan(size(mCoords_y));
-            pCoords_z = nan(size(mCoords_z));
-          end
+          
+          % get plate coordinates of each spot
+          pCoords_x = [pCoordsInner(:,1) pCoordsOuter(:,1)];
+          pCoords_y = [pCoordsInner(:,2) pCoordsOuter(:,2)];
+          pCoords_z = [pCoordsInner(:,3) pCoordsOuter(:,3)];
           % put data into string format
           newData(c,:) = {'plate.coords.x',pCoords_x}; c=c+1;
           newData(c,:) = {'plate.coords.y',pCoords_y}; c=c+1;
