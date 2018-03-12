@@ -89,15 +89,15 @@ numExpts = numExpts1;
 
 %% Pre-processing output structure
 
-% find whether any movies have paired spots
-paired = opts.paired;
-if paired
+% assume no pairing until we find one movie that is
+paired = 0;
+if opts.paired
   for iExpt = 1:numExpts
     for iMov = 1:length(movies{iExpt})
       paired = isfield(movies{iExpt}{iMov}.dataStruct{opts.channels(1)},'sisterList');
-      if ~paired; break; end
+      if paired; break; end
     end
-    if ~paired; break; end
+    if paired; break; end
   end
 end
 if selType==3
@@ -196,7 +196,8 @@ for iExpt = 1:numExpts
       if paired
         
         % check whether a sisterList is present, and if it contains any sisters
-        if ~isfield(dSinner,'sisterList') || isempty(dSinner.sisterList(1).trackPairs) || ~isfield(dSouter,'sisterList') || isempty(dSouter.sisterList(1).trackPairs)
+        if ~isfield(dSinner,'sisterList') || isempty(dSinner.sisterList(1).trackPairs) || ...
+                ~isfield(dSouter,'sisterList') || isempty(dSouter.sisterList(1).trackPairs)
           noSis = [noSis; iExpt movNum];
           continue
         end
