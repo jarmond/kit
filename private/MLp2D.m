@@ -31,7 +31,8 @@ if nargin<4
     numbins = 25;
 end
 
-data = data(~isnan(data));
+% can't handle nans or zeros
+data( isnan(data) | data==0 ) = [];
 num_pts = length(data);
  
 % Define the likelihood function and maximize it
