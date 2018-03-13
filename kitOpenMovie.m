@@ -99,7 +99,17 @@ md.is3D = nZPlanes > 1;
 
 % Numerical aperture
 try
-  md.na = metaTable.getObjectiveLensNA(0,0).doubleValue;
+  % get the correct objective ID (the objective that was used to acquire the image)
+  tmp = char(metaTable.getInstrumentID(imageID));
+  instrumentID = str2double(tmp(end));
+  tmp = char(metaTable.getObjectiveSettingsID(instrumentID));
+  objID = str2double(tmp(end));
+  numobj = metaTable.getObjectiveCount(instrumentID);
+  if numobj == 1
+    objID = 0;
+  end
+    
+  md.na = metaTable.getObjectiveLensNA(instrumentID,objID).doubleValue();
 catch
   warning('Missing metadata: Assuming NA = 1.4');
   md.na = 1.4; % Assume default.
