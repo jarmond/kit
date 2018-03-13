@@ -1,4 +1,4 @@
-function [spots,threshold] = adaptiveSpots(movie,lambda,verbose);
+function [spots,threshold] = adaptiveSpots(movie,lambda,dataProperties,verbose)
 % ADAPTIVESPOTS Adaptive thresholding for spot detection.
 %
 % Copyright 2015 J. W. Armond
@@ -13,6 +13,14 @@ end
 
 have92 = ~verLessThan('images','9.2');
 
+[~,~,sz] = size(movie);
+if sz == 1
+  ndims = 2;
+else
+  ndims = 3;
+end
+filters = createFilters(ndims,dataProperties);
+
 % Go over all frames and find local maxima.
 nFrames = size(movie,4);
 locs = cell(nFrames,1);
@@ -21,12 +29,12 @@ for i=1:nFrames
   img = movie(:,:,:,i);
   meanInt(i) = mean(img(:));
   % TODO options?
-  if have92
-    imgF = imgaussfilt3(img,2,'FilterSize',3);
-    bkgd = imgaussfilt3(img,16,'FilterSize',63);
+  if ~have92
+    imgF = fastGauss3D(img,filters.signalP(1:3),filters.signalP(4:6));
+    bkgd = fastGauss3D(img,filters.backgroundP(1:3),filters.backgroundP(4:6));
   else
-    imgF = fastGauss3D(img,2,3);
-    bkgd = fastGauss3D(img,16,63);
+    imgF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
+    bkgd = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));imgF = imgaussfilt3(img,2,'FilterSize',3);
   end
   amp = imgF-bkgd;
 
