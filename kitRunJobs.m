@@ -7,7 +7,7 @@ function kitRunJobs(jobset,varargin)
 %
 %    Options (default in {}):-
 %
-%    tasks: {1:8} or a vector. Specify tasks to perform on jobs:
+%    tasks: {1:9} or a vector. Specify tasks to perform on jobs:
 %                              1: finding spots
 %                              2: fitting plane
 %                              3: tracking spots
@@ -28,8 +28,8 @@ function kitRunJobs(jobset,varargin)
 %    errorfail: {0} or 1. Crash out if error occurs if 1.
 %
 % Created by: J. W. Armond
-% Modified by: C. A. Armond
-% Copyright (c) 2016 C. A. Smith
+% Modified by: C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 % Check minimum MATLAB version.
 % FIXME Check minimum toolbox versions also.
@@ -52,7 +52,7 @@ nROIs = length(jobset.ROI);
 options.subset = 1:nROIs;
 options.exec = 'serial';
 options.errorfail = 0;
-options.tasks = 1:8;
+options.tasks = 1:9;
 options.existing = 0;
 options.callback = [];
 options.email = [];
@@ -69,7 +69,7 @@ switch jobset.options.jobProcess
     case 'chrshift'
         options.tasks = setdiff(options.tasks,[2,3,4,5,7,8]);
 end
-if ~any(jobset.options.intensity.execute)
+if all(~jobset.options.intensity.execute)
   options.tasks = setdiff(options.tasks,9);
 end
 
@@ -84,7 +84,6 @@ switch options.exec
     kitLog(['Running ' name ' using PBS']);
 end
 
-
 if isfield(jobset,'variantName')
   fprintf('Jobset variant: %s\n',jobset.variantName);
 end
@@ -96,12 +95,13 @@ for i= options.subset
     jobs{i} = kitLoadJob(jobset,i);
     % Copy over any new options.
     jobs{i}.options = jobset.options;
+    if length(jobs{i}.ROI)>1
+        jobs{i}.ROI = jobset.ROI(i);
+    end
   else
     jobs{i} = jobset;
-    jobs{i}.movie = jobset.ROI(i).movie;
     jobs{i}.index = i;
-    jobs{i}.crop = jobset.ROI(i).crop;
-    jobs{i}.cropSize = jobset.ROI(i).cropSize;
+    jobs{i}.ROI = jobset.ROI(i);
   end
   % Update versions, may be different to jobset creator.
   jobs{i}.version = kitVersion();
@@ -174,7 +174,7 @@ for i = 1:length(exceptions)
   disp(getReport(ex.me));
 end
 
-if strcmp(options.exec,'batch');
+if strcmp(options.exec,'batch')
   % Wait for parallel tracking jobs.
   for i = options.subset
     kitLog('Waiting for %d tracking jobs to complete', length(options.subset)-i+1);
