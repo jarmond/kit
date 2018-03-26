@@ -16,9 +16,9 @@ pixelSize = metadata.pixelSize(1:3);
 chrShift = options.chrShift.result{options.coordSystemChannel,channel}(:,1:3);
 chrShift = chrShift./pixelSize; chrShift(1:2) = chrShift([2 1]);
 % image size
-[imageSizeX,imageSizeY,imageSizeZ,~] = size(movie);
+imageSize = size(movie);
 nFrames = metadata.nFrames;
-nPlanes = imageSizeZ;
+nPlanes = imageSize(3);
 % get channel orientation (1 if channel outside reference, 0 otherwise)
 refChanPos = find(options.neighbourSpots.channelOrientation==options.coordSystemChannel);
 chanPos = find(options.neighbourSpots.channelOrientation==channel);
@@ -156,24 +156,28 @@ switch options.jobProcess
 
               % get coordinate information for this each sister, then transpose
               % (the results of MMF are transposed, so need to be transposed back)
-              coords = initCoord.allCoordPix(spotID,:);
-              coords(:,1:2) = coords(:,[2 1]);
-              % check that this coordinate is within the z-range imposed
-              if coords(3)<min(zSlices) || coords(3)>max(zSlices)
-                continue
-              else  
-                % get frame
-                image = movie(:,:,:,iFrame);
+              coords = initCoord.allCoordPix(spotID,[2 1 3]);
+              
+              % chromatic shift coordinates to new channel's frame, then
+              % find nearest whole pixel
+              coords = coords + chrShift;
+              coords = round(coords);
+              
+              % define and check the image range
+              range = [coords(1)-r coords(1)+r;...
+                       coords(2)-r coords(2)-r;...
+                       coords(3)   coords(3) ];
 
-                % chromatic shift coordinates to new channel's frame, then
-                % find nearest whole pixel
-                coords(1:3) = coords(1:3) + chrShift;
-                coords = round(coords);
-
-                % realign mask into correct orientation for this track
-                if sum(framesNoPlane == iFrame) > 0
+              if any(isnan(range(:))) || any(range(:,1)<=0) || any(range(:,2)>imageSize')
+                  continue
+              elseif range(3,1)<min(zSlices) || range(3,2)>max(zSlices)
+                  continue
+              end
+                  
+              % realign mask into correct orientation for this track
+              if sum(framesNoPlane == iFrame) > 0
                   mask = noPlaneMask;
-                else
+              else
                   if refTrackList(trackID).attach > 0
                     if chanOrient
                       mask = rMask;
@@ -196,42 +200,37 @@ switch options.jobProcess
                       maskWarning=1;
                     end
                   end
-                end
+              end
+                  
+              % get frame
+              image = movie(:,:,:,iFrame);
+              
+              % get intensity values of mask-derived spot vicinity
+              imageMask = mask .* image(range(1,1):range(1,2), ...
+                  range(2,1):range(2,2), range(3,1):range(3,2));
 
-                % make sure that the mask doesn't extend over image
-                % boundaries
-                if coords(1)-2*r>0 && coords(1)+2*r<=imageSizeX && ...
-                    coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY
-
-                  % get intensity values of mask-derived spot vicinity
-                  imageMask = mask .* image(coords(1)-r:coords(1)+r, ...
-                    coords(2)-r:coords(2)+r, coords(3));
-
-                else
+              % find local maximum intensity
+              locMax1DIndx = find(imageMask==nanmax(imageMask(:)));
+              if isempty(locMax1DIndx)
                   continue
-                end
+              elseif length(locMax1DIndx)>1
+                  locMax1DIndx = locMax1DIndx(1); % IDEALLY SHOULD BE THE SPOT CLOSEST TO THE ORIGINAL SPOT
+              end
 
-                % find local maximum intensity
-                locMax1DIndx = find(imageMask==nanmax(imageMask(:)));
-                if isempty(locMax1DIndx)
+              [locMaxCrd(1),locMaxCrd(2),locMaxCrd(3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx);
+              % correct coordinates to full image
+              locMaxCrd(1) = locMaxCrd(1)+coords(1)-(r+1);
+              locMaxCrd(2) = locMaxCrd(2)+coords(2)-(r+1);
+              locMaxCrd(3) = coords(3);
+
+              if any(locMaxCrd>imageSize)
                   continue
-                end
+              end
 
-                [locMaxCrd(1),locMaxCrd(2),locMaxCrd(3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx);
-                % correct coordinates to full image
-                locMaxCrd(1) = locMaxCrd(1)+coords(1)-(r+1);
-                locMaxCrd(2) = locMaxCrd(2)+coords(2)-(r+1);
-                locMaxCrd(3) = coords(3);
+              % compile coordinates
+              spots{iFrame} = [spots{iFrame}; locMaxCrd];
+              spotIDs{iFrame} = [spotIDs{iFrame}; spotID];
 
-                if locMaxCrd(1)>imageSizeX || locMaxCrd(2)>imageSizeY || locMaxCrd(3)>imageSizeZ;
-                  continue
-                end
-
-                % compile coordinates
-                spots{iFrame} = [spots{iFrame}; locMaxCrd];
-                spotIDs{iFrame} = [spotIDs{iFrame}; spotID];
-
-              end % if in z-range
           end %iSis
         end %iFrame
 
@@ -247,59 +246,51 @@ switch options.jobProcess
 
     for iSpot = 1:nSpots
 
-      % get coordinate information, then transpose
-      % (the results of MMF are transposed, so need to be transposed back)
-      coords = refInitCoord(1).allCoordPix(iSpot,:);
-      coords(:,1:2) = coords(:,[2 1]);
-      % check that this coordinate is within the z-range imposed
-      if coords(3)<min(zSlices) || coords(3)>max(zSlices)
-        continue
-      else  
-        % get frame
-        image = movie(:,:,:,1);
+      % get coordinate information
+      coords = refInitCoord(1).allCoordPix(iSpot,[2 1 3]);
+      
+      % chromatic shift coordinates to new channel's frame, then
+      % find nearest whole pixel
+      coords = coords + chrShift;
+      coords = round(coords);
 
-        % chromatic shift coordinates to new channel's frame, then
-        % find nearest whole pixel
-        coords(1:3) = coords(1:3) + chrShift;
-        coords = round(coords);
-
-        % make sure that the mask doesn't extend over image
-        % boundaries
-        if coords(1)-2*r>0 && coords(1)+2*r<=imageSizeX && ...
-            coords(2)-2*r>0 && coords(2)+2*r<=imageSizeY
+      % define and check the image range
+      range = [coords(1)-r coords(1)+r;...
+               coords(2)-r coords(2)-r;...
+               coords(3)   coords(3) ];
+           
+      if any(isnan(range(:))) || any(range(:,1)<=0) || any(range(:,2)>imageSize')
+          continue
+      end
+  
+      % get frame
+      image = movie(:,:,:,1);
         
-          % get intensity values of mask-derived spot vicinity
-          imageMask = mask .* image(coords(1)-r:coords(1)+r, ...
-            coords(2)-r:coords(2)+r, coords(3));
+      % get intensity values of mask-derived spot vicinity
+      imageMask = mask .* image(range(1,1):range(1,2), ...
+          range(2,1):range(2,2), range(3,1):range(3,2));
 
-        else
+      % find local maximum intensity
+      locMax1DIndx = find(imageMask==nanmax(imageMask(:)));
+      if isempty(locMax1DIndx)
           continue
-
-        end
-
-        % find local maximum intensity
-        locMax1DIndx = find(imageMask==nanmax(imageMask(:)));
-        if isempty(locMax1DIndx)
-          continue
-        elseif length(locMax1DIndx)>1
+      elseif length(locMax1DIndx)>1
           locMax1DIndx = locMax1DIndx(1); % IDEALLY SHOULD BE THE SPOT CLOSEST TO THE ORIGINAL SPOT
-        end
+      end
         
-        [locMaxCrd(1),locMaxCrd(2),locMaxCrd(3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx);
-        % correct coordinates to full image
-        locMaxCrd(1) = locMaxCrd(1)+coords(1)-(r+1);
-        locMaxCrd(2) = locMaxCrd(2)+coords(2)-(r+1);
-        locMaxCrd(3) = coords(3);
-
-        if locMaxCrd(1)>imageSizeX || locMaxCrd(2)>imageSizeY || locMaxCrd(3)>imageSizeZ
+      [locMaxCrd(1),locMaxCrd(2),locMaxCrd(3)] = ind2sub([2*r+1 2*r+1 1],locMax1DIndx);
+      % correct coordinates to full image
+      locMaxCrd(1) = locMaxCrd(1)+coords(1)-(r+1);
+      locMaxCrd(2) = locMaxCrd(2)+coords(2)-(r+1);
+      locMaxCrd(3) = coords(3);
+      
+      if any(locMaxCrd>imageSize)
           continue
-        end
+      end
 
-        % compile coordinates for MMF
-        spots{1} = [spots{1}; locMaxCrd];
-        spotIDs{1} = [spotIDs{1}; iSpot];
-
-      end % if in z-range
+      % compile coordinates for MMF
+      spots{1} = [spots{1}; locMaxCrd];
+      spotIDs{1} = [spotIDs{1}; iSpot];
 
     end %iSpot
     
