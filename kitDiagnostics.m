@@ -3,14 +3,21 @@ function job=kitDiagnostics(job,channel,elapsed)
 %
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
-% Copyright (c) 2016 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 ds = job.dataStruct{channel};
 
 diag.elapsedTime = elapsed;
 
+% Failed.
+diag.failed = (isfield(ds,'failed') && ds.failed);
+
 % Spots.
-diag.nSpotsPerFrame = mean(vertcat(ds.initCoord.nSpots));
+if isfield(ds,'initCoord')
+    diag.nSpotsPerFrame = mean(vertcat(ds.initCoord.nSpots));
+else
+    diag.nSpotsPerFrame = 0;
+end
 
 % Track counts.
 if isfield(ds,'sisterList')
