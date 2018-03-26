@@ -183,9 +183,9 @@ for iExpt = 1:numExpts
         % if no sisters given, go through all sisters in movie
         switch selType
             case 0 % no spot selection
-                iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
+                iSubset = 1:length(refdS.sisterList);
             case 1 % using spots/tracks
-                iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
+                iSubset = 1:length(refdS.sisterList);
                 theseTracks = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
             case 2 % using sisters
                 iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
