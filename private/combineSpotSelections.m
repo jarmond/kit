@@ -18,6 +18,9 @@ for iExpt = 2:nExpts
         continue
     else
         spotSel.selection{iExpt} = spotSels{iExpt}.selection{1};
+        if isfield(spotSels{iExpt},'rawSelection')
+            spotSel.rawSelection{iExpt} = spotSels{iExpt}.rawSelection{1};
+        end
     end
 end
 
