@@ -119,7 +119,7 @@ for t=1:nFrames
   % Visualize final result.
   if opts.debug.showCentroidFinal ~= 0
     % If 3D image, max project.
-    raw = kitReadImageStack(reader,metadata,t,channel,job.crop);
+    raw = kitReadImageStack(reader,metadata,t,channel,job.ROI.crop);
     img = max(raw,[],3);
     figure(1);
     imshow(img,[]);

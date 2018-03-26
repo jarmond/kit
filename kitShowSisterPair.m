@@ -65,7 +65,7 @@ opts = processOptions(opts, varargin{:});
 %% Image and coordinate acquisition
 
 % open movie
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata,0);
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata,0);
 
 % get coordinate system and plot channels
 chan = opts.channel;
@@ -121,7 +121,7 @@ centrePxl = round(centrePxl);
 %% Image production
 
 % read stack
-img = kitReadImageStack(reader,md,timePoint,chan,job.crop,0);
+img = kitReadImageStack(reader,md,timePoint,chan,job.ROI.crop,0);
 % max project over three z-slices around point
 if opts.zProject == 1
     img = max(img, [], 3);

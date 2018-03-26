@@ -188,7 +188,7 @@ for t=1:nTimePoints
     % Get data for eigenRatio, subsequent plane fitting.
     if useImageCov
       img = kitReadImageStack(reader,job.metadata,t,...
-                              opts.coordSystemChannel,job.crop);
+                              opts.coordSystemChannel,job.ROI.crop);
 
       % Keep only values above chosen percentile. This eliminates the
       % background intensity and leaves mostly the spots.
@@ -202,9 +202,9 @@ for t=1:nTimePoints
           eigenCalcFromImg(img);
 
       % Calculate centroid from blend of all channels to increase stability.
-      img = zeros(job.cropSize);
+      img = zeros(job.ROI.cropSize);
       for i=1:job.metadata.nChannels
-        img = imadd(img, kitReadImageStack(reader,job.metadata,t,i,job.crop));
+        img = imadd(img, kitReadImageStack(reader,job.metadata,t,i,job.ROI.crop));
       end
       img = img / job.metadata.nChannels;
 
@@ -795,7 +795,7 @@ end % function kitFitPlane
 function showPlaneFit(job,reader,channel,frameNum,origin,eVecs,allCoordPix)
 % Show debugging visualization.
 
-img = kitReadImageStack(reader, job.metadata, frameNum, channel, job.crop);
+img = kitReadImageStack(reader, job.metadata, frameNum, channel, job.ROI.crop);
 % Max project image.
 img = max(img,[],3);
 

@@ -36,7 +36,7 @@ ndims = 2 + is3D;
 filters = createFilters(ndims,job.dataStruct{channel}.dataProperties);
 
 % Read image
-movie = kitReadWholeMovie(reader,job.metadata,channel,job.crop,0,1);
+movie = kitReadWholeMovie(reader,job.metadata,channel,job.ROI.crop,0,1);
 [imageSizeX,imageSizeY,imageSizeZ,~] = size(movie);
 if options.deconvolve
   kitLog('Deconvolving');
