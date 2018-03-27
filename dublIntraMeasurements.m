@@ -126,6 +126,7 @@ end
 noDS = [];
 noSpot = [];
 noSis = [];
+noSkip = [];
 
 %% Compiling measurements
 
@@ -141,7 +142,7 @@ for iExpt = 1:numExpts
     chanVect(chanVect==remChans) = [];
     
     for iMov = 1:length(theseMovies)
-      
+        
       % get the movie index
       movNum = theseMovies{iMov}.index;
       % check whether there is data in this movie
@@ -157,6 +158,12 @@ for iExpt = 1:numExpts
       % check whether the movie failed
       if ~isfield(dSinner,'failed') || dSinner.failed || ~isfield(dSouter,'failed') || dSouter.failed
         noSpot = [noSpot; iExpt movNum];
+        continue
+      end
+      
+      % check whether the user skipped this movie
+      if (isfield(theseMovies{iMov},'keep') && ~theseMovies{iMov}.keep)
+        noSkip = [noSkip; iExpt movNum];
         continue
       end
       
@@ -723,6 +730,12 @@ compiledIntra = strForm2struct(allData);
 
 %% Output any error information
 
+if ~isempty(noSkip)
+  fprintf('\nThe following cells were skipped by the user:\n');
+  for iCell = 1:size(noSkip,1)
+    fprintf('    Exp %i, Mov %i\n',noSkip(iCell,1),noSkip(iCell,2));
+  end
+end
 if ~isempty(noDS)
   fprintf('\nThe following cells failed during spot detection:\n');
   for iCell = 1:size(noDS,1)
