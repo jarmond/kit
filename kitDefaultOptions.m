@@ -5,7 +5,7 @@ function job=kitDefaultOptions()
 %
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 job.kit = 1;
 job.version = kitVersion();
@@ -140,7 +140,7 @@ opts.wavelet = wavelet;
 
 % Manual spot detection options.
 manualDetect.warningDist = 0.2; % in um, distance between spots below which to warn user
-manualDetect.frameSpacing = 8; % number of frames between adjacent manual detection frame
+manualDetect.frameSpacing = 7; % number of frames between adjacent manual detection frame
 manualDetect.gapMethod = 'framewise'; % can also be 'linear'
 opts.manualDetect = manualDetect;
 
