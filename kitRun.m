@@ -3,7 +3,7 @@ function kitRun(desc)
 %
 %  Run kitRun('help') for a more descriptive run screen.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 % Check whether user has asked for help.
 if nargin<1
@@ -335,6 +335,9 @@ function cuplCB(hObj,event)
   % check if a jobset is loaded
   if ~isfield(hs,'jobset') || isempty(hs.jobset)
     errorbox('No job yet created or loaded.')
+    return
+  elseif ~strcmp(hs.jobset.options.jobProcess,'zandt')
+    errorbox('Loaded jobset is not a tracking job.')
     return
   end
   kitLog('Starting CupL analysis')
