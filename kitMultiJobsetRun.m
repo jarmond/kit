@@ -13,7 +13,7 @@ end
 dockStatus = get(0,'DefaultFigureWindowStyle');
 set(0,'DefaultFigureWindowStyle','normal');
 handles = createControls(jobset);
-handles.jobsets = jobset;
+handles.jobsets{1} = jobset;
 handles.fig.Visible = 'on';
 uiwait(gcf);
 close(gcf);
