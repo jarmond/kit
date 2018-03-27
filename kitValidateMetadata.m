@@ -203,7 +203,7 @@ function hs = createControls()
   edity = edity-h;
   
   % Channels
-  nChans = 4;
+  nChans = 3;
   labw = 10;
   editx = dx+(labw+ddx);
   editw = (panw-(editx+dx+(nChans-1)*ddx))/nChans;
@@ -221,7 +221,7 @@ function hs = createControls()
   editx = dx+(labw+ddx);
   editw = (colw-(editx+(nChans-1)*ddx))/nChans;
   hs.wavelengthText = label(hs.fig,'Wavelength (nm)',[dx y labw h],tinyfont);
-  for iChan=1:4
+  for iChan=1:nChans
     hs.waveChanText{iChan} = label(hs.fig,['Ch.' num2str(iChan)],[editx y+0.75*h editw h],tinyfont);
     hs.waveChanText{iChan}.HorizontalAlignment = 'center';
     hs.waveChanText{iChan}.FontWeight = 'bold';
@@ -230,14 +230,14 @@ function hs = createControls()
   end
   
   % Pixel sizes
+  nCoords = 3;
   y = y-2*h;
   labw = 15;
   editx = dx+(labw+ddx);
-  editw = (colw-(editx+(nChans-1)*ddx))/nChans;
-  editx = editx+(editw+ddx);
+  editw = (colw-(editx+(nCoords-1)*ddx))/nCoords;
   coordLabel = ['x','y','z'];
   hs.pixelSizeText = label(hs.fig,'Pixel size (nm)',[dx y labw h],tinyfont);
-  for iCoord=1:3
+  for iCoord=1:nCoords
     hs.pixCoordText{iCoord} = label(hs.fig,coordLabel(iCoord),[editx y+0.75*h editw h],tinyfont);
     hs.pixCoordText{iCoord}.HorizontalAlignment = 'center';
     hs.pixCoordText{iCoord}.FontWeight = 'bold';
@@ -384,11 +384,11 @@ function nChannelsCB(hObj,event)
   if exist('hObj','var')
     nChans = str2double(hObj.String);
     handles.nChannels = nChans;
-    for notChan = setdiff(1:4,nChans)
+    for notChan = setdiff(1:3,nChans)
       handles.channelNum{notChan}.Value = 0;
     end
   end
-  for iChan = 1:4
+  for iChan = 1:3
     if iChan > handles.nChannels
       handles.wavelength{iChan}.Enable = 'off';
       handles.waveChanText{iChan}.Enable = 'off';
@@ -429,7 +429,7 @@ function updateMetadata()
   md.nChannels = handles.nChannels;
   md.nPlanes = str2double(handles.nPlanes.String)*md.nFrames*md.nChannels;
   md.frameSize(3) = str2double(handles.nPlanes.String);
-  for iChan = 1:4
+  for iChan = 1:3
     md.wavelength(iChan) = str2double(handles.wavelength{iChan}.String)/1000;
   end
   % construct frameTime
