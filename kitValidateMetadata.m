@@ -279,7 +279,7 @@ function updateControls(md)
     idx=0;
   end
   hs.movieName.String = jobset.ROI(iMov).movie(idx+1:end);
-  hs.nXYpixels.String = [num2str(md.frameSize(1)) ' x ' num2str(md.frameSize(1))];
+  hs.nXYpixels.String = [num2str(md.frameSize(1)) ' x ' num2str(md.frameSize(2))];
   hs.is3D.Value = md.is3D;
   hs.nPlanes.String = num2str(md.nPlanes/(md.nChannels*md.nFrames));
   hs.nFrames.String = num2str(md.nFrames);
