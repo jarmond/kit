@@ -121,7 +121,6 @@ else
     'correctionMu',0,'nSpots',0,'initAmp',[],'amp',[]);
   spotsFound = 0;
 end
-nSpots = cat(1,initCoord.nSpots);
 
 %assign dimensionality for fit
 probDim = 3 - use2D;
@@ -150,7 +149,7 @@ end
 
 % loop through timepoints. Get covariance of point cloud, and the
 % corresponding eigenvalues. Label frames that have sufficient anisotropy.
-
+nSpots = zeros(nTimePoints,1);
 eigenValues = zeros(nTimePoints,probDim);
 eigenVectors = zeros(probDim,probDim,nTimePoints);  %vectors in cols
 meanCoord = zeros(nTimePoints,probDim);
@@ -159,6 +158,9 @@ meanCoordFull = zeros(nTimePoints,3);
 goodFrames1 = [];
 potFrames = [];
 for t=1:nTimePoints
+  
+  % Get number of spots.
+  nSpots(t) = size(initCoord(t).allCoord,1);  
   % Make an initial outlier detection.
   if spotsFound && nSpots(t) < minSpotsInFrame
     % No spots. Set origin to 0.
