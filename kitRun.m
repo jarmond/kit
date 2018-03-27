@@ -88,12 +88,11 @@ function hs = createControls(desc)
   y = y-lh;
   x = dx; btnw = 12;
   hs.multirunBtn = button(hs.fig,'Multi-job run',[x y btnw btnh],@multiRunCB,10);
-  hs.multirunBtn.Enable = 'off';
   y = y-lh;
   
   % Running tools sub-title.
   x = dx; labw = w;
-  t = label(hs.fig,'2. Manually check data',[x y labw h],medfont);
+  t = label(hs.fig,'2. Manually check and process data',[x y labw h],medfont);
   t.FontWeight = 'bold';
   y = y-lh;
   
@@ -110,7 +109,8 @@ function hs = createControls(desc)
   hs.spotFilterBtn = button(hs.fig,'Spot filtering',[x y btnw btnh],@filterSpotsCB);
   x = x+btnw+ddx;
   hs.cellFilterBtn = button(hs.fig,'Cell filtering',[x y btnw btnh],@filterCellsCB);
-  hs.cellFilterBtn.Enable = 'off';
+  x = x+btnw+ddx;
+  hs.sisterPairBtn = button(hs.fig,'Sister pairing',[x y btnw btnh],@sisterPairingCB);
   y = y-lh;
   
   % Analysis tools sub-title.
@@ -283,6 +283,26 @@ function filterCellsCB(hObj,event)
   set(guiObj,'Enable','inactive');
   
   kitFilterCells(hs.jobset);
+  
+  % Re-activate GUI.
+  set(guiObj,'Enable','on');
+  
+end
+
+function sisterPairingCB(hObj,event)
+  hs = handles;
+  % check if a jobset is loaded
+  if ~isfield(hs,'jobset') || isempty(hs.jobset)
+    errorbox('No job yet created or loaded.')
+    return
+  end
+  kitLog('Starting manual pairing of sister kinetochores')
+  
+  % Turn off the GUI during processing.
+  guiObj=findobj(handles.fig,'Enable','on');
+  set(guiObj,'Enable','inactive');
+  
+  kitManualPairSisters(hs.jobset);
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
