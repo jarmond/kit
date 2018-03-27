@@ -50,7 +50,7 @@ if isempty(opts.subset)
 else
   nSpots = length(opts.subset);
 end
-opts.imageSize = job.ROI(job.index).cropSize;
+opts.imageSize = job.ROI.cropSize;
 
 % set up figure
 figure(1); clf
