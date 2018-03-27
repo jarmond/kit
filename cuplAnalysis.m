@@ -417,7 +417,7 @@ function saveCB(hObj,event)
 end
 
 function closeCB(hObj,event)
-  close(gcf);
+  uiresume(gcf);
 end
 
 function job = loadActiveJob()
