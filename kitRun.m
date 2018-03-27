@@ -158,10 +158,7 @@ function newRunCB(hObj,event)
   guiObj=findobj(handles.fig,'Enable','on');
   set(guiObj,'Enable','inactive');
   
-  % Small GUI to ask user which type of job to set up.
-  mode = chooseMode;
-  
-  jobset = kitSetupJob(mode);
+  jobset = kitSetupJob;
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
@@ -372,62 +369,6 @@ function closeCB(hObj,event)
 end
 
 %% Other functions
-
-function mode = chooseMode()
-  
-  % List all modes.
-  allModes = {'Tracking','Single timepoint','Chromatic shift'};
-  allModesJS = {'zandt','zonly','chrshift'};
-    
-  % Create figure.
-  figw = 50;
-  figh = 5;
-  f = figure('Resize','off','Units','characters','Position',[100 35 figw figh]);
-  f.DockControls = 'off';
-  f.MenuBar = 'none';
-  f.Name = 'Choose a job type';
-  f.NumberTitle = 'off';
-  f.IntegerHandle = 'off';
-  f.ToolBar = 'none';
-  
-  % Define font sizes.
-  smallfont = 12;
-  
-  % Set some standard positions and distances.
-  h = 1.5; %height
-  lh = 1.5*h; %large height
-  dx = 2.5; %horizontal shift
-  ddx = 0.5; %small horizontal shift
-  toplabely = figh; %top-most point
-  
-  % Set up initial positions.
-  x = dx;
-  w = figw-2*dx;
-  y = toplabely-lh;
-  
-  % Print choices.
-  labw = w;
-  label(f,'Choose which type of job you wish to set up:',[x y labw h],smallfont);
-  y = y-lh;
-  btnw = (w-2*ddx)/3; btnh = 2;
-  for i=1:3
-    button(f,allModes{i},[x y btnw btnh],@chooseModeCB,smallfont);
-    x = x+(btnw+ddx);
-  end
-  
-  movegui(f,'center');
-  uiwait(f);
-  
-  % Get the mode for the jobset.
-  mode = allModesJS{mode};
-    
-  function chooseModeCB(hObj,event)
-    mode = find(cellfun(@(x) strcmp(x,hObj.String),allModes));
-    uiresume(f);
-    close(f);
-  end
-  
-end
 
 function errorbox(msg)
     h=msgbox(msg,'Error','Error','modal');

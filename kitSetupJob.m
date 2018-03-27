@@ -1,4 +1,4 @@
-function jobset=kitSetupJob(mode,jobset)
+function jobset=kitSetupJob(jobset)
 % KITSETUPJOB Display a GUI to set up a job.
 %
 % Created by: J. W. Armond
@@ -8,18 +8,13 @@ function jobset=kitSetupJob(mode,jobset)
 % Download BioFormats, if required.
 kitDownloadBioFormats();
 
-if nargin<2 || isempty(jobset)
+if nargin<1 || isempty(jobset)
   jobset = kitDefaultOptions();
+  handles.mode = chooseMode;
+else
+  handles.mode = jobset.options.jobProcess;
 end
-
-if nargin<1 || isempty(mode)
-  mode = 'zandt'; % can also be 'zonly' or 'chrshift'
-elseif isstruct(mode) && isfield(mode,'kit') && mode.kit
-    jobset = mode;
-    mode = jobset.options.jobProcess;
-end
-handles.mode = mode;
-jobset.options.jobProcess = mode;
+jobset.options.jobProcess = handles.mode;
 
 % Upgrade jobset, if required.
 if ~isfield(jobset,'jobsetVersion') || ...
@@ -33,8 +28,8 @@ end
 
 coordSystemValues = {'Plane fit','Image moments','Centre of mass','None'};
 coordSystemValuesJS = {'plate','image','com','none'};
-spotDetectValues = {'Histogram','Manual'};
-spotDetectValuesJS = {'histcut','manual'};
+spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual'};
+spotDetectValuesJS = {'histcut','adaptive','wavelet','manual'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 maskValues = {'Circle','Semi-circle','Cone'};
@@ -90,7 +85,7 @@ function hs = createControls()
   % Movie selection sub-title.
   labx = dx; y = toplabely-lh;
   labw = colw(1)-2*dx;
-  t = label(hs.fig,'1. Movie selection',[labx y labw h],largefont);
+  t = label(hs.fig,'1. Movie and ROI selection',[labx y labw h],largefont);
   t.FontWeight = 'bold';
   y = y-lh;
   
@@ -348,6 +343,8 @@ function hs = createControls()
       taby = taby-h;
       hs.csDistanceText = label(hs.tabs{tabID},'Min spot separation (um)',[labx taby labw h],tinyfont);
       hs.csDistance = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
+  else
+      hs.chromaticShift.Value = 0;
   end
   
   if ~strcmp(hs.mode,'chrshift')
@@ -680,7 +677,7 @@ function cropROICB(hObj,event)
         jobset.ROI(r).cropSize = cropSize(j,:);
       end
     end
-    hwait = waitbar(i/length(v),waitmsg);
+    waitbar(i/length(v),waitmsg);
   end
   populateROIBox();
   close(hwait);
@@ -710,7 +707,7 @@ function addROICB(hObj,event)
   hwait = waitbar(0,waitmsg);
   % Loop over selected movies.
   for i=1:length(v)
-    [md,~]=kitOpenMovie(fullfile(movieDir,movieFiles{v(i)}),'ROI');
+    [md,~]=kitOpenMovie(fullfile(movieDir,movieFiles{v(i)}));
     crop = [1 1 md.frameSize(1:2)];
     cropSize = md.frameSize(1:3);
     r = length(jobset.ROI) + 1;
@@ -907,7 +904,7 @@ function chromaticShiftCB(hObj,event)
     handles.csVectText.Enable = 'on';
     handles.csJobsetText.Enable = 'on';
     handles.csOrderText.Enable = 'on';
-    for iChan = 1:3
+    for iChan = 1:(3-1)
       handles.csVect{iChan}.Enable = 'on';
       handles.csArrow{iChan}.Enable = 'on';
       handles.csJobset{iChan}.Enable = 'on';
@@ -931,7 +928,7 @@ function chromaticShiftCB(hObj,event)
     handles.csVectText.Enable = 'off';
     handles.csJobsetText.Enable = 'off';
     handles.csOrderText.Enable = 'off';
-    for iChan = 1:3
+    for iChan = 1:(3-1)
       handles.csVect{iChan}.Enable = 'off';
       handles.csArrow{iChan}.Enable = 'off';
       handles.csJobset{iChan}.Enable = 'off';
@@ -965,17 +962,17 @@ function csOrderCB(hObj,event)
   if isequal(file,0)
     return
   end
-  for i=1:3
+  for i=1:(3-1)
     testPos(i) = handles.csJobset{i}.Position(2);
   end
   chan = find(testPos == hObj.Position(2));
   handles.csJobset{chan}.String = file;
   file = fullfile(path,file);
-  jobset.options.chrShift.jobset{1,chan} = file;
-  handles.csOrder{chan,1}.Enable = 'on'; % LOOK AT THIS, WHY AM I DOING THIS?
-  handles.csOrder{chan,1}.String = jobset.options.chrShift.chanOrder{1,chan}(1);
+  jobset.options.chrShift.jobset{1,chan+1} = file;
+  handles.csOrder{chan,1}.Enable = 'on';
+  handles.csOrder{chan,1}.String = jobset.options.chrShift.chanOrder{1,chan+1}(1);
   handles.csOrder{chan,2}.Enable = 'on';
-  handles.csOrder{chan,2}.String = jobset.options.chrShift.chanOrder{1,chan}(2);
+  handles.csOrder{chan,2}.String = jobset.options.chrShift.chanOrder{1,chan+1}(2);
 end
 
 function intensityOptionsCB(hObj,event)
@@ -1137,7 +1134,7 @@ function updateJobset()
     if handles.autoRadii.Value
       opts.autoRadiidt = str2double(handles.autoRadiidt.String);
 %       opts.autoRadiiAvgDisp = str2double(handles.autoRadiiAvgDisp.String)/60;
-      r = computeSearchRadii(opts.autoRadiidt,opts.autoRadiiAvgDisp);
+      r = computeSearchRadii(opts.autoRadiidt,str2double(handles.autoRadiiAvgDisp)/60);
     else
       opts.autoRadiidt = [];
       r = zeros(2,1);
@@ -1169,7 +1166,7 @@ function updateJobset()
     chrShift = opts.chrShift;
     chrShift.minSpots = str2double(handles.csMinSpots.String);
     chans = setdiff(1:3,handles.spotDetectChNum);
-    for iChan = 1:3
+    for iChan = 1:(3-1)
       jChan = chans(iChan);
       chrShift.chanOrder{opts.coordSystemChannel,jChan}(1) = str2double(handles.csOrder{iChan,1}.String);
       chrShift.chanOrder{opts.coordSystemChannel,jChan}(2) = str2double(handles.csOrder{iChan,2}.String);
@@ -1246,6 +1243,62 @@ function cellResult = getChromaticShiftResults(chrShift)
       cellResult{i,j} = result; cellResult{j,i} = result.*[-1 -1 -1 1 1 1];
     end
   end       
+end
+
+function mode = chooseMode()
+  
+  % List all modes.
+  allModes = {'Tracking','Single timepoint','Chromatic shift'};
+  allModesJS = {'zandt','zonly','chrshift'};
+    
+  % Create figure.
+  figw = 50;
+  figh = 5;
+  f = figure('Resize','off','Units','characters','Position',[100 35 figw figh]);
+  f.DockControls = 'off';
+  f.MenuBar = 'none';
+  f.Name = 'Choose a job type';
+  f.NumberTitle = 'off';
+  f.IntegerHandle = 'off';
+  f.ToolBar = 'none';
+  
+  % Define font sizes.
+  smallfont = 12;
+  
+  % Set some standard positions and distances.
+  h = 1.5; %height
+  lh = 1.5*h; %large height
+  dx = 2.5; %horizontal shift
+  ddx = 0.5; %small horizontal shift
+  toplabely = figh; %top-most point
+  
+  % Set up initial positions.
+  x = dx;
+  w = figw-2*dx;
+  y = toplabely-lh;
+  
+  % Print choices.
+  labw = w;
+  label(f,'Choose which type of job you wish to set up:',[x y labw h],smallfont);
+  y = y-lh;
+  btnw = (w-2*ddx)/3; btnh = 2;
+  for i=1:3
+    button(f,allModes{i},[x y btnw btnh],@chooseModeCB,smallfont);
+    x = x+(btnw+ddx);
+  end
+  
+  movegui(f,'center');
+  uiwait(f);
+  
+  % Get the mode for the jobset.
+  mode = allModesJS{mode};
+    
+  function chooseModeCB(hObj,event)
+    mode = find(cellfun(@(x) strcmp(x,hObj.String),allModes));
+    uiresume(f);
+    close(f);
+  end
+  
 end
 
 end % kitGUI
