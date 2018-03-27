@@ -85,7 +85,10 @@ maskWarning=0;
 
 %% Get intensities
 
-for iChan = find(opts.execute)
+prog = kitProgress(0);
+chans = find(opts.execute);
+nChans = length(chans);
+for iChan = chans
 
     % read whole movie
     if length(job.ROI)>1
@@ -94,7 +97,6 @@ for iChan = find(opts.execute)
       movie = kitReadWholeMovie(reader, metadata, iChan, job.ROI.crop);
     end
 
-    prog = kitProgress(0);
     for t=1:nFrames
 
         stack = movie(:,:,:,t);
@@ -222,7 +224,7 @@ for iChan = find(opts.execute)
         end
 
       % Report progress.
-      prog = kitProgress(t/nFrames, prog);
+      prog = kitProgress((t/nFrames)*(iChan/nChans), prog);
     end
 
     if opts.photobleachCorrect && nFrames>1
