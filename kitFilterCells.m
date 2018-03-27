@@ -285,10 +285,10 @@ function [allInts, allIdxs] = getIntensities(jobs,chans)
       cI = jobs{iJob}.dataStruct{c}.cellInt;
         
       % correct intensities for background  
-      sI.intensity_mean = sI.intensity_mean - cI.back;
+      sI.intensity(:,iChan) = sI.intensity(:,iChan) - cI.back;
       
       % provide intensities, and compile
-      ints = sI.intensity_mean;
+      ints = sI.intensity(:,iChan);
       allInts{iChan} = [allInts{iChan}; ints];
       
       % get number of spots
