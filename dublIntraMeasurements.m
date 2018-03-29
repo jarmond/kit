@@ -123,8 +123,7 @@ else
 end
 
 % predesignate error arrays
-noDS = [];
-noSpot = [];
+noFail = [];
 noSis = [];
 noSkip = [];
 
@@ -147,7 +146,7 @@ for iExpt = 1:numExpts
       movNum = theseMovies{iMov}.index;
       % check whether there is data in this movie
       if ~isfield(theseMovies{iMov},'dataStruct')
-        noDS = [noDS; iExpt movNum];
+        noFail = [noFail; iExpt movNum];
         continue
       end
       
@@ -156,8 +155,9 @@ for iExpt = 1:numExpts
       dSouter = theseMovies{iMov}.dataStruct{chanVect(2)};
       
       % check whether the movie failed
-      if ~isfield(dSinner,'failed') || dSinner.failed || ~isfield(dSouter,'failed') || dSouter.failed
-        noSpot = [noSpot; iExpt movNum];
+      if (isfield(dSinner,'failed') && dSinner.failed) || (isfield(dSouter,'failed') && dSouter.failed) ...
+              || (~isfield(dSinner,'initCoord') && ~isfield(dSouter,'initCoord'))
+        noFail = [noFail; iExpt movNum];
         continue
       end
       
@@ -173,9 +173,24 @@ for iExpt = 1:numExpts
       % check if there is a plate fit
       plane = (isfield(dSinner,'planeFit') && ~isempty(dSinner.planeFit) && ~isempty(dSinner.planeFit.planeVectors));
       
-      % get initCoord structures
-      iCinner = dSinner.initCoord;
-      iCouter = dSouter.initCoord;
+      % get initCoord structures - if one doesn't exist trade for an empty
+      % initCoord
+      if ~isfield(dSinner,'initCoord')
+        iCouter = dSouter.initCoord;
+        iC = iCouter;
+        iC.allCoord(:) = NaN; iC.allCoordPix(:) = NaN; iC.amp(:) = NaN; iC.bg(:) = NaN;
+        iCinner = iC;
+        clear iC
+      elseif ~isfield(dSouter,'initCoord')
+        iCinner = dSinner.initCoord;
+        iC = iCinner;
+        iC.allCoord(:) = NaN; iC.allCoordPix(:) = NaN; iC.amp(:) = NaN; iC.bg(:) = NaN;
+        iCouter = iC;
+        clear iC
+      else
+        iCinner = dSinner.initCoord;  
+        iCouter = dSouter.initCoord;
+      end
       
       % get xyz correction for centralisation
       if opts.centralise
@@ -736,16 +751,16 @@ if ~isempty(noSkip)
     fprintf('    Exp %i, Mov %i\n',noSkip(iCell,1),noSkip(iCell,2));
   end
 end
-if ~isempty(noDS)
+if ~isempty(noFail)
   fprintf('\nThe following cells failed during spot detection:\n');
-  for iCell = 1:size(noDS,1)
-    fprintf('    Exp %i, Mov %i\n',noDS(iCell,1),noDS(iCell,2));
+  for iCell = 1:size(noFail,1)
+    fprintf('    Exp %i, Mov %i\n',noFail(iCell,1),noFail(iCell,2));
   end
 end
-if ~isempty(noSpot)
+if ~isempty(noFail)
   fprintf('\nThe following cells found no spots:\n');
-  for iCell = 1:size(noSpot,1)
-    fprintf('    Exp %i, Mov %i\n',noSpot(iCell,1),noSpot(iCell,2));
+  for iCell = 1:size(noFail,1)
+    fprintf('    Exp %i, Mov %i\n',noFail(iCell,1),noFail(iCell,2));
   end
 end
 if ~isempty(noSis)
