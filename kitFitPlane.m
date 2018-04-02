@@ -97,10 +97,8 @@ minSpotsInFrame = 3;
 dataProperties = dataStruct.dataProperties;
 if ~job.metadata.is3D
     use2D = 1;
-elseif isfield(dataProperties,'planeFitParam')
-    use2D = dataProperties.planeFitParam.use2D;
 else
-    use2D = 0;
+    use2D = opts.force2DPlaneFit
 end
 
 if strcmp(opts.coordSystem, 'image')
