@@ -98,7 +98,7 @@ dataProperties = dataStruct.dataProperties;
 if ~job.metadata.is3D
     use2D = 1;
 else
-    use2D = opts.force2DPlaneFit
+    use2D = opts.force2DPlaneFit;
 end
 
 if strcmp(opts.coordSystem, 'image')
