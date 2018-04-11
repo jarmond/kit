@@ -1,15 +1,19 @@
 function [job,userStatus] = pairSpots(job,opts)
 % PAIRSPOTS Manual pairing of spots in single timepoint z-stacks.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
+
+% Check form of ROIs
+if length(job.ROI)>1
+    job.ROI = job.ROI(job.index);
+end
 
 %% GET REQUIRED IMAGE AND METADATA
-[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
-movieIdx = job.index;
+[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
 
 % get crop information, if any
-crop = job.ROI(movieIdx).crop;
-cropSize = job.ROI(movieIdx).cropSize;
+crop = job.ROI.crop;
+cropSize = job.ROI.cropSize;
 if isempty(crop)
     cropSize = md.frameSize;
 end
