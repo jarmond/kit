@@ -7,6 +7,7 @@ function job=kitLoadJob(jobsetorname, index)
 %    JOB = KITLOADJOB(FILENAME) Load tracking data by job FILENAME.
 %
 % Copyright (c) Jonathan Armond 2016
+% Edited: C. A. Smith 2018
 
 if ischar(jobsetorname)
   outputName = jobsetorname;
@@ -27,9 +28,11 @@ if ischar(jobsetorname)
   % Use directory of job file.
   pathstr = fileparts(jobsetorname);
   job.movieDirectory = pathstr;
-  job.filename = jobsetorname;
+  job.filename = jobsetorname;  
 else
   job.movieDirectory = jobset.movieDirectory;
   job.filename = jobset.filename;
 end
+job.ROI = job.ROI(index);
+job.index = index;
 job.output = outputName;
