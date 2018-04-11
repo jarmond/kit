@@ -25,7 +25,7 @@ cropRange = 1.25*repmat(opts.maxSisSep,1,3)./pixelSize;
 cropRange = round(cropRange);
 chrShift = job.options.chrShift.result;
 % find chrShift rounded to nearest pixel
-pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},4),'UniformOutput',0);
+pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},size(chrShift,1)),'UniformOutput',0);
 
 %% GET IMAGE AND COORDINATE INFORMATION
 
