@@ -33,6 +33,8 @@ else
   job.movieDirectory = jobset.movieDirectory;
   job.filename = jobset.filename;
 end
-job.ROI = job.ROI(index);
+if length(job.ROI)>1
+    job.ROI = job.ROI(index);
+end
 job.index = index;
 job.output = outputName;
