@@ -441,16 +441,16 @@ for iExpt = 1:numExpts
               for iFrame = 1:nFrames
                 % inner mean int
                 temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
-                intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                intsInnerMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),1);
                 % inner max int
                 temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
-                intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                intsInnerMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),1);
                 % outer mean int
                 temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
-                intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                intsOuterMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),1);
                 % outer max int
                 temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
-                intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),1);
+                intsOuterMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),1);
               end
             else
               switch opts.intRefMarker
@@ -458,46 +458,46 @@ for iExpt = 1:numExpts
                   for iFrame = 1:nFrames
                     % inner mean int
                     temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
-                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    intsInnerMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
                     % inner max int
                     temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
-                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    intsInnerMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
                     % outer mean int
                     temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
-                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    intsOuterMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
                     % outer max int
                     temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
-                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    intsOuterMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
                   end
                 case 'inner'
                   for iFrame = 1:nFrames
                     % inner mean int
                     temp = cat(2,sIinner(iFrame).intensity) - innerBg(iFrame,1);
-                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    intsInnerMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
                     % inner max int
                     temp = cat(2,sIinner(iFrame).intensity_max) - innerBg(iFrame,1);
-                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    intsInnerMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
                     % outer mean int, relative to inner
                     temp = cat(2,sIinner(iFrame).intensity) - outerBg(iFrame,1);
-                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    intsOuterMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
                     % outer max int, relative to inner
                     temp = cat(2,sIinner(iFrame).intensity_max) - outerBg(iFrame,1);
-                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    intsOuterMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
                   end
                 case 'outer'
                   for iFrame = 1:nFrames
                     % inner mean int, relative to outer
                     temp = cat(2,sIouter(iFrame).intensity) - innerBg(iFrame,1);
-                    intsInnerMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    intsInnerMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
                     % inner max int, relative to outer
                     temp = cat(2,sIouter(iFrame).intensity_max) - innerBg(iFrame,1);
-                    intsInnerMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
+                    intsInnerMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(1));
                     % outer mean int
                     temp = cat(2,sIouter(iFrame).intensity) - outerBg(iFrame,1);
-                    intsOuterMean(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    intsOuterMean(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
                     % outer max int
                     temp = cat(2,sIouter(iFrame).intensity_max) - outerBg(iFrame,1);
-                    intsOuterMax(iFrame,:) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
+                    intsOuterMax(iFrame,~isnan(spotIDs)) = temp(spotIDs(~isnan(spotIDs)),chanVect(2));
                   end
               end
             end
