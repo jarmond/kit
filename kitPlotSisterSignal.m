@@ -6,13 +6,11 @@ function kitPlotSisterSignal(job,sigchannel,varargin)
 %
 %    Options, defaults in {}:-
 %
-%    channel: {coordinate system channel} or number. Tracking channel for
-%           which tracks are plotted.
+%    channel: {1} or number. Tracking channel for which tracks are plotted.
 %
-%    minLength: {0.75}. Set to percentage of track length as threshold for
-%           plotting.
+%    minLength: {0.75}. set to percentage of track length as threshold for plotting.
 %
-%    subset: {[]}. Subset of tracks.
+%    sel: {[]}. subset of tracks.
 %
 %    directionality: {0}. Set to 1 to plot AP/P sections.
 %
@@ -23,8 +21,8 @@ if nargin<2
 end
 
 % Set defaults
-opts.channel = job.options.coordSystemChannel;
-opts.subset = [];
+opts.channel = 1;
+opts.sel = [];
 opts.minLength = 0.75;
 opts.directionality = 0;
 
@@ -35,22 +33,20 @@ ds = job.dataStruct{opts.channel};
 sisterList = ds.sisterList;
 trackPairs = sisterList(1).trackPairs;
 trackList = ds.trackList;
-spotInt = job.dataStruct{sigchannel}.spotInt;
+spotInt = ds.spotInt;
 t = job.metadata.frameTime(1,:)';
 
 if opts.minLength > 0
   coords = horzcat(sisterList.coords1);
   coords = coords(:,1:6:end); % X coordinate.
   nancount = sum(isnan(coords),1);
-  opts.subset = find(nancount < job.metadata.nFrames*(1-opts.minLength));
-elseif ~isempty(opts.subset)
-  opts.subset = 1:length(sisterList);
+  opts.sel = find(nancount < job.metadata.nFrames*(1-opts.minLength));
+elseif ~isempty(opts.sel)
+  opts.sel = 1:length(sisterList);
 end
-sisterList = sisterList(opts.subset);
-trackPairs = trackPairs(opts.subset,:);
+sisterList = sisterList(opts.sel);
+trackPairs = trackPairs(opts.sel,:);
 nSisters = length(sisterList);
-
-intdat = nan(length(spotInt),2);
 
 figure;
 n=nSisters;
@@ -60,16 +56,12 @@ clf;
 for i=1:nSisters
   subplot(fig_m,fig_n,i);
   pair = trackPairs(i,1:2);
+  ints = cat(3,spotInt.intensity);
+  ints = squeeze(ints(:,sigchannel,:));
   
-  % Get intensity data.
-  for j=1:length(spotInt)
-    intdat(j,:) = spotInt(j).intensity(pair)';
-  end
-
   % Plot sister tracks.
   plotyy([t t],[sisterList(i).coords1(:,1) sisterList(i).coords2(:,1)],...
-         [t t],intdat);
-         %[t t],[spotInt(pair(1)).intensity(:,sigchannel) spotInt(pair(2)).intensity(:,sigchannel)])
+         [t t],[ints(pair(1),:)' ints(pair(2),:)'])
   if opts.directionality
     % Plot directionality.
     hold on;

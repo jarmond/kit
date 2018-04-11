@@ -3,7 +3,7 @@ function kitRun(desc)
 %
 %  Run kitRun('help') for a more descriptive run screen.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 % Check whether user has asked for help.
 if nargin<1
@@ -92,7 +92,7 @@ function hs = createControls(desc)
   
   % Running tools sub-title.
   x = dx; labw = w;
-  t = label(hs.fig,'2. Manually check data',[x y labw h],medfont);
+  t = label(hs.fig,'2. Manually check and process data',[x y labw h],medfont);
   t.FontWeight = 'bold';
   y = y-lh;
   
@@ -110,10 +110,7 @@ function hs = createControls(desc)
   x = x+btnw+ddx;
   hs.cellFilterBtn = button(hs.fig,'Cell filtering',[x y btnw btnh],@filterCellsCB);
   x = x+btnw+ddx;
-  hs.sisterPairingBtn = button(hs.fig,'Sister pairing',[x y btnw btnh],@sisterPairingCB);
-  x = x+btnw+ddx;
-  hs.categoriesBtn = button(hs.fig,'Categorise spots',[x y btnw btnh],@categoriseCB);
-  hs.categoriesBtn.Enable = 'off';
+  hs.sisterPairBtn = button(hs.fig,'Sister pairing',[x y btnw btnh],@sisterPairingCB);
   y = y-lh;
   
   % Analysis tools sub-title.
@@ -136,9 +133,6 @@ function hs = createControls(desc)
   x = x+(btnw+ddx);
   hs.dublBtn = button(hs.fig,'DubL analysis',[x y btnw btnh],@dublCB);
   hs.dublBtn.Enable = 'off';
-  x = x+(btnw+ddx);
-  hs.intensityBtn = button(hs.fig,'Intensity analysis',[x y btnw btnh],@intensityCB);
-  hs.intensityBtn.Enable = 'off';
   
   % Close button.
   x = figw-btnw-dx; y = 1;
@@ -164,10 +158,7 @@ function newRunCB(hObj,event)
   guiObj=findobj(handles.fig,'Enable','on');
   set(guiObj,'Enable','inactive');
   
-  % Small GUI to ask user which type of job to set up.
-  mode = chooseMode;
-  
-  jobset = kitSetupJob(mode);
+  jobset = kitSetupJob;
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
@@ -182,7 +173,6 @@ function newRunCB(hObj,event)
   maxMovLen = 55;
   filename = strshorten(filename,maxMovLen);
   hs.jobsetLab.String = filename;
-  hs.runBtn.String = 'Run';
   % back up all information
   hs.jobset = jobset;
   handles = hs;
@@ -330,7 +320,7 @@ function executeCB(hObj,event)
   pause(1);
   
   % Run the job.
-  kitRunJob(handles.jobset,'tasks',handles.jobset.options.tasks);
+  kitRunJob(handles.jobset);%,'tasks',handles.jobset.options.tasks);
   
   % We turn back on the interface
   set(guiObj,'Enable','on');
@@ -338,13 +328,22 @@ function executeCB(hObj,event)
 end
 
 function cuplCB(hObj,event)
+  hs = handles;
+  % check if a jobset is loaded
+  if ~isfield(hs,'jobset') || isempty(hs.jobset)
+    errorbox('No job yet created or loaded.')
+    return
+  elseif ~strcmp(hs.jobset.options.jobProcess,'zandt')
+    errorbox('Loaded jobset is not a tracking job.')
+    return
+  end
   kitLog('Starting CupL analysis')
   
   % Turn off the GUI during processing.
-  guiObj=findobj(handles.fig,'Enable','on');
+  guiObj=findobj(hs.fig,'Enable','on');
   set(guiObj,'Enable','inactive');
   
-  cuplAnalysis(handles.jobset);
+  cuplAnalysis(hs.jobset);
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
@@ -370,62 +369,6 @@ function closeCB(hObj,event)
 end
 
 %% Other functions
-
-function mode = chooseMode()
-  
-  % List all modes.
-  allModes = {'Tracking','Single timepoint','Chromatic shift'};
-  allModesJS = {'zandt','zonly','chrshift'};
-    
-  % Create figure.
-  figw = 50;
-  figh = 5;
-  f = figure('Resize','off','Units','characters','Position',[100 35 figw figh]);
-  f.DockControls = 'off';
-  f.MenuBar = 'none';
-  f.Name = 'Choose a job type';
-  f.NumberTitle = 'off';
-  f.IntegerHandle = 'off';
-  f.ToolBar = 'none';
-  
-  % Define font sizes.
-  smallfont = 12;
-  
-  % Set some standard positions and distances.
-  h = 1.5; %height
-  lh = 1.5*h; %large height
-  dx = 2.5; %horizontal shift
-  ddx = 0.5; %small horizontal shift
-  toplabely = figh; %top-most point
-  
-  % Set up initial positions.
-  x = dx;
-  w = figw-2*dx;
-  y = toplabely-lh;
-  
-  % Print choices.
-  labw = w;
-  label(f,'Choose which type of job you wish to set up:',[x y labw h],smallfont);
-  y = y-lh;
-  btnw = (w-2*ddx)/3; btnh = 2;
-  for i=1:3
-    button(f,allModes{i},[x y btnw btnh],@chooseModeCB,smallfont);
-    x = x+(btnw+ddx);
-  end
-  
-  movegui(f,'center');
-  uiwait(f);
-  
-  % Get the mode for the jobset.
-  mode = allModesJS{mode};
-    
-  function chooseModeCB(hObj,event)
-    mode = find(cellfun(@(x) strcmp(x,hObj.String),allModes));
-    uiresume(f);
-    close(f);
-  end
-  
-end
 
 function errorbox(msg)
     h=msgbox(msg,'Error','Error','modal');

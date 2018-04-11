@@ -115,7 +115,7 @@ pdfOut = strcmp(upper(opts.codec),'PDF');
 colors = presetColors();
 
 % Open movie.
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.movie),job.metadata);
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
 
 h = figure;
 clf;
@@ -180,7 +180,7 @@ if opts.zoomTrack > 0
       if ~isnan(track(i).coords(j,1))
         cds = track(i).coords(j,1:2);
         cds = cds ./ job.metadata.pixelSize(1:2);
-        cds = cds + job.cropSize([2 1])/2;
+        cds = cds + job.ROI.cropSize([2 1])/2;
         coords(j,:) = cds;
       end
     end
@@ -212,10 +212,10 @@ if size(opts.saturate,1)<md.nChannels
 end
 
 for i=1:md.nFrames
-  rgbImg = zeros([job.cropSize(dims), 3]);
+  rgbImg = zeros([job.ROI.cropSize(dims), 3]);
   for c=1:min(md.nChannels, maxMergeChannels)
     % Read stack.
-    img = kitReadImageStack(reader, md, i, c, job.crop, opts.normalize);
+    img = kitReadImageStack(reader, md, i, c, job.ROI.crop, opts.normalize);
 
     % Max project.
     img = max(img, [], 3);

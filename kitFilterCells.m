@@ -2,7 +2,7 @@ function kitFilterCells(jobset)
 % KITFILTERCELLS(EXPTS) Allows the user to remove cells whose intensities
 % do not represent the general distribution from the full dataset.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 % suppress docking
 dockStatus = get(0,'DefaultFigureWindowStyle');
@@ -285,10 +285,10 @@ function [allInts, allIdxs] = getIntensities(jobs,chans)
       cI = jobs{iJob}.dataStruct{c}.cellInt;
         
       % correct intensities for background  
-      sI.intensity_mean = sI.intensity_mean - cI.back;
+      sI.intensity(:,iChan) = sI.intensity(:,iChan) - cI.back;
       
       % provide intensities, and compile
-      ints = sI.intensity_mean;
+      ints = sI.intensity(:,iChan);
       allInts{iChan} = [allInts{iChan}; ints];
       
       % get number of spots

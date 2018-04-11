@@ -1,7 +1,7 @@
-function kitShowAllSpots(job,varargin)
-% KITSHOWALLSPOTS Plots images of each spot in a movie.
+function kitShowSpots(job,varargin)
+% KITSHOWSPOTS Plots images of each spot in a movie.
 %
-%    KITSHOWALLSPOTS(JOB,...) Plots coordinates over images of each
+%    KITSHOWSPOTS(JOB,...) Plots coordinates over images of each
 %    spot localised in a given channel at a given timepoint.
 %
 %    Options, defaults in {}:-

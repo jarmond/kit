@@ -76,7 +76,6 @@ warningState = warning;
 warning off stats:lillietest:OutOfRangeP
 
 opts = job.options;
-nTimePoints = job.metadata.nFrames;
 
 % threshold for an acceptable eigenvalue ratio
 minEigenValRatio1 = 3;
@@ -87,12 +86,12 @@ minEigenValRatio2 = 3;
 rankNNearestNeighbors = 10;
 
 % minimal number of consecutive frames in a movie that have stable enough
-% eigenvectors for plane rotation estimation - if less than 5 timepoints,
-% force plane fitting
+% eigenvectors for plane rotation estimation
+nTimePoints = job.metadata.nFrames;
 minConsecFrames = min(5,nTimePoints-1);
 
 % minimum number of spots to attempt to fit plane to
-minSpotsInFrame = 10;
+minSpotsInFrame = 3;
 
 %determine whether to use 2D projection instead of 3D
 %the 2D approximation only works in late prometaphase and metaphase
@@ -114,7 +113,6 @@ end
 % Get coordinates.
 if isfield(dataStruct,'initCoord')
   initCoord = dataStruct.initCoord;
-%   initCoord.allCoord = initCoord(~isnan(initCoord(:,1))); % remove pre-filtered spots
   spotsFound = 1;
 else
   % Fake initCoord if none. This will be case for image moment coordinate
@@ -151,7 +149,7 @@ end
 
 % loop through timepoints. Get covariance of point cloud, and the
 % corresponding eigenvalues. Label frames that have sufficient anisotropy.
-
+nSpots = zeros(nTimePoints,1);
 eigenValues = zeros(nTimePoints,probDim);
 eigenVectors = zeros(probDim,probDim,nTimePoints);  %vectors in cols
 meanCoord = zeros(nTimePoints,probDim);
@@ -162,8 +160,7 @@ potFrames = [];
 for t=1:nTimePoints
   
   % Get number of spots.
-  nSpots = size(initCoord(t).allCoord,1);
-    
+  nSpots(t) = size(initCoord(t).allCoord,1);  
   % Make an initial outlier detection.
   if spotsFound && nSpots(t) < minSpotsInFrame
     % No spots. Set origin to 0.
@@ -193,7 +190,7 @@ for t=1:nTimePoints
     % Get data for eigenRatio, subsequent plane fitting.
     if useImageCov
       img = kitReadImageStack(reader,job.metadata,t,...
-                              opts.coordSystemChannel,job.crop);
+                              opts.coordSystemChannel,job.ROI.crop);
 
       % Keep only values above chosen percentile. This eliminates the
       % background intensity and leaves mostly the spots.
@@ -207,9 +204,9 @@ for t=1:nTimePoints
           eigenCalcFromImg(img);
 
       % Calculate centroid from blend of all channels to increase stability.
-      img = zeros(job.cropSize);
+      img = zeros(job.ROI.cropSize);
       for i=1:job.metadata.nChannels
-        img = imadd(img, kitReadImageStack(reader,job.metadata,t,i,job.crop));
+        img = imadd(img, kitReadImageStack(reader,job.metadata,t,i,job.ROI.crop));
       end
       img = img / job.metadata.nChannels;
 

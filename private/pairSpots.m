@@ -1,7 +1,12 @@
 function [job,userStatus] = pairSpots(job,opts)
 % PAIRSPOTS Manual pairing of spots in single timepoint z-stacks.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
+
+% Check form of ROIs
+if length(job.ROI)>1
+    job.ROI = job.ROI(job.index);
+end
 
 %% GET REQUIRED IMAGE AND METADATA
 [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
@@ -20,7 +25,7 @@ cropRange = 1.25*repmat(opts.maxSisSep,1,3)./pixelSize;
 cropRange = round(cropRange);
 chrShift = job.options.chrShift.result;
 % find chrShift rounded to nearest pixel
-pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},4),'UniformOutput',0);
+pixChrShift = cellfun(@times,chrShift,repmat({[pixelSize pixelSize]},size(chrShift,1)),'UniformOutput',0);
 
 %% GET IMAGE AND COORDINATE INFORMATION
 

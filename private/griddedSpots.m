@@ -34,16 +34,27 @@ warning('off','all');
 dS = job.dataStruct{opts.channel};
 nSpots = size(dS.initCoord.allCoord,1);
 opts.imageSize = job.ROI.cropSize;
+if isfield(job,'nROIs')
+    nROIs = job.nROIs;
+elseif length(job.ROI)>1
+    nROIs = length(job.ROI);
+else
+    nROIs = NaN;
+end
 
 % set up figure
 figure(1); clf
 fig_n=ceil(sqrt(nSpots));
 fig_m=ceil(nSpots/fig_n);
 
-% open movie
-[~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'ROI');
-% read stack
-img = kitReadImageStack(reader,job.metadata,1,opts.channel,job.ROI.crop,0);
+% open movie and read stack
+if length(job.ROI)>1
+    [~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI(job.index).movie),'ROI');
+    img = kitReadImageStack(reader,job.metadata,1,opts.channel,job.ROI(job.index).crop,0);
+else
+    [~,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'ROI');
+    img = kitReadImageStack(reader,job.metadata,1,opts.channel,job.ROI.crop,0);
+end
 
 % make empty gridded image
 gridw = fig_m*imgWidth + (fig_m+1)*gridsep;
@@ -92,7 +103,7 @@ end
 imshow(gridImg,'Border','tight');
 hold on
 scatter(allCoords(:,1),allCoords(:,2),15*fig_m,'k','x')
-figtit = sprintf('Spot filtering: Image %i of %i, channel %i',job.index,job.nROIs,opts.channel);
+figtit = sprintf('Spot filtering: Image %i of %i, channel %i',job.index,nROIs,opts.channel);
 set(gcf,'Resize','off','Name',figtit,'Units','characters',...
     'Position',[70 35 80 50],'NumberTitle','off');
 movegui(gcf,'center');

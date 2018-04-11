@@ -271,7 +271,7 @@ function allSpotsCB(hObj,event)
   chan = job.options.coordSystemChannel;
   
   updateStatus('Generating all spots');
-  kitShowAllSpots(job,'channel',chan,'timePoint',allSpotsTp);
+  kitShowSpots(job,'channel',chan,'timePoint',allSpotsTp);
   updateStatus('');
 end
 
@@ -281,7 +281,7 @@ function allSisCB(hObj,event)
   chan = job.options.coordSystemChannel;
   
   updateStatus('Generating all sisters');
-  kitShowAllSisters(job,'channel',chan,'timePoint',allSisTp);
+  kitShowSisters(job,'channel',chan,'timePoint',allSisTp);
   updateStatus('');
 end
 
@@ -417,7 +417,7 @@ function saveCB(hObj,event)
 end
 
 function closeCB(hObj,event)
-  close(gcf);
+  uiresume(gcf);
 end
 
 function job = loadActiveJob()

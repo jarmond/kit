@@ -5,7 +5,7 @@ function job=kitDefaultOptions()
 %
 % Created by: J. W. Armond
 % Modified by: C. A. Smith
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 job.kit = 1;
 job.version = kitVersion();

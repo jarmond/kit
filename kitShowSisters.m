@@ -1,7 +1,7 @@
-function kitShowAllSisters(job,varargin)
-% KITSHOWALLSISTERS Plots images of each sister pair in a movie.
+function kitShowSisters(job,varargin)
+% KITSHOWSISTERS Plots images of each sister pair in a movie.
 %
-%    KITSHOWALLSISTERS(JOB,...) Plots coordinates over images of each
+%    KITSHOWSISTERS(JOB,...) Plots coordinates over images of each
 %    sister pair in a given channel at a given timepoint.
 %
 %    Options, defaults in {}:-

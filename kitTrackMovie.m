@@ -13,13 +13,13 @@ tstart = tic;
 if nargin<2
   switch job.options.jobProcess
     case 'zandt'
-      tasks = 1:9;
+      tasks = 1:8;
     case 'zonly'
-      tasks = [1,2,6,9];
+      tasks = [1,2,6];
     case 'chrshift'
       tasks = [1,6];
   end
-  if ~any(jobset.options.intensity.execute)
+  if ~any(job.options.intensity.execute)
     tasks = setdiff(tasks,9);
   end
 end
@@ -39,9 +39,9 @@ if any(ismember(tasks,[1 2 9]))
     if iscell(job.metadata)
       job.metadata = job.metadata{job.index};
     end
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata);
+    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
   else
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'init');
+    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie));
   end
   job = kitSaveJob(job);
 end
@@ -151,13 +151,13 @@ if ismember(6,tasks)
   % Find neighbouring 3D spot coordinates per frame.
   for c = neighChans
     if ismember(1,tasks)
-      % Find coordinates in neighbour channel.
       kitLog('Finding particle coordinates in channel %d',c);
       job = kitFindCoords(job, reader, c);
     end
     if ismember(2,tasks)
       % Transform coordinates into plane.
       kitLog('Transforming coordinates in channel %d to plane from channel %d',c,planeChan);
+      planeChan = job.options.coordSystemChannel;
       job.dataStruct{c}.planeFit = job.dataStruct{planeChan}.planeFit;
       job.dataStruct{c} = kitFitPlane(job,reader,job.dataStruct{c},c,1);
     end
@@ -197,7 +197,7 @@ if ismember(9,tasks)
   % Read spot intensity.
   intChans = find(job.options.intensity.execute);
   for c = intChans
-    kitLog('Measuring particle intensity in channel %d',c);
+    kitLog('Measure particle intensity in channel %d',c);
     job = kitLocalIntensity(job, reader, job.metadata, c, opts.intensity);
   end
   job = kitSaveJob(job);
@@ -207,16 +207,11 @@ end
 elapsed = toc(tstart);
 for c = sort([channels neighChans])
   kitLog('Gather diagnostics in channel %d',c);
-  if isfield(job.dataStruct{c},'failed') && job.dataStruct{c}.failed || ~isfield(job.dataStruct{c},'initCoord')
-    fprintf('Tracking for channel %d failed\n', c);
-    fprintf('-----------------------------\n', c);
-  else
-    job = kitDiagnostics(job,c,elapsed);
-    fprintf('Diagnostics for channel %d\n', c);
-    fprintf('-------------------------\n', c);
-    kitPrintDiagnostics(job.dataStruct{c},opts.jobProcess);
-    fprintf('-------------------------\n', c);
-  end
+  job = kitDiagnostics(job,c,elapsed);
+  fprintf('Diagnostics for channel %d\n', c);
+  fprintf('-------------------------\n', c);
+  kitPrintDiagnostics(job.dataStruct{c},opts.jobProcess);
+  fprintf('-------------------------\n', c);
 end
 fprintf('\n')
 job = kitSaveJob(job);

@@ -57,8 +57,6 @@ function kitShowImage(job,varargin)
 %    withinFig: {0} or 1. Whether or not to show images within the current
 %       figure environment.
 %
-%    NB Need to better calculate position of text and scale bar in corners.
-%
 % Copyright (c) 2017 C. A. Smith
 
 % define default options
@@ -118,7 +116,8 @@ if isempty(opts.jobsetMovie)
         job = job{1};
         warning('Job provided is in cell format. Please ensure that you have provided a single job and not a full experiment.');
     end
-    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata);
+    jobID = job.index;
+    [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
     if opts.crop==1
       crop = job.ROI.crop;
       cropSize = job.ROI.cropSize;
@@ -129,13 +128,13 @@ if isempty(opts.jobsetMovie)
 else
     jobID = opts.jobsetMovie;
     if isfield(job,'metadata')
-      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata{jobID});
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata{jobID});
     else
-      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'ROI');
+      [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie));
     end
     if opts.crop==1
-      crop = job.ROI.crop;
-      cropSize = job.ROI.cropSize;
+      crop = job.ROI(jobID).crop;
+      cropSize = job.ROI(jobID).cropSize;
     else
       crop = [];
       cropSize = md.frameSize;
@@ -174,11 +173,11 @@ end
 
 % produce structure to hold images, dependent on transposing
 if opts.transpose
-    rgbImg = zeros([cropSize(opts.coords), 3]);
-    rgbImgShift = zeros([cropSize(opts.coords)*opts.subpixelate, 3]);
-else
     rgbImg = zeros([cropSize(fliplr(opts.coords)), 3]);
     rgbImgShift = zeros([cropSize(fliplr(opts.coords))*opts.subpixelate, 3]);
+else
+    rgbImg = zeros([cropSize(opts.coords), 3]);
+    rgbImgShift = zeros([cropSize(opts.coords)*opts.subpixelate, 3]);
 end
 
 % get images for each channel

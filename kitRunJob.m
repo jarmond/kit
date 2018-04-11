@@ -1,7 +1,7 @@
 function kitRunJob(jobset,varargin)
-% KITRUNJOBS Runs tracking analysis on jobset
+% KITRUNJOB Runs tracking analysis on jobset
 %
-%    KITRUNJOBS(JOBSET,...) Runs tracking analysis on JOBSET. JOBSET should be
+%    KITRUNJOB(JOBSET,...) Runs tracking analysis on JOBSET. JOBSET should be
 %    output from either KITSETUPJOBS or KITLOADJOBSET. Additional options can
 %    be supplied as string/value pairs.
 %
@@ -28,13 +28,13 @@ function kitRunJob(jobset,varargin)
 %    errorfail: {0} or 1. Crash out if error occurs if 1.
 %
 % Created by: J. W. Armond
-% Modified by: C. A. Armond
-% Copyright (c) 2016 C. A. Smith
+% Modified by: C. A. Smith
+% Copyright (c) 2018 C. A. Smith
 
 % Check minimum MATLAB version.
 % FIXME Check minimum toolbox versions also.
-if verLessThan('matlab','7.14')
-  error('Minimum required MATLAB version is 7.14 (R2012a)');
+if verLessThan('matlab','8.6')
+  error('Minimum required MATLAB version is 8.6 (R2015b)');
 end
 
 % Download BioFormats, if required.
@@ -69,7 +69,7 @@ switch jobset.options.jobProcess
     case 'chrshift'
         options.tasks = setdiff(options.tasks,[2,3,4,5,7,8]);
 end
-if ~any(jobset.options.intensity.execute)
+if all(~jobset.options.intensity.execute)
   options.tasks = setdiff(options.tasks,9);
 end
 
@@ -84,26 +84,24 @@ switch options.exec
     kitLog(['Running ' name ' using PBS']);
 end
 
-
 if isfield(jobset,'variantName')
   fprintf('Jobset variant: %s\n',jobset.variantName);
 end
 
 % Copy out job info for each movie.
 jobs = cell(nROIs,1);
-for i=1:nROIs
+for i= options.subset
   if options.existing
     jobs{i} = kitLoadJob(jobset,i);
     % Copy over any new options.
     jobs{i}.options = jobset.options;
+    if length(jobs{i}.ROI)>1
+        jobs{i}.ROI = jobset.ROI(i);
+    end
   else
     jobs{i} = jobset;
-    jobs{i}.ROI = jobset.ROI(i);
-    jobs{i}.nROIs = nROIs;
-    if isfield(jobs{i},'metadata')
-      jobs{i}.metadata = jobset.metadata{i};
-    end
     jobs{i}.index = i;
+    jobs{i}.ROI = jobset.ROI(i);
   end
   % Update versions, may be different to jobset creator.
   jobs{i}.version = kitVersion();

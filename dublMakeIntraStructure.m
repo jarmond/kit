@@ -13,11 +13,8 @@ if nargin<1 || isempty(paired)
   paired = 1;
 end
 
-intraStruct.dublVersion = 'DubL 1.1.0';
-intraStruct.exptLabel = [];
-intraStruct.options.channels = [];
-intraStruct.options.paired = paired;
-intraStruct.options.plate = 0;
+intraStruct.kitVersion = kitVersion;
+intraStruct.label = [];
 
 % make substructures for all pair-derived measurements
 direction = struct('P',[],'AP',[],'N',[],'S',[]);
@@ -27,10 +24,12 @@ subint = struct('inner',[],'outer',[]);
 intensity = struct('mean',subint,'max',subint,'bg',subint);
 
 % make substructure for each microscope and plate coordinate systems
+meas = struct('all',[],'P',[],'AP',[],'N',[],'S',[]);
+
 coords = struct('x',[],'y',[],'z',[]);
-delta  = struct('x',[],'y',[],'z',[],...
-               'oneD',[],'twoD',[],'threeD',[]);
-swivel = struct('y',[],'z',[],'threeD',[],'kMT',[]);
+delta  = struct('x',meas,'y',meas,'z',meas,...
+               'oneD',[],'twoD',meas,'threeD',meas);
+swivel = struct('y',meas,'z',meas,'threeD',meas,'kMT',[]);
 % those only appropriate for plate coordinate system
 twist  = struct('y',[],'z',[],'threeD',[]);
 sisterCentreSpeed = [];
@@ -50,18 +49,15 @@ end
 % produce same again for plate coordinate system
 plate = microscope;
 if paired
-  plate.raw.twist         = twist;
-  plate.depthFilter.twist = twist;
+  plate.twist         = twist;
   plate.sisterCentreSpeed = sisterCentreSpeed;
   plate.plateThickness    = plateThickness;
   
-    intraStruct.direction = direction;
+  intraStruct.direction = direction;
 end
-    intraStruct.microscope = microscope;
-    intraStruct.plate = plate;
-    intraStruct.sisters = microscope;
-    intraStruct.intensity = intensity;
-    
+  intraStruct.microscope = microscope;
+  intraStruct.plate = plate;
+  intraStruct.intensity = intensity;  
 end
     
     

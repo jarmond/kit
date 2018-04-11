@@ -8,6 +8,7 @@ function lastUpdate = kitProgress(progress, lastUpdate, updateInterval)
 %       lastUpdate: Last timestamp progress was called with (optional).
 %                   Omit for first call.
 %
+% Modified by: Christopher A. Smith
 % Copyright (c) 2012 Jonathan W. Armond
 
 currentClock = clock;

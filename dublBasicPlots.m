@@ -25,6 +25,8 @@ function dublBasicPlots(intraStructures,varargin)
 %           - 'delta2D'
 %           - 'delta1D'
 %           - 'deltaXYZ'
+%           - 'delta3D-church'
+%           - 'delta2D-church'
 %           - 'sisSep3D'
 %           - 'sisSep2D'
 %           - 'sisSepXYZ'
@@ -42,7 +44,7 @@ function dublBasicPlots(intraStructures,varargin)
 
 
 % default options
-opts.coordSystem = 'plate';
+opts.coordSystem = 'microscope';
 opts.depthFilter = 1;
 opts.legend = {'Expt 1','Expt 2','Expt 3','Expt 4', 'Expt 5'};
 opts.stat = '';
@@ -59,12 +61,13 @@ end
 
 % ask the user which stat they would like
 statsList = {'delta3D' ,'delta2D' ,'delta1D'  ,'deltaXYZ',...
+             'delta3D-church','delta2D-church',...
              'sisSep3D','sisSep2D','sisSepXYZ',...
              'twist3D' ,'twistYZ' ,...
              'swivel3D','swivelYZ','swivelKMT',...
              'rawInts','normInts'};
 if ~strcmp(opts.coordSystem,'plate')
-    statsList(8:9) = [];
+    statsList(10:11) = [];
 end
 if ~ismember(opts.stat,statsList)
     fprintf('Output statistics options:\n')
@@ -76,6 +79,16 @@ if ~ismember(opts.stat,statsList)
     opts.stat = statsList{result};
 end
 
+for iExpt = 1:nExpts
+    isall{iExpt} = isfield(intraStructures{iExpt}.microscope.raw.delta.threeD,'all');
+    if strcmp(opts.coordSystem,'plate')
+        if (isall{iExpt} && isempty(intraStructures{iExpt}.plate.raw.delta.threeD.all)) || (~isall{iExpt} && isempty(intraStructures{iExpt}.plate.raw.delta.threeD))
+            kitLog('No plane fit in movies in intraMeasurements. Converting coordinate system to ''microscope''');
+            opts.coordSystem = 'microscope';
+        end
+    end
+end
+
 switch opts.stat
 
     case 'delta3D'
@@ -84,21 +97,37 @@ switch opts.stat
             case 'plate'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      delta3D{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.threeD(:)*1000;
+                        if isall{iExpt}
+                            delta3D{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.threeD.all(:)*1000;
+                        else
+                            delta3D{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.threeD(:)*1000;
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      delta3D{iExpt} = intraStructures{iExpt}.plate.raw.delta.threeD(:)*1000;
+                        if isall{iExpt}
+                            delta3D{iExpt} = intraStructures{iExpt}.plate.raw.delta.threeD.all(:)*1000;
+                        else
+                            delta3D{iExpt} = intraStructures{iExpt}.plate.raw.delta.threeD(:)*1000;
+                        end
                     end
                 end
             case 'microscope'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      delta3D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.threeD(:)*1000;
+                        if isall{iExpt}
+                            delta3D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.threeD.all(:)*1000;
+                        else
+                            delta3D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.threeD(:)*1000;
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      delta3D{iExpt} = intraStructures{iExpt}.microscope.raw.delta.threeD(:)*1000;
+                        if isall{iExpt}
+                            delta3D{iExpt} = intraStructures{iExpt}.microscope.raw.delta.threeD.all(:)*1000;
+                        else
+                            delta3D{iExpt} = intraStructures{iExpt}.microscope.raw.delta.threeD(:)*1000;
+                        end
                     end
                 end
         end
@@ -115,21 +144,37 @@ switch opts.stat
             case 'plate'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      delta2D{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.twoD(:)*1000;
+                        if isall{iExpt}
+                            delta2D{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.twoD.all(:)*1000;
+                        else
+                            delta2D{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.twoD(:)*1000;
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      delta2D{iExpt} = intraStructures{iExpt}.plate.raw.delta.twoD(:)*1000;
+                        if isall{iExpt}
+                            delta2D{iExpt} = intraStructures{iExpt}.plate.raw.delta.twoD.all(:)*1000;
+                        else
+                            delta2D{iExpt} = intraStructures{iExpt}.plate.raw.delta.twoD(:)*1000;
+                        end
                     end
                 end
             case 'microscope'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      delta2D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.twoD(:)*1000;
+                        if isall{iExpt}
+                            delta2D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.twoD.all(:)*1000;
+                        else
+                            delta2D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.twoD(:)*1000;
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      delta2D{iExpt} = intraStructures{iExpt}.microscope.raw.delta.twoD(:)*1000;
+                        if isall{iExpt}
+                            delta2D{iExpt} = intraStructures{iExpt}.microscope.raw.delta.twoD.all(:)*1000;
+                        else
+                            delta2D{iExpt} = intraStructures{iExpt}.microscope.raw.delta.twoD(:)*1000;
+                        end
                     end
                 end
         end
@@ -177,29 +222,53 @@ switch opts.stat
             case 'plate'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      deltaX{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.x(:)*1000;
-                      deltaY{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.y(:)*1000;
-                      deltaZ{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.z(:)*1000;
+                        if isall{iExpt}
+                            deltaX{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.x.all(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.y.all(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.z.all(:)*1000;
+                        else
+                            deltaX{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.x(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.y(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.plate.depthFilter.delta.z(:)*1000;
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      deltaX{iExpt} = intraStructures{iExpt}.plate.raw.delta.x(:)*1000;
-                      deltaY{iExpt} = intraStructures{iExpt}.plate.raw.delta.y(:)*1000;
-                      deltaZ{iExpt} = intraStructures{iExpt}.plate.raw.delta.z(:)*1000;
+                        if isall{iExpt}
+                            deltaX{iExpt} = intraStructures{iExpt}.plate.raw.delta.x.all(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.plate.raw.delta.y.all(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.plate.raw.delta.z.all(:)*1000;
+                        else
+                            deltaX{iExpt} = intraStructures{iExpt}.plate.raw.delta.x(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.plate.raw.delta.y(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.plate.raw.delta.z(:)*1000;
+                        end
                     end
                 end
             case 'microscope'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      deltaX{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.x(:)*1000;
-                      deltaY{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.y(:)*1000;
-                      deltaZ{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.z(:)*1000;
+                        if isall{iExpt}
+                            deltaX{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.x.all(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.y.all(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.z.all(:)*1000;
+                        else
+                            deltaX{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.x(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.y(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.microscope.depthFilter.delta.z(:)*1000;
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      deltaX{iExpt} = intraStructures{iExpt}.microscope.raw.delta.x(:)*1000;
-                      deltaY{iExpt} = intraStructures{iExpt}.microscope.raw.delta.y(:)*1000;
-                      deltaZ{iExpt} = intraStructures{iExpt}.microscope.raw.delta.z(:)*1000;
+                        if isall{iExpt}
+                            deltaX{iExpt} = intraStructures{iExpt}.microscope.raw.delta.x.all(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.microscope.raw.delta.y.all(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.microscope.raw.delta.z.all(:)*1000;
+                        else
+                            deltaX{iExpt} = intraStructures{iExpt}.microscope.raw.delta.x(:)*1000;
+                            deltaY{iExpt} = intraStructures{iExpt}.microscope.raw.delta.y(:)*1000;
+                            deltaZ{iExpt} = intraStructures{iExpt}.microscope.raw.delta.z(:)*1000;
+                        end
                     end
                 end
         end
@@ -221,6 +290,103 @@ switch opts.stat
         compareHistograms(deltaZ,'nBins',10,'axisLimits',[-200 200],...
             'title',title,'xLabel','\Delta_{z} (nm)','yLabel','','withinFig',1);
     
+    case 'delta3D-church'
+        
+        if nExpts > 1
+            error('Plotting Churchman-derived inflation-corrected delta only currently works for single conditions.');
+        else
+            isall = isall{1};
+            intraStructure = intraStructures{1};
+        end
+        
+        switch opts.coordSystem
+            case 'plate'
+                if opts.depthFilter
+                    if isall
+                        delta3D = intraStructure.plate.depthFilter.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.plate.depthFilter.delta.threeD(:);
+                    end
+                else
+                    if isall
+                        delta3D = intraStructure.plate.raw.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.plate.raw.delta.threeD(:);
+                    end
+                end
+            case 'microscope'
+                if opts.depthFilter
+                    if isall
+                        delta3D = intraStructure.microscope.depthFilter.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.microscope.depthFilter.delta.threeD(:);
+                    end
+                else
+                    if isall
+                        delta3D = intraStructure.microscope.raw.delta.threeD.all(:);
+                    else
+                        delta3D = intraStructure.microscope.raw.delta.threeD(:);
+                    end
+                end
+        end
+        
+        % Churchman falls over with outliers - remove them.
+        outs = findoutliers(delta3D);
+        delta3D = delta3D(~outs);
+
+        mean   = nanmean(delta3D)*1000;
+        stdDev = nanstd(delta3D)*1000;
+        MLp3D(delta3D*1000,[mean stdDev],1,25);
+        
+    case 'delta2D-church'
+        
+        if nExpts > 1
+            error('Plotting Churchman-derived inflation-corrected delta only currently works for single conditions.');
+        else
+            isall = isall{1};
+            intraStructure = intraStructures{1};
+        end
+        
+        switch opts.coordSystem
+            case 'plate'
+                if opts.depthFilter
+                    if isall
+                        delta2D = intraStructure.plate.depthFilter.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.plate.depthFilter.delta.twoD(:);
+                    end
+                else
+                    if isall
+                        delta2D = intraStructure.plate.raw.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.plate.raw.delta.twoD(:);
+                    end
+                end
+            case 'microscope'
+                if opts.depthFilter
+                    if isall
+                        delta2D = intraStructure.microscope.depthFilter.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.microscope.depthFilter.delta.twoD(:);
+                    end
+                else
+                    if isall
+                        delta2D = intraStructure.microscope.raw.delta.twoD.all(:);
+                    else
+                        delta2D = intraStructure.microscope.raw.delta.twoD(:);
+                    end
+                end
+        end
+        
+        % Churchman falls over with outliers - remove them.
+        outs = findoutliers(delta2D);
+        delta2D = delta2D(~outs);
+
+        mean   = nanmean(delta2D)*1000;
+        stdDev = nanstd(delta2D)*1000;
+        MLp2D(delta2D*1000,[mean stdDev],1,25);
+        
+        
     case 'sisSep3D'
         
         switch opts.coordSystem
@@ -334,23 +500,39 @@ switch opts.stat
         switch opts.coordSystem
             case 'plate'
                 if opts.depthFilter
-                  for iExpt = 1:nExpts
-                    swivel3D{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.threeD(:);
-                  end
+                    for iExpt = 1:nExpts
+                        if isall{iExpt}
+                            swivel3D{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.threeD.all(:);
+                        else
+                            swivel3D{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.threeD(:);
+                        end
+                    end
                 else
-                  for iExpt = 1:nExpts
-                    swivel3D{iExpt} = intraStructures{iExpt}.plate.raw.swivel.threeD(:);
-                  end
+                    for iExpt = 1:nExpts
+                        if isall{iExpt}
+                            swivel3D{iExpt} = intraStructures{iExpt}.plate.raw.swivel.threeD.all(:);
+                        else
+                            swivel3D{iExpt} = intraStructures{iExpt}.plate.raw.swivel.threeD(:);
+                        end
+                    end
                 end
             case 'microscope'
                 if opts.depthFilter
-                  for iExpt = 1:nExpts
-                    swivel3D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.threeD(:);
-                  end
+                    for iExpt = 1:nExpts
+                        if isall{iExpt}
+                            swivel3D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.threeD.all(:);
+                        else
+                            swivel3D{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.threeD(:);
+                        end
+                    end
                 else
-                  for iExpt = 1:nExpts
-                    swivel3D{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.threeD(:);
-                  end
+                    for iExpt = 1:nExpts
+                        if isall{iExpt}
+                            swivel3D{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.threeD.all(:);
+                        else
+                            swivel3D{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.threeD(:);
+                        end
+                    end
                 end
         end
 
@@ -368,25 +550,45 @@ switch opts.stat
             case 'plate'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      swivelY{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.y(:);
-                      swivelZ{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.z(:);
+                        if isall{iExpt}
+                            swivelY{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.y.all(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.z.all(:);
+                        else
+                            swivelY{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.y(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.z(:);
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      swivelY{iExpt} = intraStructures{iExpt}.plate.raw.swivel.y(:);
-                      swivelZ{iExpt} = intraStructures{iExpt}.plate.raw.swivel.z(:);
+                        if isall{iExpt}
+                            swivelY{iExpt} = intraStructures{iExpt}.plate.raw.swivel.y.all(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.plate.raw.swivel.z.all(:);
+                        else
+                            swivelY{iExpt} = intraStructures{iExpt}.plate.raw.swivel.y(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.plate.raw.swivel.z(:);
+                        end
                     end
                 end        
             case 'microscope'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      swivelY{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.y(:);
-                      swivelZ{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.z(:);
+                        if isall{iExpt}
+                            swivelY{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.y.all(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.z.all(:);
+                        else
+                            swivelY{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.y(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.z(:);
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      swivelY{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.y(:);
-                      swivelZ{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.z(:);
+                        if isall{iExpt}
+                            swivelY{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.y.all(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.z.all(:);
+                        else
+                            swivelY{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.y(:);
+                            swivelZ{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.z(:);
+                        end
                     end
                 end  
         end
@@ -409,21 +611,37 @@ switch opts.stat
             case 'plate'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      swivelKMT{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.kMT(:);
+                        if isall{iExpt}
+                            swivelKMT{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.kMT.all(:);
+                        else
+                            swivelKMT{iExpt} = intraStructures{iExpt}.plate.depthFilter.swivel.kMT(:);
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      swivelKMT{iExpt} = intraStructures{iExpt}.plate.raw.swivel.kMT(:);
+                        if isall{iExpt}
+                            swivelKMT{iExpt} = intraStructures{iExpt}.plate.raw.swivel.kMT.all(:);
+                        else
+                            swivelKMT{iExpt} = intraStructures{iExpt}.plate.raw.swivel.kMT(:);
+                        end
                     end
                 end        
             case 'microscope'
                 if opts.depthFilter
                     for iExpt = 1:nExpts
-                      swivelKMT{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.kMT(:);
+                        if isall{iExpt}
+                            swivelKMT{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.kMT.all(:);
+                        else
+                            swivelKMT{iExpt} = intraStructures{iExpt}.microscope.depthFilter.swivel.kMT(:);
+                        end
                     end
                 else
                     for iExpt = 1:nExpts
-                      swivelKMT{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.kMT(:);
+                        if isall{iExpt}
+                            swivelKMT{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.kMT.all(:);
+                        else
+                            swivelKMT{iExpt} = intraStructures{iExpt}.microscope.raw.swivel.kMT(:);
+                        end
                     end
                 end  
         end
@@ -438,30 +656,36 @@ switch opts.stat
     case 'rawInts'
         
         for iExpt = 1:nExpts
-          intsInner{iExpt} = intraStructures{iExpt}.intensity.mean.inner(:);
-          intsOuter{iExpt} = intraStructures{iExpt}.intensity.mean.outer(:);
-          if opts.depthFilter
-            filt = isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD(:));
-            intsInner{iExpt}(filt) = NaN;
-            intsOuter{iExpt}(filt) = NaN;
-          end
+            intsInner{iExpt} = intraStructures{iExpt}.intensity.mean.inner(:);
+            intsOuter{iExpt} = intraStructures{iExpt}.intensity.mean.outer(:);
+            if opts.depthFilter
+                if isall{iExpt}
+                    filt = ~isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD.all(:));
+                else
+                    filt = ~isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD(:));
+                end
+                intsInner{iExpt}(filt) = NaN;
+                intsOuter{iExpt}(filt) = NaN;
+            end
         end
         
         figure; clf
         subplot(1,2,1);
-        title = sprintf('raw I_{inner}: %s',opts.legend{1});
+        title = sprintf('raw intensity_{inner}: %s',opts.legend{1});
         for iExpt = 2:nExpts
           title = [title ' vs. ' opts.legend{iExpt}];
         end
-        compare1Dscatters(intsInner,'title',title,...
-            'yLabel','raw intensity','withinFig',1,'legend',opts.legend);
+        compareBoxWhiskers(intsInner,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','raw intensity',...
+            'withinFig',1,'legend',opts.legend);
         subplot(1,2,2);
-        title = sprintf('raw I_{outer}: %s',opts.legend{1});
+        title = sprintf('raw intensity_{outer}: %s',opts.legend{1});
         for iExpt = 2:nExpts
           title = [title ' vs. ' opts.legend{iExpt}];
         end
-        compare1Dscatters(intsOuter,'title',title,...
-            'yLabel','raw intensity','withinFig',1,'legend',opts.legend);
+        compareBoxWhiskers(intsOuter,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','raw intensity',...
+            'withinFig',1,'legend',opts.legend);
         
     case 'normInts'
         
@@ -469,7 +693,11 @@ switch opts.stat
             intsInner{iExpt} = intraStructures{iExpt}.intensity.mean.inner(:);
             intsOuter{iExpt} = intraStructures{iExpt}.intensity.mean.outer(:);
             if opts.depthFilter
-                filt = isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD(:));
+                if isall{iExpt}
+                    filt = ~isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD.all(:));
+                else
+                    filt = ~isnan(intraStructures{iExpt}.plate.depthFilter.delta.threeD(:));
+                end
                 intsInner{iExpt}(filt) = NaN;
                 intsOuter{iExpt}(filt) = NaN;
             end
@@ -481,19 +709,21 @@ switch opts.stat
         
         figure; clf
         subplot(1,2,1);
-        title = sprintf('inner-normalised I_{outer}: %s',opts.legend{1});
+        title = sprintf('inner-normalised intensity_{outer}: %s',opts.legend{1});
         for iExpt = 2:nExpts
           title = [title ' vs. ' opts.legend{iExpt}];
         end
-        compare1Dscatters(normIntsOuter,'title',title,...
-            'yLabel','normalised intensity','withinFig',1,'legend',opts.legend);
+        compareBoxWhiskers(normIntsOuter,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','normalised intensity',...
+            'withinFig',1,'legend',opts.legend);
         subplot(1,2,2);
-        title = sprintf('outer-normalised I_{inner}: %s',opts.legend{1});
+        title = sprintf('outer-normalised intensity_{inner}: %s',opts.legend{1});
         for iExpt = 2:nExpts
           title = [title ' vs. ' opts.legend{iExpt}];
         end
-        compare1Dscatters(normIntsInner,'title',title,...
-            'yLabel','normalised intensity','withinFig',1,'legend',opts.legend);
+        compareBoxWhiskers(normIntsInner,'showOutliers',0,'outlierP',0.05,...
+            'title',title,'yLabel','normalised intensity',...
+            'withinFig',1,'legend',opts.legend);
         
     otherwise
         
@@ -503,4 +733,21 @@ end
 
 fprintf('\n')
 
+end
+
+%% Sub-functions
+
+function outs = findoutliers(data)
+  if nargin<1 || isempty(data)
+    return
+  end
+  if verLessThan('matlab','9.2')
+    nTests = length(data);
+    outs = zeros(nTests,1);
+    for iTest = 1:nTests
+      outs(iTest) = ttest2(data,data(iTest),'alpha',0.0455);
+    end    
+  else
+    outs = isoutlier(data,'mean');
+  end
 end

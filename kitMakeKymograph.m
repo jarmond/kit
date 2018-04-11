@@ -30,7 +30,7 @@ function K=kitMakeKymograph(job,pairIdx,varargin)
 %    scaleMethod: {'nearest'} or 'bilinear' or 'bicubic'. Interpolation
 %    method for scaling image up.
 %
-%    fixture: 'sisters' or {'plate'}. Reference point to fix X against,
+%    fixture: {'sisters'} or 'plate'. Reference point to fix X against,
 %    sister pair centre or metaphase plate.
 %
 %    margin: {1.0} or real. Multiple of extent of sister travel to extend
@@ -47,15 +47,14 @@ if nargin<2
 end
 
 % Set defaults.
-opts.trackChannel = []; % Default to first tracked channel.
-opts.channels = [];
+opts.trackChannel = 0; % Default to first tracked channel.
 opts.outfile = [];
 opts.saturate = [1 100];
 opts.channelMap = [2 1 3]; % Green, red, blue
 opts.points = 100;
-opts.scale = [1 5];
+opts.scale = [1 1];
 opts.scaleMethod = 'nearest';
-opts.fixture = 'plate';
+opts.fixture = 'sisters';
 opts.margin = 1.0;
 opts.jet = 0;
 opts.trackIdx = 0; % Use pairIdx as a trackList indices not sisterList.
@@ -65,7 +64,7 @@ opts.rotate = 0;
 % Process options.
 opts = processOptions(opts, varargin{:});
 
-if isempty(opts.trackChannel)
+if opts.trackChannel == 0
   % Plot first non-empty tracking channel
   opts.trackChannel = find(~cellfun(@isempty,job.dataStruct),1);
 end
@@ -73,13 +72,7 @@ end
 mapChans = opts.channelMap;
 
 nFrames = job.metadata.nFrames;
-
-if isempty(opts.channels)
-  chans = opts.trackChannel;
-else
-  chans = opts.channels;
-end
-nChannels = length(chans);
+nChannels = job.metadata.nChannels;
 
 if size(opts.saturate,1)<nChannels
   opts.saturate=repmat(opts.saturate,[nChannels 1]);
@@ -130,7 +123,7 @@ valid = zeros(nFrames,1);
 plateDist = nan;
 sisVec = [];
 for i=1:nFrames
-  if isnan(coords1(i,1)) && isempty(sisVec)
+  if isnan(coords1(i,1)) && isempty(sisVec);
     continue;
   end
   valid(i) = 1;
@@ -164,16 +157,15 @@ for i=1:nFrames
   end
 
   for j=1:nChannels
-    chan = chans(j);
     % Read frame. FIXME using sister 1 z plane arbitrarily
-    plane = kitReadImagePlane(reader,md,i,chan,coords1(i,3),job.ROI.crop);
+    plane = kitReadImagePlane(reader,md,i,j,coords1(i,3),job.ROI.crop);
 
     % First frame defines contrast stretch.
-    if isnan(irange(mapChans(chan),1))
-      irange(mapChans(chan),:) = stretchlim(plane,opts.saturate(j,:)/100);
+    if isnan(irange(mapChans(j),1))
+      irange(mapChans(j),:) = stretchlim(plane,opts.saturate(j,:)/100);
     end
 
-    K(i,:,mapChans(chan)) = improfile(plane,endPts(:,1),endPts(:,2),...
+    K(i,:,mapChans(j)) = improfile(plane,endPts(:,1),endPts(:,2),...
                                    opts.points,'bilinear')';
   end
 end
