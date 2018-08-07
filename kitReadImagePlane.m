@@ -27,7 +27,7 @@ plane = bfGetPlane(imageReader,iPlane)';
 
 % Crop if requested.
 if ~isempty(crop)
-  plane = imcrop(plane,crop);
+  plane = imcrop(plane',crop)';
 end
 
 % Convert to double.
