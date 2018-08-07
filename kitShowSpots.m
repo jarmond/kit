@@ -13,6 +13,9 @@ function kitShowSpots(job,varargin)
 %               - Increase brightness by changing to [0.1 0.9]
 %               - Decrease background noise by changing to [0.5 1]
 %
+%    marker: {'x'}, '+' or 'i'. Marker used to label spots. 'i' plots
+%           circles with radius within which intensities were measured.
+%
 %    plotCoords: 0 or {1}. Whether or not to plot coordinates over images.
 %
 %    subset: {[]} or array of numbers. The spots to plot from a movie.
@@ -27,6 +30,7 @@ function kitShowSpots(job,varargin)
 
 opts.channel = 1;
 opts.contrast = [0.1 1];
+opts.marker = 'x';
 opts.plotCoords = 1;
 opts.subset = [];
 opts.timePoint = 1;
@@ -36,6 +40,11 @@ opts = processOptions(opts,varargin{:});
 % suppress warnings
 w = warning;
 warning('off','all');
+
+% check marker option
+if ~ismember(opts.marker,'x+i')
+    error('Marker option not recognised: %s',opts.marker);
+end
 
 % get important information
 dataStruct = job.dataStruct{opts.channel};
@@ -49,6 +58,10 @@ if isempty(opts.subset)
 %   end
 else
   nSpots = length(opts.subset);
+end
+if length(job.ROI)>1
+    job.ROI = job.ROI(job.index);
+    job = kitSaveJob(job);
 end
 opts.imageSize = job.ROI.cropSize;
 
@@ -71,7 +84,7 @@ for iSpot=opts.subset
     
     noCoords = showSpot(job,img,opts);
     if noCoords
-        cla(f);
+        set(f,'Visible','off');
     else
         plotTit = sprintf('Spot %i',iSpot);
         title(plotTit,'FontSize',10)
@@ -90,6 +103,14 @@ chan = opts.channel;
 refChan = job.options.coordSystemChannel;
 % get chromatic shift
 chrShift = job.options.chrShift.result{refChan,chan}(1:3);
+
+% set crop half-width
+if strcmp(opts.marker,'i')
+    maskRadius = job.options.intensity.maskRadius;
+    cropHalfWidth = maskRadius*1.5;
+else
+    cropHalfWidth = 0.5; %um
+end
 
 % get sister information
 tk = opts.spotID;
@@ -141,10 +162,10 @@ else
 end
 
 % produce cropped image around track centre
-xReg = [centrePxl(1)-ceil(0.5/pixelSize(1))+1 ...
-           centrePxl(1)+ceil(0.5/pixelSize(1))+1];
-yReg = [centrePxl(2)-ceil(0.5/pixelSize(2))+1 ...
-           centrePxl(2)+ceil(0.5/pixelSize(2))+1];
+xReg = [centrePxl(1)-ceil(cropHalfWidth/pixelSize(1))+1 ...
+           centrePxl(1)+ceil(cropHalfWidth/pixelSize(1))+1];
+yReg = [centrePxl(2)-ceil(cropHalfWidth/pixelSize(2))+1 ...
+           centrePxl(2)+ceil(cropHalfWidth/pixelSize(2))+1];
 xReg(1) = max(xReg(1),1); xReg(2) = min(xReg(2),imageSize(2));
 yReg(1) = max(yReg(1),1); yReg(2) = min(yReg(2),imageSize(1));
 imgCrpd = img(yReg(1):yReg(2),xReg(1):xReg(2));
@@ -164,10 +185,29 @@ if ~opts.plotCoords
     return
 end
 
-% plot coordinates
+% plot coordinates.
 hold on
-plot(coords(1),coords(2),...
-    'Color','k','Marker','x','MarkerSize',10)
+if strcmp(opts.marker,'i')
+    markerSize = ceil(job.options.intensity.maskRadius / pixelSize(1));
+    markerSize = max(markerSize,0.5);
+    drawCircle(coords(1),coords(2),markerSize,'w');
+else
+    markerSize = 10;
+    plot(coords(1),coords(2),...
+        'Color','k','Marker',opts.marker,'MarkerSize',markerSize)
+end
 hold off
+
+end
+
+function drawCircle(x,y,r,color)
+% Draws circle.
+
+% Estimate pixels in circumference.
+c = 2*pi*r;
+theta = linspace(0,2*pi,ceil(c));
+cx = x + r*cos(theta);
+cy = y + r*sin(theta);
+plot(cx, cy, [color '-']);
 
 end
