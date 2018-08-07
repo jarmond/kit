@@ -35,11 +35,9 @@ dS = job.dataStruct{opts.channel};
 nSpots = size(dS.initCoord.allCoord,1);
 opts.imageSize = job.ROI.cropSize;
 if isfield(job,'nROIs')
-    nROIs = job.nROIs;
-elseif length(job.ROI)>1
-    nROIs = length(job.ROI);
+    nROIs = [' of ' num2str(job.nROIs)];
 else
-    nROIs = NaN;
+    nROIs = '';
 end
 
 % set up figure
@@ -103,7 +101,7 @@ end
 imshow(gridImg,'Border','tight');
 hold on
 scatter(allCoords(:,1),allCoords(:,2),15*fig_m,'k','x')
-figtit = sprintf('Spot filtering: Image %i of %i, channel %i',job.index,nROIs,opts.channel);
+figtit = sprintf('Spot filtering: Image %i%s, channel %i',job.index,nROIs,opts.channel);
 set(gcf,'Resize','off','Name',figtit,'Units','characters',...
     'Position',[70 35 80 50],'NumberTitle','off');
 movegui(gcf,'center');
