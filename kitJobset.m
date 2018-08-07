@@ -163,37 +163,37 @@ function opts = updVer8(opts)
 end
 
 function opts = updVer9(opts)
-  % Upgrade to 4 channel.  
-
-  % Detection and refinement modes.
-  opts.spotMode{4} = 'none';
-  opts.coordMode{4} = 'none';
-  
-  % Chromatic shift.
-  cSresult = repmat({zeros(1,6)},4,4);
-  cSresult(1:3,1:3) = opts.chrShift.result;
-  opts.chrShift.result = cSresult;
-  cSjobset = repmat({[]},4,4);
-  cSjobset(1:3,1:3) = opts.chrShift.jobset;
-  opts.chrShift.jobset = cSjobset;
-  for i=1:4; for j=1:4; chanOrder{i,j} = [i j]; end; end
-  chanOrder(1:3,1:3) = opts.chrShift.chanOrder;
-  opts.chrShift.chanOrder = chanOrder;
-  coordAdjs = repmat({zeros(1,3)},4,4);
-  coordAdjs(1:3,1:3) = opts.chrShift.coordinateAdjustments;
-  opts.chrShift.coordinateAdjustments = coordAdjs;
-  
-  % MMF.
-  opts.mmf.alphaA(4) = 0.10;
-  opts.mmf.alphaD(4) = 0.01;
-  opts.mmf.alphaF(4) = 0.05;
-  
-  % Neighbour spot detection.
-  opts.neighbourSpots.channelOrientation(4) = 4;
-  opts.neighbourSpots.timePoints{4} = [];
-  opts.neighbourSpots.zSlices{4} = [];
-  
-  % Intensity measurement.
-  opts.intensity.execute(4) = 0;
-  
+%   % Upgrade to 4 channel.  
+% 
+%   % Detection and refinement modes.
+%   opts.spotMode{4} = 'none';
+%   opts.coordMode{4} = 'none';
+%   
+%   % Chromatic shift.
+%   cSresult = repmat({zeros(1,6)},4,4);
+%   cSresult(1:3,1:3) = opts.chrShift.result;
+%   opts.chrShift.result = cSresult;
+%   cSjobset = repmat({[]},4,4);
+%   cSjobset(1:3,1:3) = opts.chrShift.jobset;
+%   opts.chrShift.jobset = cSjobset;
+%   for i=1:4; for j=1:4; chanOrder{i,j} = [i j]; end; end
+%   chanOrder(1:3,1:3) = opts.chrShift.chanOrder;
+%   opts.chrShift.chanOrder = chanOrder;
+%   coordAdjs = repmat({zeros(1,3)},4,4);
+%   coordAdjs(1:3,1:3) = opts.chrShift.coordinateAdjustments;
+%   opts.chrShift.coordinateAdjustments = coordAdjs;
+%   
+%   % MMF.
+%   opts.mmf.alphaA(4) = 0.10;
+%   opts.mmf.alphaD(4) = 0.01;
+%   opts.mmf.alphaF(4) = 0.05;
+%   
+%   % Neighbour spot detection.
+%   opts.neighbourSpots.channelOrientation(4) = 4;
+%   opts.neighbourSpots.timePoints{4} = [];
+%   opts.neighbourSpots.zSlices{4} = [];
+%   
+%   % Intensity measurement.
+%   opts.intensity.execute(4) = 0;
+%   
 end
