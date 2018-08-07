@@ -62,7 +62,7 @@ for iSis=opts.subset
     
     noCoords = showSisterPair(job,img,opts);
     if noCoords
-        cla(f);
+        set(f,'Visible','off');
     else
         plotTit = sprintf('Sis %i',iSis);
         title(plotTit,'FontSize',10)
@@ -160,7 +160,7 @@ end
 hold on
 for iSis = 1:2
     plot(coords(iSis,1),coords(iSis,2),...
-        'Color','k','Marker','x','MarkerSize',15)
+        'Color','y','Marker','x','MarkerSize',15)
 end
 hold off
 
