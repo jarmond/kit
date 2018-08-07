@@ -11,6 +11,11 @@ end
 %% GET REQUIRED IMAGE AND METADATA
 [md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
 
+% get channel information
+for iCh = 1:length(job.dataStruct)
+    opts.coordChans(iCh) = ~isempty(job.dataStruct{iCh});
+end
+opts.coordChans = find(opts.coordChans);
 % get crop information, if any
 crop = job.ROI.crop;
 cropSize = job.ROI.cropSize;
@@ -55,8 +60,8 @@ elseif isfield(job.dataStruct{opts.plotChan},'failed') && job.dataStruct{opts.pl
   coordsPix = [];
   skip = 1;
 else
-  coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[1 2 3]);
-  coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[1 2 3]);
+  coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[2 1 3]);
+  coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[2 1 3]);
   skip = 0;
 end
 nCoords = size(coords,1);
@@ -85,12 +90,38 @@ if ~isempty(coords)
   doublePairingIdx = [];
   
   % produce image file
-  fullImg = zeros([cropSize([2 1]) 3]);
+  fullImg = zeros([cropSize([1 2]) 3]);
   for iChan = opts.imageChans
     img(:,:,:,iChan) = kitReadImageStack(reader, md, 1, iChan, crop, 0);
     fullImg(:,:,chanOrder(iChan)) = max(img(:,:,:,iChan),[],3); % full z-project
     irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
     fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
+  end
+  
+  % produce figure environment
+  f = figure(1);
+  clf
+  plotTitle = sprintf('Check cell orientation\nPress: y to continue, n to skip, q to quit.');
+  if length(opts.imageChans) == 1
+    imshow(fullImg(:,:,chanOrder(opts.imageChans)));
+    title(plotTitle,'FontSize',14)
+  else
+    imshow(fullImg)
+    title(plotTitle,'FontSize',14)
+  end
+  [~,~,buttonPress] = ginput(1);
+  
+  if exist('f','var'); close(f); end
+
+  if buttonPress == 110 %110 corresponds to user pressing n key
+    unallocatedIdx = [];
+  elseif buttonPress == 121 %121 corresponds to user pressing y key
+    kitLog('Cell accepted. Continuing with pairing of sisters.');
+  elseif buttonPress == 113 %113 corresponds to user pressing q key
+    userStatus = 'userPaused';
+    return
+  else
+    kitLog('Another key other than y, n or q pressed. Continuing with kinetochore pairing.');
   end
   
   % preconfigure progress information
@@ -138,8 +169,8 @@ while ~isempty(unallocatedIdx)
     
     % IMAGE PROCESSING
     % predesignate cropImg structure
-    coordRange = [max(1,centreCoords(2)-cropRange(2)) min(centreCoords(2)+cropRange(2),cropSize(2));...
-                  max(1,centreCoords(1)-cropRange(1)) min(centreCoords(1)+cropRange(1),cropSize(1));...
+    coordRange = [max(1,centreCoords(1)-cropRange(1)) min(centreCoords(1)+cropRange(1),cropSize(1));...
+                  max(1,centreCoords(2)-cropRange(2)) min(centreCoords(2)+cropRange(2),cropSize(2));...
                   max(1,centreCoords(3)-opts.zProjRange) min(centreCoords(3)+opts.zProjRange,cropSize(3))];
     cropImg = zeros(coordRange(1,2)-coordRange(1,1)+1,...
                     coordRange(2,2)-coordRange(2,1)+1,...
@@ -233,13 +264,7 @@ while ~isempty(unallocatedIdx)
             % PLOTTING COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(:,1),iCoordsPix(:,2),'xw','sizeData',200,'LineWidth',1.25);
-            % unallocated in green
-%             scatter(unallCoordsPix(:,1),unallCoordsPix(:,2),'xg','sizeData',200,'LineWidth',1.25);
-%             % unpaired in yellow
-%             scatter(unpairedCoordsPix(:,1),unpairedCoordsPix(:,2),'xy','sizeData',200,'LineWidth',1.25);
-%             % paired in red
-%             scatter(pairedCoordsPix(:,1),pairedCoordsPix(:,2),'xr','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,2),iCoordsPix(:,1),'xw','sizeData',200,'LineWidth',1.25);
             
             subplot(2,4,[1,2,5,6])
             % get zoomed image
@@ -260,13 +285,13 @@ while ~isempty(unallocatedIdx)
             % PLOTTING ZOOMED COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(:,1) - coordRange(2,1)+1, iCoordsPix(:,2) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,2) - coordRange(2,1)+1, iCoordsPix(:,1) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
-            scatter(unallCoordsPix(:,1) - coordRange(2,1)+1, unallCoordsPix(:,2) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
+            scatter(unallCoordsPix(:,2) - coordRange(2,1)+1, unallCoordsPix(:,1) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
             % unpaired in yellow
-            scatter(unpairedCoordsPix(:,1) - coordRange(2,1)+1, unpairedCoordsPix(:,2) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
+            scatter(unpairedCoordsPix(:,2) - coordRange(2,1)+1, unpairedCoordsPix(:,1) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
             % paired in red
-            scatter(pairedCoordsPix(:,1) - coordRange(2,1)+1, pairedCoordsPix(:,2) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
+            scatter(pairedCoordsPix(:,2) - coordRange(2,1)+1, pairedCoordsPix(:,1) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
             
     end
     
@@ -285,7 +310,7 @@ while ~isempty(unallocatedIdx)
         end
         
         % find the user-selected cross
-        userNNdist = createDistanceMatrix([userX userY],frameCoordsPix(:,1:2));
+        userNNdist = createDistanceMatrix([userX userY],frameCoordsPix(:,[2 1]));
         [~,userIdx] = min(userNNdist);
         [userIdx,~] = find((coordsPix - repmat(frameCoordsPix(userIdx,:),size(coordsPix,1),1)) == 0);
         userIdx = userIdx(1);
@@ -342,6 +367,11 @@ while ~isempty(unallocatedIdx)
         kitLog('No sister paired with %i.',iCoord)
     end
     
+end
+
+% close the figure
+if exist('f','var') && isa(f,'matlab.ui.Figure') && ishandle(f)
+    close(f);
 end
 
 userStatus = 'completed';
