@@ -39,15 +39,15 @@ opts.transparency = 1-opts.transparency;
 
 % get coordinate-specific delta
 if opts.depthFilter
-    delta(:,1) = intraStruct.plate.depthFilter.delta.y(:);
-    delta(:,2) = intraStruct.plate.depthFilter.delta.x(:);
-    delta(:,3) = intraStruct.plate.depthFilter.delta.z(:);
-    delta3D    = intraStruct.plate.depthFilter.delta.threeD(:);
+    delta(:,1) = intraStruct.plate.depthFilter.delta.y.all(:);
+    delta(:,2) = intraStruct.plate.depthFilter.delta.x.all(:);
+    delta(:,3) = intraStruct.plate.depthFilter.delta.z.all(:);
+    delta3D    = intraStruct.plate.depthFilter.delta.threeD.all(:);
 else
-    delta(:,1) = intraStruct.plate.raw.delta.y(:);
-    delta(:,2) = intraStruct.plate.raw.delta.x(:);
-    delta(:,3) = intraStruct.plate.raw.delta.z(:);
-    delta3D    = intraStruct.plate.raw.delta.threeD(:);
+    delta(:,1) = intraStruct.plate.raw.delta.y.all(:);
+    delta(:,2) = intraStruct.plate.raw.delta.x.all(:);
+    delta(:,3) = intraStruct.plate.raw.delta.z.all(:);
+    delta3D    = intraStruct.plate.raw.delta.threeD.all(:);
 end
 
 % and coordinate-specific sister separation
