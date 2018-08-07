@@ -35,6 +35,7 @@ function compiledInts = dublIntensityMeasurements(movies,varargin)
 % Copyright (c) 2018 C. A. Smith
 
 % default options
+opts.category = [];
 opts.channels = [1 2];
 opts.refMarker = 'self';
 opts.paired = 1;
@@ -186,9 +187,9 @@ for iExpt = 1:numExpts
                 iSubset = 1:length(refdS.sisterList);
             case 1 % using spots/tracks
                 iSubset = 1:length(refdS.sisterList);
-                theseTracks = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                theseTracks = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
             case 2 % using sisters
-                iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                iSubset = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
         end
         
         for iSis = iSubset
@@ -209,6 +210,15 @@ for iExpt = 1:numExpts
                 trackIDs(iTrack) = NaN;
               end
             end 
+          end
+          % filter based on chosen category
+          if ~isempty(opts.category) && nFrames==1
+              if isfield(theseMovies{iMov},'categories') && ...
+                      isfield(theseMovies{iMov}.categories,opts.category)
+                  spotIDs = intersect(spotIDs,theseMovies{iMov}.categories.(opts.category));
+              else
+                  trackIDs = [NaN NaN];
+              end
           end
           % if both spots skipped
           if all(isnan(trackIDs))
@@ -317,10 +327,19 @@ for iExpt = 1:numExpts
             case 0 % no spot selection
                 spotIDs = 1:size(refdS.initCoord(1).allCoord,1);
             case 1 % using spots/tracks
-                trackIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                trackIDs = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
                 spotIDs = cat(2,dSinner.trackList(trackIDs).featIndx);
             case 3 % using initCoord
-                spotIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                spotIDs = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
+          end
+          % filter based on chosen category
+          if ~isempty(opts.category)
+              if isfield(theseMovies{iMov},'categories') && ...
+                      isfield(theseMovies{iMov}.categories,opts.category)
+                  spotIDs = intersect(spotIDs,theseMovies{iMov}.categories.(opts.category));
+              else
+                  spotIDs = [];
+              end
           end
           nSpots = length(spotIDs);
           if nSpots == 0

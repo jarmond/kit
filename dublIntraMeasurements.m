@@ -10,6 +10,9 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 %
 %    Options, defaults in {}:-
 %
+%    category: {[]} or string. The category from which to calculate intra-
+%       measurements.
+%
 %    centralise: {0} or 1. Whether or not to adjust the outer kinetochore
 %       components' position so that average delta-x, delta-y and delta-z
 %       measurements are zero.
@@ -41,6 +44,7 @@ function compiledIntra = dublIntraMeasurements(movies,varargin)
 % Copyright (c) 2018 C. A. Smith
 
 % default options
+opts.category = [];
 opts.centralise = 1;
 opts.channels = [1 2];
 opts.intRefMarker = 'self';
@@ -230,9 +234,9 @@ for iExpt = 1:numExpts
                 iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
             case 1 % using spots/tracks
                 iSubset = 1:length(theseMovies{iMov}.dataStruct{chanVect(1)}.sisterList);
-                theseTracks = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                theseTracks = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
             case 2 % using sisters
-                iSubset = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                iSubset = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
         end
 
         % check that there are sisters
@@ -273,6 +277,15 @@ for iExpt = 1:numExpts
                         end
                     end
                 end 
+            end
+            % filter based on chosen category
+            if ~isempty(opts.category) && nFrames==1
+                if isfield(theseMovies{iMov},'categories') && ...
+                        isfield(theseMovies{iMov}.categories,opts.category)
+                    spotIDs = intersect(spotIDs,theseMovies{iMov}.categories.(opts.category));
+                else
+                    trackIDs = [NaN NaN];
+                end
             end
             % if both spots skipped
             if all(isnan(trackIDs))
@@ -566,11 +579,23 @@ for iExpt = 1:numExpts
             case 0 % no spot selection
                 spotIDs = 1:size(iCinner(1).allCoord,1);
             case 1 % using spots/tracks
-                trackIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                trackIDs = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
                 spotIDs = cat(2,dSinner.trackList(trackIDs).featIndx);
             case 3 % using initCoord
-                spotIDs = subset{iExpt}(subset{iExpt}(:,1)==iMov,2)';
+                spotIDs = subset{iExpt}(subset{iExpt}(:,1)==movNum,2)';
           end
+          
+          % filter based on chosen category
+          if ~isempty(opts.category)
+              if isfield(theseMovies{iMov},'categories') && ...
+                      isfield(theseMovies{iMov}.categories,opts.category)
+                  spotIDs = intersect(spotIDs,theseMovies{iMov}.categories.(opts.category));
+              else
+                  spotIDs = [];
+              end
+          end
+          
+          % check number of spots
           nSpots = length(spotIDs);
           if nSpots == 0
               continue
@@ -628,7 +653,7 @@ for iExpt = 1:numExpts
           intsInnerMax = nan(nSpots,1);
           intsOuterMax = nan(nSpots,1);
           if ints
-            if size(sIinner.intensity,2)==1
+            if size(sIinner(1).intensity,2)==1
               % inner mean int
               temp = cat(2,sIinner.intensity) - innerBg;
               intsInnerMean = temp(spotIDs,1);
