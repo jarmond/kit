@@ -364,7 +364,7 @@ function hs = createControls()
       hs.intensityMaskShapeText = label(hs.tabs{tabID},'Mask shape',[labx taby labw h],tinyfont);
       hs.intensityMaskShape = popup(hs.tabs{tabID},maskValues,[editx-editw taby editw*2 h],[],tinyfont);
       taby = taby-h;
-      hs.intensityMaskRadiusText = label(hs.tabs{tabID},'Mask radius (um)',[labx taby labw h],tinyfont);
+      hs.intensityMaskRadiusText = label(hs.tabs{tabID},'Mask radius (nm)',[labx taby labw h],tinyfont);
       hs.intensityMaskRadius = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
   end
   
@@ -515,7 +515,7 @@ function updateControls(jobset)
       hs.intensityExecute{iChan}.Value = opts.intensity.execute(iChan);
     end
     hs.intensityMaskShape.Value = mapStrings(opts.intensity.maskShape,maskValuesJS);
-    hs.intensityMaskRadius.String = num2str(opts.intensity.maskRadius);
+    hs.intensityMaskRadius.String = num2str(opts.intensity.maskRadius*1000);
     intensityOptionsCB();
     
     for iChan=1:3
@@ -1134,7 +1134,7 @@ function updateJobset()
     if handles.autoRadii.Value
       opts.autoRadiidt = str2double(handles.autoRadiidt.String);
 %       opts.autoRadiiAvgDisp = str2double(handles.autoRadiiAvgDisp.String)/60;
-      r = computeSearchRadii(opts.autoRadiidt,str2double(handles.autoRadiiAvgDisp)/60);
+      r = computeSearchRadii(opts.autoRadiidt,str2double(handles.autoRadiiAvgDisp.String)/60);
     else
       opts.autoRadiidt = [];
       r = zeros(2,1);
@@ -1197,7 +1197,7 @@ function updateJobset()
       intensity.execute(iChan) = handles.intensityExecute{iChan}.Value;
     end
     intensity.maskShape = mapStrings(handles.intensityMaskShape.Value,maskValuesJS);
-    intensity.maskRadius = str2double(handles.intensityMaskRadius.String);
+    intensity.maskRadius = str2double(handles.intensityMaskRadius.String)/1000;
     intensity.photobleachCorrect = intensity.photobleachCorrect*strcmp(handles.mode,'zandt');
     opts.intensity = intensity;
   end
