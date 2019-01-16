@@ -72,6 +72,9 @@ end
 if all(~jobset.options.intensity.execute)
   options.tasks = setdiff(options.tasks,9);
 end
+if ~ismember(options.tasks,1)
+    options.existing = 1;
+end
 
 % If using matlabpool for parallel computation, report workers.
 [~,name] = fileparts(jobset.filename);
