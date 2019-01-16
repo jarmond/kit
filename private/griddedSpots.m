@@ -10,10 +10,13 @@ function imgDims = griddedSpots(job,varargin)
 %
 %    channel: {1}, 2, 3 or 4. Which channel to show.
 %
+%    rawData: 0 or {1}. Whether or not to show raw data.
+%
 %
 % Copyright (c) 2017 C. A. Smith
 
 opts.channel = 1;
+opts.rawData = 1;
 opts = processOptions(opts,varargin{:});
 
 % some variables
@@ -60,7 +63,7 @@ gridh = fig_n*imgWidth + (fig_n+1)*gridsep;
 gridImg = opts.bgcol*ones(gridh,gridw);
 
 % get all coordinate
-if isfield(dS,'rawData')
+if isfield(dS,'rawData') && opts.rawData
   iC = dS.rawData.initCoord;
 else
   iC = dS.initCoord;
