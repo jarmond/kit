@@ -65,7 +65,7 @@ if iscell(job)
     job = job{1};
     warning('Job provided is in cell format. Please ensure that you have provided a single job and not a full experiment.');
 end
-[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
+[md, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata);
 crop = job.ROI.crop;
 
 %% Process the image
