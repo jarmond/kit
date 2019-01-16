@@ -90,7 +90,7 @@ try
 
 % Wavelengths. Needed to estimate PSFs.
 numWvs = metaTable.getChannelCount(0);
-md.wavelength = [525 615 705 360]/1000; % Default assumes EGFP, mCherry,
+md.wavelength = [525 615 705]/1000; % Default assumes EGFP, mCherry,
                                     % DAPI. FIXME Ask user.
 warnWv = 0;
 for i=1:numWvs
@@ -107,7 +107,7 @@ for i=1:numWvs
 end
 if warnWv && ~suppWarn
   warning('Missing metadata: Assuming wavelengths %d, %d, %d nm',...
-          1000*md.wavelength);
+          1000*md.wavelength(1),1000*md.wavelength(2),1000*md.wavelength(3));
 end
 
 % Timepoints per plane
