@@ -115,7 +115,7 @@ pdfOut = strcmp(upper(opts.codec),'PDF');
 colors = presetColors();
 
 % Open movie.
-[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),job.metadata);
+[md,reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata);
 
 h = figure;
 clf;
@@ -205,7 +205,7 @@ end
 mapChans = opts.channelMap;
 %markers = 'xo+*sd';
 maxMergeChannels = 3;
-dims = [1 2];
+dims = [2 1];
 if opts.transpose
   dims = fliplr(dims);
 end
@@ -236,14 +236,14 @@ for i=1:md.nFrames
   end
 
   sz = size(rgbImg);
-  imgCentre = sz([2 1])/2;
+  imgCentre = sz(dims)/2;
   % Transform image.
   planeFit = job.dataStruct{coordSysChan}.planeFit(i);
   origin = planeFit.planeOrigin(1:2)./job.metadata.pixelSize(1:2);
   if opts.rotate && ~isempty(planeFit.planeVectors)
     if isfield(planeFit, 'tform')
       rgbImg = imtransform(rgbImg, planeFit.tform,...
-                           'XData',[1 sz(2)],'YData',[1 sz(1)],'Size',[sz(1) sz(2)]);
+                           'XData',[1 sz(1)],'YData',[1 sz(2)],'Size',[sz(1) sz(2)]);
     else
       % Translate to image coordinates (0,0).
       transMat = eye(3);
@@ -511,7 +511,7 @@ for i=1:md.nFrames
     % Save frame to PDF.
     set(gcf,'Color','w');
     pdfname = sprintf('%s%04d.pdf',opts.outfile,i);
-    if exist('export_fig')
+    if exist('export_fig','var')
       export_fig(pdfname);
     else
       saveas(gcf,pdfname);
