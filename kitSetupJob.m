@@ -677,7 +677,7 @@ function cropROICB(hObj,event)
         jobset.ROI(r).cropSize = cropSize(j,:);
       end
     end
-    waitbar(i/length(v),waitmsg);
+    waitbar(i/length(v),hwait,waitmsg);
   end
   populateROIBox();
   close(hwait);
