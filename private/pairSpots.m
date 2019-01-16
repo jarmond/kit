@@ -13,7 +13,7 @@ end
 
 % get channel information
 for iCh = 1:length(job.dataStruct)
-    opts.coordChans(iCh) = ~isempty(job.dataStruct{iCh});
+    opts.coordChans(iCh) = isfield(job.dataStruct{iCh},'initCoord');
 end
 opts.coordChans = find(opts.coordChans);
 % get crop information, if any
