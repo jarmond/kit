@@ -79,7 +79,11 @@ while ~handles.stop
     job{iMov}.nROIs = handles.nMovs;
 
     % show all spots - defined using tracks
-    rectDims = griddedSpots(job{iMov},'channel',channel);
+    rectDims = griddedSpots(job{iMov},'channel',channel,'rawData',0);
+    
+    % label figure title
+    figtit = sprintf('Categorise spots: Image %i%s, channel %i',job{iMov}.index,handles.nMovs,channel);
+    set(gcf,'Name',figtit);
     
     % get image information
     rectPos = rectDims(:,1:2);
