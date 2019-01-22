@@ -56,7 +56,7 @@ end
 psfIntegY = zeros(maxIndxY-minIndxY+1,numPSF);
 for i=1:numPSF
     psfIntegY(:,i) = GaussListND((minIndxY:maxIndxY)',...
-        psfSigma(1),psfPos(i,2));
+        psfSigma(2),psfPos(i,2));
 end
 
 % Determine the contribution of each PSF (assuming amplitude 1) to a
@@ -64,7 +64,7 @@ end
 psfIntegZ = zeros(maxIndxZ-minIndxZ+1,numPSF);
 for i=1:numPSF
     psfIntegZ(:,i) = GaussListND((minIndxZ:maxIndxZ)',...
-        psfSigma(2),psfPos(i,3));
+        psfSigma(3),psfPos(i,3));
 end
 
 % Get xy-indices relative to minimum.
@@ -93,14 +93,14 @@ if nargout > 1
   % y-coordinates of the corners of all pixels (needed to calculate J).
   psfValueY = zeros(2*(maxIndxY-minIndxY+1),numPSF);
   for i=1:numPSF
-    psfValueY(:,i) = GaussListND([(minIndxY:maxIndxY)-h (minIndxY:maxIndxY)+h]',psfSigma(1),psfPos(i,2));
+    psfValueY(:,i) = GaussListND([(minIndxY:maxIndxY)-h (minIndxY:maxIndxY)+h]',psfSigma(2),psfPos(i,2));
   end
 
   % Calculate the value of each PSF (assuming amplitude 1) at the
   % z-coordinates of the corners of all pixels (needed to calculate J).
   psfValueZ = zeros(2*(maxIndxZ-minIndxZ+1),numPSF);
   for i=1:numPSF
-    psfValueZ(:,i) = GaussListND([(minIndxZ:maxIndxZ)-h (minIndxZ:maxIndxZ)+h]',psfSigma(2),psfPos(i,3));
+    psfValueZ(:,i) = GaussListND([(minIndxZ:maxIndxZ)-h (minIndxZ:maxIndxZ)+h]',psfSigma(3),psfPos(i,3));
   end
 
   % Get number of pixels in image.

@@ -25,7 +25,7 @@ is3D = ndims(image) == 3;
 if is3D
   degFreePerSpot = 4;
   cols = 3;
-  psfSigma = psfSigma([1 1 2]); % for XYZ
+  psfSigma = psfSigma([1 2 3]); % for XYZ
 else
   degFreePerSpot = 3;
   cols = 2;
@@ -476,7 +476,7 @@ function [x0,lb,ub]=guessBounds(pos,amp,clusterPixels,bgAmp)
 
   % Lower bound.
   lb = x0;
-  lb(:,1:2) = lb(:,1:2) - 2*max(1,psfSigma(1));
+  lb(:,1:2) = lb(:,1:2) - 2*max(1,psfSigma(1:2));
   if is3D
     lb(:,3) = lb(:,3) - max(1,psfSigma(3));
   end
@@ -485,7 +485,7 @@ function [x0,lb,ub]=guessBounds(pos,amp,clusterPixels,bgAmp)
 
   % Upper bound.
   ub = x0;
-  ub(:,1:2) = ub(:,1:2) + 2*max(1,psfSigma(1));
+  ub(:,1:2) = ub(:,1:2) + 2*max(1,psfSigma(1:2));
   if is3D
     ub(:,3) = ub(:,3) + max(1,psfSigma(3));
   end

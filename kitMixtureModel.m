@@ -54,7 +54,7 @@ goodImages = goodImages(:)';
 
 % get psf sigma from filterPrm
 if is3D
-  psfSigma = [filterPrm(1) filterPrm(3)];
+  psfSigma = filterPrm(1:3); %[filterPrm(1) filterPrm(3)];
 else
   psfSigma = filterPrm(1);
 end
