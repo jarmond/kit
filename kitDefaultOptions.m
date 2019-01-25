@@ -67,6 +67,9 @@ direction.switchBuffer = 1; % number of timepoints at start and end of run
                           % to be considered directional switches
 opts.direction = direction;
 
+%for adaptive spot detection method
+options.adaptiveLambda = 10;
+
 % Gaussian mixture-model spot finding options.
 mmf.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole
                             % plate, if too small will not account for

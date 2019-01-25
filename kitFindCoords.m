@@ -54,7 +54,9 @@ switch spotMode
 
   case 'adaptive'
     kitLog('Detecting particle candidates using adaptive thresholding');
-    options.adaptiveLambda = 0.1; %TODO: fix in GUI - why is this not being set?
+    if ~isfield(options,'adativeLambda')
+      options.adaptiveLambda = 10; % if lambda not set, then set to 10 as default
+    end
     spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
 
   case 'wavelet'
