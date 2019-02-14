@@ -54,7 +54,14 @@ switch spotMode
 
   case 'adaptive'
     kitLog('Detecting particle candidates using adaptive thresholding');
-    spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
+    if ~isfield(options,'adaptiveLambda')
+      options.adaptiveLambda = 10; % if lambda not set, then set to 10 as default
+    end
+    if ~isfield(options,'realisticNumSpots')
+      options.realisticNumSpots = 100;
+    end
+    spots = adaptiveSpots(movie,options.adaptiveLambda,...
+                          options.realisticNumSpots,options.debug.showAdaptive);
 
   case 'wavelet'
     kitLog('Detecting particle candidates using multiscale wavelet product');
