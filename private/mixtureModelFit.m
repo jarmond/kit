@@ -188,6 +188,7 @@ candID2 = [];
 amps2 = [];
 bgAmps2 = [];
 
+amp_pvals_store = [];
 % Distance testing. 1-sided t-test.
 for i=1:nClusters
   % Extract candidate information for new cluster.
@@ -303,6 +304,7 @@ for i=1:nClusters
     testAmp = pValueMax > alphaA;
     if ~testAmp
       if verbose
+        amp_pvals_store = [amp_pvals_store; pValue];
         kitLog('All candidates passed amplitude test. Range of p=[%g,%g]',min(pValue),pValueMax);
       end
       break;
@@ -352,6 +354,11 @@ for i=1:nClusters
 
   if verbose
     kitLog('Cluster fitting complete, %d spots',numCands);
+    figure(1);
+%    plot(amp_pvals_store,'rx');
+%    hold on;
+    [fpvals,xi] = ksdensity(amp_pvals_store); 
+    plot(xi,fpvals,'k','LineWidth',3);
   end
 
   % Add amplitude p-value

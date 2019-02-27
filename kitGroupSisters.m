@@ -56,7 +56,7 @@ end
 nTimepoints = dataStruct.dataProperties.movieSize(4);
 
 % read parameters
-minOverlap = nTimepoints * dataStruct.dataProperties.groupSisters.minOverlap/100;
+minOverlap = dataStruct.dataProperties.groupSisters.minOverlap;
 % if minOverlap < 10
 %     minOverlap = 10;
 % end
@@ -79,7 +79,7 @@ trackLength = squeeze(trackStats(2,1,:)-trackStats(1,1,:)+1);
 
 % select tracks whose length is larger than the minimum overlap
 goodTracks = find(trackLength>=minOverlap);
-nGoodTracks = length(goodTracks);
+nGoodTracks = length(goodTracks)
 
 %% READ TRACK INFORMATION
 
@@ -168,7 +168,7 @@ for jTrack = 1:nGoodTracks % loop cols
         commonTimeNA = commonTime(ctNotAna); %not in anaphase
         ctColIdxNA = ctColIdx(ctNotAna);
         ctRowIdxNA = ctRowIdx(ctNotAna);
-        commonTimeA = commonTime(ctAna); %not in anaphase
+        commonTimeA = commonTime(ctAna); %in anaphase
         ctColIdxA = ctColIdx(ctAna);
         ctRowIdxA = ctRowIdx(ctAna);
         clear commonTime ctColIdx ctRowIdx
@@ -229,7 +229,6 @@ for jTrack = 1:nGoodTracks % loop cols
                     rMean = mean(distance);
                     rStd = std(distance);
                 end
-
                 %assign distance mean for pair
                 distances(iTrack,jTrack) = rMean;
                 distances(jTrack,iTrack) = rMean;
@@ -241,6 +240,8 @@ for jTrack = 1:nGoodTracks % loop cols
                 %assign alignment cost for pair if the average angle is less
                 %than maxAngle degrees. Otherwise, keep as NaN to prohibit the link
                 if meanAlpha < maxAngle
+%                fprintf('\nrobust mean distance is %f pm %f compared to %f\n',rMean,rStd,maxDist);
+%                fprintf('\nrobust mean allignment is %f pm %f compared to %f\n',meanAlpha,stdAlpha,maxAngle);
                     [alignment(jTrack,iTrack),alignment(iTrack,jTrack)]...
                         = deal(2*sqrt(3)*tan(meanAlpha)+1);
                 end
@@ -487,6 +488,7 @@ function [r2c,c2r,costMat,linkedIdx] = linkTracks(distances,variances,...
 
 % cutoff distances
 distCutoffIdx = distances>maxDist;
+sum(sum(distCutoffIdx))
 distances(distCutoffIdx) = NaN;
 variances(distCutoffIdx) = NaN;
 alignment(distCutoffIdx) = NaN;
@@ -499,15 +501,21 @@ switch useAlignment
         costMat = distances.*variances.*alignment;
 end
 
+max(max(costMat))
+
+sum(all(isnan(costMat),2))
+
 % replace NaNs with -1
 costMat(isnan(costMat)) = -1;
+
+min(min(costMat))
 
 % lap costMat
 if all(costMat==-1)
     r2c = NaN(2*nGoodTracks,1);
     c2r = NaN(2*nGoodTracks,1);
 else
-    [r2c,c2r] = lap(costMat,-1,0,1);
+    [r2c,c2r] = lap(costMat,-1,0,1,100); %lap applied here, investigate JUH
 end
 
 % shorten r2c, c2r. No link is NaN
