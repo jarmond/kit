@@ -2,6 +2,8 @@ function sigmaFitted = jonathanFitPSF(psfMovie,showPlots)
 % Here we will load in an experimental PSF and fit a gaussian to it
 % Fit a full 3D gaussian(no assumptions about symmetry or diagonal entries)
 %
+%psfMovie - 3D array containing image of measured bead
+%showPlots - logical to determine whether to show plots of image and model
 %Jonathan U Harrison 2019-02-26
 %%%%%%%%%%%%%%%%%%%%
 rng('default');
@@ -11,7 +13,8 @@ if nargin < 1
     psf.movie = 'OS_LLSM_181205_MC139_bead_images_for_PSF.ome.tif';
     %create reader to read movie
     %%%%%%%%%%%%%%%%%%%%%%%%%
-    [psf.metadata, reader] = kitOpenMovie(fullfile(psf.movieDirectory,psf.movie));
+    [psf.metadata, reader] = kitOpenMovie(fullfile(psf.movieDirectory,...
+        psf.movie));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%
     %load movie
@@ -60,10 +63,27 @@ plotComparisonObservedAndModel(psfMovie,modelMovie,2);
 title('Final guess');
 plotComparisonObservedAndModel(psfMovie,modelMovie,3);
 title('Final guess');
-resid = reshape(abs(bsxfun(@minus,psfMovie, modelMovie)),size(psfMovie));
-figure; imshow(squeeze(max(resid,[],2)));
-figure; imshow(squeeze(max(resid,[],3)));
 end
+
+%%%%%%%%%%%%%
+%What we have determined thus far corresponds to the true bead convolved
+%with the psf that we want to know about.
+%We have to account for this.
+
+beadSize = 100*ones(1,3); % in nm, each dimension
+pixelSize = [104,104,308];
+beadSizeInPixels = beadSize./pixelSize;
+
+%define Bead to deconvolve with to leave PSF?
+patchXYZ = roundOddOrEven(4*beadSizeInPixels,'odd','inf');
+beadFilter = fspecial3('gaussian',patchXYZ,beadSizeInPixels);
+deconBead = deconvlucy(psfMovie,beadFilter,10); %10 iterations
+deconBead = min(deconBead,1);
+
+plotComparisonObservedAndModel(psfMovie,deconBead,2);
+
+
+%%%%%%%%%%%%%%%%
 
 end
 function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList)
