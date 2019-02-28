@@ -1,4 +1,4 @@
-function [sigmaFitted,x,modelMovie] = jonathanFitPSF(psfMovie,showPlots)
+function sigmaFitted = jonathanFitPSF(psfMovie,showPlots)
 % Here we will load in an experimental PSF and fit a gaussian to it
 % Fit a full 3D gaussian(no assumptions about symmetry or diagonal entries)
 %
@@ -51,10 +51,12 @@ sigma0 = sigma0*sigma0'; %ensure positive definite
 b0 = 0.0028; %initial estimate of background from looking at image values
 x0 = [b0,256,size(psfMovie)/2,sigma0(:)'];
 %% perform optimization for initial model
-[x,fp,flp,op] = fmincon(fitFun1,x0,[],[],[],[],zeros(1,14),[1,256,...
-    size(psfMovie),10*ones(1,9)])
+fprintf('Initializing ...\n');
+[x,~,~,~] = fmincon(fitFun1,x0,[],[],[],[],zeros(1,14),[1,256,...
+    size(psfMovie),10*ones(1,9)]);
+fprintf('Done\n')
 sigma1 = reshape(x(6:end),3,3);
-sigma1 = sigma1*sigma1'
+sigma1 = sigma1*sigma1';
 sigma1 = diag(sigma1)'/4; %matlab filter functions need a diagonal matrix
 %NB. to use non diagonal matrix for gaussian filter, could write something.
 %But bead images fit well to a diagonal gaussian. (off diagonal entries 0
@@ -77,9 +79,11 @@ if showPlots
 end
 %%%%%%%%%%%%
 %% perform optimization
-[x,fp,flp,op] = fmincon(fitFun2,x1,[],[],[],[],zeros(1,8),[1,256,...
-    size(psfMovie),20*ones(1,3)])
+fprintf('Solving for PSF...\n');
+[x,~,~,~] = fmincon(fitFun2,x1,[],[],[],[],zeros(1,8),[1,256,...
+    size(psfMovie),20*ones(1,3)]);
 sigmaFitted = diag(x(6:end));
+fprintf('Done: PSF is x:%f y:%f z:%f \n',x(6:end));
 
 if showPlots
     %%%%%%%%%%%%%
