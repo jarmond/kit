@@ -26,7 +26,7 @@ if nargin < 2
 end
 
 beadSize = 100; % in nm
-pixelSize = [104,104,308];
+pixelSize = [104,104,100];
 
 %first draft: put in loop. TODO: vetorise this part (only done once though)
 pixelList = zeros(numel(psfMovie),3);
@@ -40,36 +40,38 @@ for k=1:size(psfMovie,3)
     end
 end
 
-fitFun = @(x) singleGaussianObjectiveFun(x,psfMovie,pixelList,...
-    beadSize,pixelSize);
-sigma0 = rand(1,3); %matlab filter functions need a diagonal matrix
+sigma0 = [2,2,3]; %matlab filter functions need a diagonal matrix
 %NB. to use non diagonal matrix for gaussian filter, could write something.
 %But bead images fit well to a diagonal gaussian. (off diagonal entries 0
 %to 2dp)
-x0 = [0.0028,256,64,64,50,sigma0]; %Starting guess near middle of stack
+b0 = 0.0028; %initial estimate of background from looking at image values
+x0 = [b0,sum(psfMovie(:)-b0),round(size(psfMovie)/2)]; %Starting guess near middle of stack
+fitFun = @(x) singleGaussianObjectiveFun(x,psfMovie,pixelList,...
+    beadSize,pixelSize,x0);
+fltXYZ = roundOddOrEven(4*sigma0,'odd','inf');
 if showPlots
     modelMovie = reshape(x0(2)*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
         (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2) < ...
         beadSize), size(psfMovie));
-    modelMovie = imgaussfilt3(modelMovie,sigma0) + x0(1);
+    modelMovie = imgaussfilt3(modelMovie,sigma0,'FilterSize',max(fltXYZ)*ones(1,3)) + x0(1);
     %plot before
     plotComparisonObservedAndModel(psfMovie,modelMovie,2);
     title('Initial guess');
 end
 %%%%%%%%%%%%
 %% perform optimization
-[x,fp,flp,op] = fmincon(fitFun,x0,[],[],[],[],zeros(1,8),[1,1000,...
-    size(psfMovie),10*ones(1,3)]);
-sigmaFitted = diag(x(6:end));
+[x,fp,flp,op] = fmincon(fitFun,sigma0,[],[],[],[],zeros(1,3),50*ones(1,3))
+sigmaFitted = diag(x(1:3));
 
 
 if showPlots
     %%%%%%%%%%%%%
     %plot after
-    modelMovie = reshape(x(2)*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
-        (bsxfun(@minus, pixelList, repmat(x(3:5),numel(psfMovie),1)))).^2,2) < ...
+    fltXYZ = roundOddOrEven(4*x(1:3),'odd','inf');
+    modelMovie = reshape(x0(2)*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
+        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2) < ...
         beadSize), size(psfMovie));
-    modelMovie = imgaussfilt3(modelMovie,x(6:end)) + x(1);
+    modelMovie = imgaussfilt3(modelMovie,x(1:3),'FilterSize',max(fltXYZ)*ones(1,3)) + x0(1);
     plotComparisonObservedAndModel(psfMovie,modelMovie,2);
     title('Final guess');
     plotComparisonObservedAndModel(psfMovie,modelMovie,3);
@@ -80,24 +82,25 @@ end
 
 end
 function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList,...
-                                                beadSize, pixelSize)
+                                                beadSize, pixelSize,y0)
 %% Suppose a model of the form b + a*exp(-(x-mu).^2/sigma^2)
-b = theta(1); %background
-a = theta(2); %amplitude
-mu = theta(3:5); %mean: centre of bead
-sigma = theta(6:end); %diagonal entries of psf
+b = y0(1); %background
+a = y0(2); %amplitude
+mu = y0(3:5); %mean: centre of bead
+sigma = theta(1:3); %diagonal entries of psf
 
 %Note: we rely on data about the size of the bead and the pixel size
 
 %Take an indiator or binary mask for an object the same size as the bead is
 %supposed to be. Put this at position mu (in pixel units).
 %Multiply by some amplitude a. Make into the size of an image.
+fltXYZ = roundOddOrEven(4*theta(1:3),'odd','inf');
 modelMovie = reshape(a*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
     (bsxfun(@minus, pixelList, repmat(mu,numel(psfMovie),1)))).^2,2) < ...
     beadSize), size(psfMovie));
 %Convolve the model image with a gaussian corresponding to the proposed PSF
 %parameters sigma. Add a small amount of background b
-modelMovie = imgaussfilt3(modelMovie,sigma) + b;
+modelMovie = imgaussfilt3(modelMovie,sigma,'FilterSize',max(fltXYZ)*ones(1,3)) + b;
 %Compute a total L1 loss across all voxels. We will aim to minimise this.
 residual = sum(sum(sum(abs(bsxfun(@minus,psfMovie, modelMovie)))));
 end
