@@ -40,30 +40,45 @@ for k=1:size(psfMovie,3)
     end
 end
 
-sigma0 = 2*ones(1,3); %matlab filter functions need a diagonal matrix
+%we are first going to fit a single gaussian assuming sub pixel point for
+%the bead. We will use this to inform an initial condition for a model
+%where the bead has finite size not necessarily restricted to a single
+%pixel
+
+fitFun1 = @(x) singleGaussianObjectiveFun(x,psfMovie,pixelList);
+sigma0 = rand(3,3);
+sigma0 = sigma0*sigma0'; %ensure positive definite
+b0 = 0.0028; %initial estimate of background from looking at image values
+x0 = [b0,256,size(psfMovie)/2,sigma0(:)'];
+%% perform optimization for initial model
+[x,fp,flp,op] = fmincon(fitFun1,x0,[],[],[],[],zeros(1,14),[1,256,...
+    size(psfMovie),10*ones(1,9)])
+sigma1 = reshape(x(6:end),3,3);
+sigma1 = sigma1*sigma1'
+sigma1 = diag(sigma1)'/4; %matlab filter functions need a diagonal matrix
 %NB. to use non diagonal matrix for gaussian filter, could write something.
 %But bead images fit well to a diagonal gaussian. (off diagonal entries 0
 %to 2dp)
-b0 = 0.0028; %initial estimate of background from looking at image values
-mu0 = [63, 66, 51] + randn(1,3); %size(psfMovie)/2; %[64.3021   66.8140   52.0831]; %Starting guess near middle of stack
-x0 = [b0,sum(psfMovie(:)-b0),mu0,sigma0]; 
-fitFun = @(x) singleGaussianObjectiveFun(x,psfMovie,pixelList,...
+b1 = x(1); 
+mu1 = x(3:5); %Starting guess based on previous result
+x1 = [b1,sum(psfMovie(:)-b1),mu1,sigma1]; 
+fitFun2 = @(x) GaussianFilterObjectiveFun(x,psfMovie,pixelList,...
     beadSize,pixelSize);
-fltXYZ = roundOddOrEven(4*sigma0,'odd','inf');
+fltXYZ = roundOddOrEven(4*sigma1,'odd','inf');
 if showPlots
-    modelMovie = reshape(x0(2)*(sqrt(sum((repmat(pixelSize, ...
-        numel(psfMovie),1).*(bsxfun(@minus, pixelList, repmat(x0(3:5), ...
+    modelMovie = reshape(x1(2)*(sqrt(sum((repmat(pixelSize, ...
+        numel(psfMovie),1).*(bsxfun(@minus, pixelList, repmat(x1(3:5), ...
         numel(psfMovie),1)))).^2,2)) < beadSize), size(psfMovie));
-    modelMovie = imgaussfilt3(modelMovie,sigma0,'FilterSize', ...
-        max(fltXYZ)*ones(1,3)) + x0(1);
+    modelMovie = imgaussfilt3(modelMovie,sigma1,'FilterSize', ...
+        max(fltXYZ)*ones(1,3)) + x1(1);
     %plot before
     plotComparisonObservedAndModel(psfMovie,modelMovie,2);
     title('Initial guess');
 end
 %%%%%%%%%%%%
 %% perform optimization
-[x,~,~,~] = fmincon(fitFun,x0,[],[],[],[],zeros(1,8),[1,256,...
-    size(psfMovie),20*ones(1,3)]);
+[x,fp,flp,op] = fmincon(fitFun2,x1,[],[],[],[],zeros(1,8),[1,256,...
+    size(psfMovie),20*ones(1,3)])
 sigmaFitted = diag(x(6:end));
 
 if showPlots
@@ -84,9 +99,20 @@ end
 %%%%%%%%%%%%%%%%
 
 end
-function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList,...
-                                                beadSize, pixelSize)
+function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList)
 %% Suppose a model of the form b + a*exp(-(x-mu).^2/sigma^2)
+b = theta(1); %background
+a = theta(2); %amplitude
+mu = theta(3:5); %mean: centre of gaussian
+sigma = reshape(theta(6:end),3,3); %covariance: psf
+sigma = sigma*sigma'; %ensure symmetric and positive definite
+
+modelMovie = reshape(b + a*mvnpdf(pixelList,mu,sigma),size(psfMovie));
+residual = sum(sum(sum(abs(bsxfun(@minus,psfMovie, modelMovie)))));
+end
+function residual = GaussianFilterObjectiveFun(theta,psfMovie,pixelList,...
+                                                beadSize, pixelSize)
+%% Make a mask for the bead image and convolve with gaussian filter
 b = theta(1); %background
 a = theta(2); %amplitude
 mu = theta(3:5); %mean: centre of bead
