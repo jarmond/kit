@@ -1,4 +1,4 @@
-function [sigmaFitted,x] = jonathanFitPSF(psfMovie,showPlots)
+function [sigmaFitted,x,modelMovie] = jonathanFitPSF(psfMovie,showPlots)
 % Here we will load in an experimental PSF and fit a gaussian to it
 % Fit a full 3D gaussian(no assumptions about symmetry or diagonal entries)
 %
@@ -40,39 +40,41 @@ for k=1:size(psfMovie,3)
     end
 end
 
-sigma0 = [2,2,3]; %matlab filter functions need a diagonal matrix
+sigma0 = 2*ones(1,3); %matlab filter functions need a diagonal matrix
 %NB. to use non diagonal matrix for gaussian filter, could write something.
 %But bead images fit well to a diagonal gaussian. (off diagonal entries 0
 %to 2dp)
 b0 = 0.0028; %initial estimate of background from looking at image values
-mu0 = [64.3021   66.8140   52.0831];
-x0 = [b0,sum(psfMovie(:)-b0),mu0]; %Starting guess near middle of stack
+mu0 = [63, 66, 51] + randn(1,3); %size(psfMovie)/2; %[64.3021   66.8140   52.0831]; %Starting guess near middle of stack
+x0 = [b0,sum(psfMovie(:)-b0),mu0,sigma0]; 
 fitFun = @(x) singleGaussianObjectiveFun(x,psfMovie,pixelList,...
-    beadSize,pixelSize,x0);
+    beadSize,pixelSize);
 fltXYZ = roundOddOrEven(4*sigma0,'odd','inf');
 if showPlots
-    modelMovie = reshape(x0(2)*(sqrt(sum((repmat(pixelSize,numel(psfMovie),1).* ...
-        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2)) < ...
-        beadSize), size(psfMovie));
-    modelMovie = imgaussfilt3(modelMovie,sigma0,'FilterSize',max(fltXYZ)*ones(1,3)) + x0(1);
+    modelMovie = reshape(x0(2)*(sqrt(sum((repmat(pixelSize, ...
+        numel(psfMovie),1).*(bsxfun(@minus, pixelList, repmat(x0(3:5), ...
+        numel(psfMovie),1)))).^2,2)) < beadSize), size(psfMovie));
+    modelMovie = imgaussfilt3(modelMovie,sigma0,'FilterSize', ...
+        max(fltXYZ)*ones(1,3)) + x0(1);
     %plot before
     plotComparisonObservedAndModel(psfMovie,modelMovie,2);
     title('Initial guess');
 end
 %%%%%%%%%%%%
 %% perform optimization
-[x,fp,flp,op] = fmincon(fitFun,sigma0,[],[],[],[],zeros(1,3),12*ones(1,3))
-sigmaFitted = diag(x(1:3));
-
+[x,~,~,~] = fmincon(fitFun,x0,[],[],[],[],zeros(1,8),[1,256,...
+    size(psfMovie),20*ones(1,3)]);
+sigmaFitted = diag(x(6:end));
 
 if showPlots
     %%%%%%%%%%%%%
     %plot after
-    fltXYZ = roundOddOrEven(4*x(1:3),'odd','inf');
-    modelMovie = reshape(x0(2)*(sqrt(sum((repmat(pixelSize,numel(psfMovie),1).* ...
-        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2)) < ...
-        beadSize), size(psfMovie));
-    modelMovie = imgaussfilt3(modelMovie,x(1:3),'FilterSize',max(fltXYZ)*ones(1,3)) + x0(1);
+    fltXYZ = roundOddOrEven(4*x(6:end),'odd','inf');
+    modelMovie = reshape(x(2)*(sqrt(sum((repmat(pixelSize,...
+        numel(psfMovie),1).*(bsxfun(@minus, pixelList, repmat(x(3:5), ...
+        numel(psfMovie),1)))).^2,2)) < beadSize), size(psfMovie));
+    modelMovie = imgaussfilt3(modelMovie,x(6:end),'FilterSize', ...
+        max(fltXYZ)*ones(1,3)) + x(1);
     plotComparisonObservedAndModel(psfMovie,modelMovie,2);
     title('Final guess');
     plotComparisonObservedAndModel(psfMovie,modelMovie,3);
@@ -83,12 +85,12 @@ end
 
 end
 function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList,...
-                                                beadSize, pixelSize,y0)
+                                                beadSize, pixelSize)
 %% Suppose a model of the form b + a*exp(-(x-mu).^2/sigma^2)
-b = y0(1); %background
-a = y0(2); %amplitude
-mu = y0(3:5); %mean: centre of bead
-sigma = theta(1:3); %diagonal entries of psf
+b = theta(1); %background
+a = theta(2); %amplitude
+mu = theta(3:5); %mean: centre of bead
+sigma = theta(6:8); %diagonal entries of psf
 
 %Note: we rely on data about the size of the bead and the pixel size
 
@@ -101,7 +103,8 @@ modelMovie = reshape(a*(sqrt(sum((repmat(pixelSize,numel(psfMovie),1).* ...
     beadSize), size(psfMovie));
 %Convolve the model image with a gaussian corresponding to the proposed PSF
 %parameters sigma. Add a small amount of background b
-modelMovie = imgaussfilt3(modelMovie,sigma,'FilterSize',max(fltXYZ)*ones(1,3)) + b;
+modelMovie = imgaussfilt3(modelMovie,sigma,'FilterSize',max(fltXYZ)*...
+    ones(1,3)) + b;
 %Compute a total L1 loss across all voxels. We will aim to minimise this.
 residual = sum(sum(sum(abs(bsxfun(@minus,psfMovie, modelMovie)))));
 end
