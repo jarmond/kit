@@ -45,13 +45,14 @@ sigma0 = [2,2,3]; %matlab filter functions need a diagonal matrix
 %But bead images fit well to a diagonal gaussian. (off diagonal entries 0
 %to 2dp)
 b0 = 0.0028; %initial estimate of background from looking at image values
-x0 = [b0,sum(psfMovie(:)-b0),round(size(psfMovie)/2)]; %Starting guess near middle of stack
+mu0 = [64.3021   66.8140   52.0831];
+x0 = [b0,sum(psfMovie(:)-b0),mu0]; %Starting guess near middle of stack
 fitFun = @(x) singleGaussianObjectiveFun(x,psfMovie,pixelList,...
     beadSize,pixelSize,x0);
 fltXYZ = roundOddOrEven(4*sigma0,'odd','inf');
 if showPlots
-    modelMovie = reshape(x0(2)*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
-        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2) < ...
+    modelMovie = reshape(x0(2)*(sqrt(sum((repmat(pixelSize,numel(psfMovie),1).* ...
+        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2)) < ...
         beadSize), size(psfMovie));
     modelMovie = imgaussfilt3(modelMovie,sigma0,'FilterSize',max(fltXYZ)*ones(1,3)) + x0(1);
     %plot before
@@ -60,7 +61,7 @@ if showPlots
 end
 %%%%%%%%%%%%
 %% perform optimization
-[x,fp,flp,op] = fmincon(fitFun,sigma0,[],[],[],[],zeros(1,3),50*ones(1,3))
+[x,fp,flp,op] = fmincon(fitFun,sigma0,[],[],[],[],zeros(1,3),12*ones(1,3))
 sigmaFitted = diag(x(1:3));
 
 
@@ -68,8 +69,8 @@ if showPlots
     %%%%%%%%%%%%%
     %plot after
     fltXYZ = roundOddOrEven(4*x(1:3),'odd','inf');
-    modelMovie = reshape(x0(2)*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
-        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2) < ...
+    modelMovie = reshape(x0(2)*(sqrt(sum((repmat(pixelSize,numel(psfMovie),1).* ...
+        (bsxfun(@minus, pixelList, repmat(x0(3:5),numel(psfMovie),1)))).^2,2)) < ...
         beadSize), size(psfMovie));
     modelMovie = imgaussfilt3(modelMovie,x(1:3),'FilterSize',max(fltXYZ)*ones(1,3)) + x0(1);
     plotComparisonObservedAndModel(psfMovie,modelMovie,2);
@@ -95,8 +96,8 @@ sigma = theta(1:3); %diagonal entries of psf
 %supposed to be. Put this at position mu (in pixel units).
 %Multiply by some amplitude a. Make into the size of an image.
 fltXYZ = roundOddOrEven(4*theta(1:3),'odd','inf');
-modelMovie = reshape(a*(sum((repmat(pixelSize,numel(psfMovie),1).* ...
-    (bsxfun(@minus, pixelList, repmat(mu,numel(psfMovie),1)))).^2,2) < ...
+modelMovie = reshape(a*(sqrt(sum((repmat(pixelSize,numel(psfMovie),1).* ...
+    (bsxfun(@minus, pixelList, repmat(mu,numel(psfMovie),1)))).^2,2)) < ...
     beadSize), size(psfMovie));
 %Convolve the model image with a gaussian corresponding to the proposed PSF
 %parameters sigma. Add a small amount of background b
