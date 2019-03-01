@@ -501,14 +501,8 @@ switch useAlignment
         costMat = distances.*variances.*alignment;
 end
 
-max(max(costMat))
-
-sum(all(isnan(costMat),2))
-
 % replace NaNs with -1
 costMat(isnan(costMat)) = -1;
-
-min(min(costMat))
 
 % lap costMat
 if all(costMat==-1)
