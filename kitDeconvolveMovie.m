@@ -1,5 +1,15 @@
-function deconMovie = kitDeconvolveMovie(job,movie,channel,verbose)
-%
+function deconMovie = kitDeconvolveMovie(job,movie,channel,...
+                                         pathToExpmtPSF,saveoutput,...
+                                         verbose)
+%kitDeconvolveMovie should perform deconvolution using the Richardson-Lucy
+%algorithm to reduce the blur on raw images. We can use either the
+%theoretical of experimentally determined PSF for this. Better results are
+%seen with experimental PSFs. 
+%job - struct containing info about job
+%movie - 4D double array
+%channel - int, usually 1
+%pathToExpmtPSF - char, path to PSF image,
+%                                     
 % Jonathan U Harrison 2019-02-19
 %%%%%%%%%%%%%%%%%%%%%
 
@@ -10,12 +20,20 @@ end
 
 is3D = job.metadata.is3D;
 ndims = 2 + is3D;
-%define PSF
-filters = createFilters(ndims,job.dataStruct{channel}.dataProperties);
-PSF = fspecial3('gaussian',filters.signalP(4:6),filters.signalP(1:3));
+
+if ischar(pathToExpmtPSF)
+    PSF = pathToExpmtPSF;
+    %PSF = jonathanFitPSF(psfMovie,0);    
+    fltXYZ = roundOddOrEven(4*PSF,'odd','inf');
+    PSF = fspecial3('gaussian',max(fltXYZ)*ones(1,3),useExperimentalPSF);
+else
+    %define PSF based on theoretical properties
+    filters = createFilters(ndims,job.dataStruct{channel}.dataProperties);
+    PSF = fspecial3('gaussian',filters.signalP(4:6),filters.signalP(1:3));
+end
 
 deconMovie = zeros(size(movie));
-nFrames = job.dataStruct{1}.dataProperties.movieSize(ndims+1);
+nFrames = job.dataStruct{channel}.dataProperties.movieSize(ndims+1);
 for i=1:nFrames %loop is faster here than deconvolving full movie together
     deconMovie(:,:,:,i) = deconvlucy(movie(:,:,:,i),PSF,10); %10 iterations
 end
@@ -24,6 +42,7 @@ end
 %deconMovie = min(permute(deconMovie,[2,1,3,4]),1); 
 deconMovie = min(deconMovie,1);
 
+if saveoutput
 savename = sprintf('%s/%s',job.movieDirectory,job.ROI.movie);
 [extStart,extEnd] = regexp(savename,'.ome.tif','start','end');
 savename(extStart:extEnd)=[];
@@ -34,6 +53,7 @@ addpath bfmatlab;
 bfCheckJavaPath(1);
 bfsave(deconMovie, sprintf('%sDeconvolved.ome.tif',savename),...
     'dimensionOrder', 'XYZTC','BigTiff',true,'Compression', 'LZW');
+end
 
 if verbose
     figure;

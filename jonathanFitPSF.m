@@ -8,17 +8,21 @@ function sigmaFitted = jonathanFitPSF(psfMovie,showPlots)
 %%%%%%%%%%%%%%%%%%%%
 rng('default');
 if nargin < 1
-    %load in psfMovie
-    psf.movieDirectory = '../../Data/2019-02-26';
-    psf.movie = 'OS_LLSM_181205_MC139_bead_images_for_PSF.ome.tif';
-    %create reader to read movie
+    % TODO: add feature to open file system to select file
+    error('No file selected. Input path to experimental PSF or an array');
+%     psf.movieDirectory = '../../Data/2019-02-26';
+%     psf.movie = 'OS_LLSM_181205_MC139_bead_images_for_PSF.ome.tif';
+%     psfMovie = fullfile(psf.movieDirectory,psf.movie)
+end
+if ischar(psfMovie)
+%create reader to read movie
     %%%%%%%%%%%%%%%%%%%%%%%%%
-    [psf.metadata, reader] = kitOpenMovie(fullfile(psf.movieDirectory,...
-        psf.movie));
-    
+    [metadata, reader] = kitOpenMovie(psfMovie);    
     %%%%%%%%%%%%%%%%%%%%%%%%%%
     %load movie
-    psfMovie = kitReadWholeMovie(reader,psf.metadata,1,[],0,1);
+    psfMovie = kitReadWholeMovie(reader,metadata,1,[],0,1);
+elseif ~isa(psfMovie,'double')
+    error('Unknown type for psfMovie. Try inputting a string or array');
 end
 
 if nargin < 2
@@ -82,8 +86,12 @@ end
 fprintf('Solving for PSF...\n');
 [x,~,~,~] = fmincon(fitFun2,x1,[],[],[],[],zeros(1,8),[1,256,...
     size(psfMovie),20*ones(1,3)]);
-sigmaFitted = diag(x(6:end));
-fprintf('Done: PSF is x:%f y:%f z:%f \n',x(6:end));
+
+sigmaFitted = x(6:end);
+%this has been in units of pixels
+%account for pixel size and convert to um for consistency with rest of KiT
+sigmaFitted = sigmaFitted.*pixelSize/10^3; 
+fprintf('Done: PSF is x:%f y:%f z:%f in units of um \n',sigmaFitted);
 
 if showPlots
     %%%%%%%%%%%%%
