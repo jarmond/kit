@@ -30,7 +30,7 @@ if nargin < 2
 end
 
 beadSize = 100; % in nm
-pixelSize = [104,104,100];
+pixelSize = [104,104,308*cos(57.2)];%100
 
 %first draft: put in loop. TODO: vetorise this part (only done once though)
 pixelList = zeros(numel(psfMovie),3);
