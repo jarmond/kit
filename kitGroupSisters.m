@@ -399,13 +399,14 @@ for iPair = 1:nGoodPairs/2
     %find common time between them
     [commonTime,ctColIdx,ctRowIdx] = intersect(colTime,rowTime);
 
+%EDITED SO THAT WE DO NOT THROW AWAY INFORMATION ABOUT THE LONGER TRACK -JUH
     %store the coordinates of the first sister
-    sisterList(iPair).coords1(commonTime,:) = [rowCoords(rowIdx(ctRowIdx),:) ...
-        rowCoordsStd(rowIdx(ctRowIdx),:)];
+    sisterList(iPair).coords1(rowTime,:) = [rowCoords(rowIdx,:) ...
+        rowCoordsStd(rowIdx,:)];
 
     %store the coordinates of the second sister
-    sisterList(iPair).coords2(commonTime,:) = [colCoords(colIdx(ctColIdx),:) ...
-        colCoordsStd(colIdx(ctColIdx),:)];
+    sisterList(iPair).coords2(colTime,:) = [colCoords(colIdx,:) ...
+        colCoordsStd(colIdx,:)];
 
     %calculate the vector connecting the two sisters and its std (microns)
     sisterVectors = [colCoords(colIdx(ctColIdx),:) - rowCoords(rowIdx(ctRowIdx),:) ...
