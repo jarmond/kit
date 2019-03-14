@@ -73,7 +73,7 @@ end
 
 % Draw axis line.
 axisLine = line(xlim(gca),[0 0]);
-set(axisLine,'LineStyle',':');
+set(axisLine,'LineStyle',':','linewidth',3);
 axisAnnotation = get(axisLine,'Annotation');
 axisLegendEntry = get(axisAnnotation,'LegendInformation');
 set(axisLegendEntry,'IconDisplayStyle','off');
