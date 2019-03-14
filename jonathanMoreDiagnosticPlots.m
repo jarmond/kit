@@ -14,8 +14,8 @@ elseif ~isfield(job,'output')
     warning('job does not have output to save plots so will not save')
     ableToSave=false;
 end
-if isfield(job.dataStruct{channel},'sisterList')
-
+if isfield(job.dataStruct{channel},'sisterList') && ...
+        ~isempty(job.dataStruct{channel}.sisterList(1).distances)
     sisterList = job.dataStruct{channel}.sisterList;
     sisterSisterDist = [];
     for i = 1:length(sisterList)

@@ -21,7 +21,11 @@ if nargin <1
 end
 
 if nargin<2 || isempty(verbose)
-verbose = 1;
+    verbose = 1;
+end
+
+if nargin<3
+    movie = []; %then ignore the movie argument
 end
 
 if nargin<4
@@ -33,11 +37,11 @@ if nargin<4
     opts.useAnaphase=0;
     opts.robust=0;
 else %use input, can set up as optimization problem
-    opts.useAlignment = 1; 
+    opts.useAlignment = 1;
     opts.maxAngle = theta(1);
     opts.maxDist = theta(2);
     opts.minOverlap = theta(3);
-    opts.useAnaphase=1;
+    opts.useAnaphase=0;
     opts.robust=0;
 end
 
@@ -48,26 +52,28 @@ job.dataStruct{channel} = kitGroupSisters(job.dataStruct{channel},...
     verbose);
 
 %how many sisters does this give us on average through the movie?
-    nFrames = job.metadata.nFrames;
-    nSisters = size(job.dataStruct{channel}.sisterList,1);
-    doesSisterPairExist = zeros(nFrames,nSisters);
+nFrames = job.metadata.nFrames;
+nSisters = size(job.dataStruct{channel}.sisterList,1);
+doesSisterPairExist = zeros(nFrames,nSisters);
+if ~isempty(job.dataStruct{channel}.sisterList(1).coords1)
     for j = 1:nSisters
         %put ones where a paired sister exists
         doesSisterPairExist(:,j)= ~isnan(...
             job.dataStruct{channel}.sisterList(j).coords1(:,1));
     end
-    %multiply by 2 since we count the pair twice
-    nSistersMovieAverage = 2*mean(sum(doesSisterPairExist,2));
-    fprintf('On average through the movie we find %f sisters\n',...
-        nSistersMovieAverage);
+end
+%multiply by 2 since we count the pair twice
+nSistersMovieAverage = 2*mean(sum(doesSisterPairExist,2));
+fprintf('On average through the movie we find %f sisters\n',...
+    nSistersMovieAverage);
 
 %can we plot which sisters we have matched up
 if verbose && ~isempty(movie)
-    frameToShow = min(50,nFrames); %piack a frame to plot sisters on
+    frameToShow = min(50,nFrames); %pick a frame to plot sisters on
     jonathanVisualiseTrackedAndGroupedSpots(job,movie,channel,frameToShow);
 elseif verbose
     %load movie if input movie is empty. eg:
     [~, movie, ~] = jonathanExampleDetectionTest(job);
-    frameToShow = min(50,nFrames); %piack a frame to plot sisters on
+    frameToShow = min(50,nFrames); %pick a frame to plot sisters on
     jonathanVisualiseTrackedAndGroupedSpots(job,movie,channel,frameToShow);
 end

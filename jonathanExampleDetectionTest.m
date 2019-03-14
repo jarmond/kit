@@ -1,4 +1,5 @@
-function [spots, movie, job] = jonathanExampleDetectionTest(job)
+function [spots, movie, job] = jonathanExampleDetectionTest(job, channel,...
+                            useAdaptive, adaptiveLambda, verbose)
 % Perform detection on metaphase example downloaded from the bitbucket repo
 %
 % Jonathan U Harrison 2019-02-06
@@ -17,26 +18,40 @@ if ~isfield(job,'index')
     job.index=1;
 end
 %set some options for which method to use
-useAdaptive=1;
-adaptiveLambda = 1;
-realisticNumSpots=100;
-verbose=0;
-channel = 1;
+if nargin<2 || isempty(channel)
+    channel=1;
+end
+if nargin<3 || isempty(useAdaptive)
+    useAdaptive=1;
+end
+if nargin<4 || isempty(adaptiveLambda) && useAdaptive
+    adaptiveLambda = 1;
+end
+if nargin<5 || isempty(verbose)
+    verbose=0;
+end
+realisticNumSpots=92;
 
 %create reader to read movie
 %%%%%%%%%%%%%%%%%%%%%%%%%
+if isfield(job,'ROI') && length(job.ROI)>1
+    warning('More than one stack in job but using only first one\n');
+    pathToMovie = fullfile(job.movieDirectory,job.ROI(1).movie);
+else
+    pathToMovie = fullfile(job.movieDirectory,job.ROI.movie);
+end
 if isfield(job,'metadata')
     if iscell(job.metadata)
         job.metadata = job.metadata{job.index};
     end
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie),'valid',job.metadata);
+    [job.metadata, reader] = kitOpenMovie(pathToMovie,'valid',job.metadata);
 else
-    [job.metadata, reader] = kitOpenMovie(fullfile(job.movieDirectory,job.ROI.movie));
+    [job.metadata, reader] = kitOpenMovie(pathToMovie);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %load movie
-movie = kitReadWholeMovie(reader,job.metadata,channel,job.ROI.crop,0,1);
+movie = kitReadWholeMovie(reader,job.metadata,channel,job.ROI(1).crop,0,1);
 
 
 if useAdaptive
@@ -57,7 +72,7 @@ else
 end
 %max project and show spots
 if verbose
-    t_frame = 66;
+    t_frame = 1;
     figure;
     imshow(max(movie(:,:,:,t_frame),[],3));
     hold on;

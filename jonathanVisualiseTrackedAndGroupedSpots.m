@@ -37,7 +37,8 @@ else
     warning('tracks field not found. Will not perform diagnostic plot');
 end
 
-if isfield(job.dataStruct{channel},'sisterList')
+if isfield(job.dataStruct{channel},'sisterList') && ...
+        ~isempty(job.dataStruct{channel}.sisterList(1).coords1)
     %visualise grouped sisters
     totalNumSisters = length(job.dataStruct{channel}.sisterList);
     subplot(1,2,2);

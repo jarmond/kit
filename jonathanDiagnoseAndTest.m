@@ -73,7 +73,11 @@ end
 nFrames = size(spots,1);
 nStages = 5; %number of stages of algorithm to consider
 nSpots = zeros(nFrames,nStages); %store num spots at each different stage
-minOverlap = job.dataStruct{channel}.dataProperties.groupSisters.minOverlap; %now in number of frames
+if isfield(job,'dataStruct')
+    minOverlap = job.dataStruct{channel}.dataProperties.groupSisters.minOverlap; %now in number of frames
+else
+    minOverlap = 10;
+end
 try
     planeFitted = zeros(nFrames,1);
     for i = 1:nFrames
@@ -119,11 +123,16 @@ end
 t = job.metadata.frameTime(1,:);
 if nStages ==5
     coloursByStage = ...
-        [127,201,127;
-        190,174,212;
-        253,192,134;
-        255,255,153;
-        56,108,176]/256; %from http://colorbrewer2.org/
+        [228,26,28
+        55,126,184
+        77,175,74
+        152,78,163
+        255,127,0]/256;
+%         [127,201,127;
+%         190,174,212;
+%         253,192,134;
+%         255,255,153;
+%         56,108,176]/256; %from http://colorbrewer2.org/
 elseif nStages==4
     % for 4 colours:
     coloursByStage = ...
@@ -154,7 +163,7 @@ for i=1:nStages
         error('wrong number of fitted planes compared to frames');
     end
 end
-legend(stagesLegend);
+legend(stagesLegend,'Location','southeast');
 xlabel('Time (s)');
 ylabel('Number of spots');
 title('Performance of each stage of KiT in tracking kinetochores');
@@ -162,16 +171,18 @@ grid on;
 box on;
 set(gca,'fontsize',20);
 savename =  sprintf('%s/%sNumSpotsDiagnosticPlot',job.movieDirectory,...
-    job.ROI.movie);
+    job.ROI(1).movie);
 savename(regexp(savename,'[.]'))=[];
 print(sprintf('%s.eps',savename),'-depsc');
 
 %%%%%%%%%%%%
 %call other diagnostics too
+if isfield(job,'dataStruct') %these are meaningless if didnt manage this
 jonathanCheckTracks(job);
 jonathanMoreDiagnosticPlots(job,channel,1);
 jonathanVisualiseTrackedAndGroupedSpots(job,movie,channel,...
     round(job.metadata.nFrames/2));
+end
 
 if applyTests
 %% Test1: good number of spots

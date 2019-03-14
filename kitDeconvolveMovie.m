@@ -21,11 +21,22 @@ end
 is3D = job.metadata.is3D;
 ndims = 2 + is3D;
 
+if ischar(movie) || isempty(movie)
+        %user has provided a path to movie file
+        if ischar(movie)
+            pathToMovie = movie; 
+        elseif isempty(movie)
+            pathToMovie = fullfile(job.movieDirectory,job.ROI.movie);
+        end
+        [metadata,reader] = kitOpenMovie(pathToMovie);
+        movie = kitReadWholeMovie(reader,metadata,channel,[],0,1);
+end
+
 if ischar(pathToExpmtPSF)
-    PSF = pathToExpmtPSF;
-    %PSF = jonathanFitPSF(psfMovie,0);    
+%    PSF = pathToExpmtPSF;
+    PSF = jonathanFitPSF(pathToExpmtPSF,0);    
     fltXYZ = roundOddOrEven(4*PSF,'odd','inf');
-    PSF = fspecial3('gaussian',max(fltXYZ)*ones(1,3),useExperimentalPSF);
+    PSF = fspecial3('gaussian',max(fltXYZ)*ones(1,3),PSF);
 else
     %define PSF based on theoretical properties
     filters = createFilters(ndims,job.dataStruct{channel}.dataProperties);

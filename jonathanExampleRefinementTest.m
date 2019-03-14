@@ -1,4 +1,5 @@
-function job = jonathanExampleRefinementTest(spots,movie,job)
+function job = jonathanExampleRefinementTest(spots,movie,job, ...
+                                             channel,verbose,debug)
 % Perform and test refinement of spots by gaussian mixture model fitting
 %
 %take output from jonathanExampleDetectionTest.m rather than redoing
@@ -11,16 +12,23 @@ function job = jonathanExampleRefinementTest(spots,movie,job)
 if nargin <1
     [spots, movie, job] = jonathanExampleDetectionTest();
 end
-
+if nargin<4 || isempty(channel)
 channel = 1;
+end
+if nargin<5 || isempty(verbose)
+    verbose=0;
+end
+if nargin<6 || isempty(debug)
+    debug = 0;
+end
 method = 'gaussian'; %could also test centroid fitting method
 ndims = 3;
-verbose=0;
 %get data properties rather than setting manually for test
 ds = kitMakeMakiDatastruct(job,channel);
 job.dataStruct{channel}.dataProperties = ds.dataProperties;
 % set more options for use later in MMF fitting
-job.options.debug.showMmfFinal = verbose;
+job.options.debug.showMmfFinal = debug;
+job.options.debug.showMmfPvals = debug;
 job.options.debug.mmfVerbose = verbose;
 job.options.spotMode{1} = 'adaptive';
 job.options.chrShift.result{1,1} = zeros(1,6);
@@ -59,9 +67,9 @@ for i=1:nFrames
     % TODO this is computed in both spot detectors, just return it.
     img = movie(:,:,:,i);
     if verLessThan('images','9.2')
-        background = fastGauss3D(img,filters.backgroundP(1:3),filters.backgroundP(4:6));
+        background = fastGauss3D(img,filters.backgroundP(1:3)/2,filters.backgroundP(4:6));
     else
-        background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
+        background = imgaussfilt3(img,filters.backgroundP(1:3)/2,'FilterSize',filters.backgroundP(4:6));
     end
     localMaxima(i).cands = spots{i};
     if nSpots(i) > 1

@@ -178,7 +178,7 @@ catch
   end
 end
 
-if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
+if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) >= 1) || ...
     md.pixelSize(3) > 5
   warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
 end

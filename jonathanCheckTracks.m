@@ -5,7 +5,7 @@ function jonathanCheckTracks(job)
 %
 %Jonathan U Harrison 2019-02-21
 %%%%%%%%%%%%%%%%%
-if isfield(job.dataStruct{1},'tracks')
+if isfield(job,'dataStruct') && isfield(job.dataStruct{1},'tracks')
     %compute how many tracks in a given frame
     nTracks = size(job.dataStruct{1}.tracks,1);
     nFrames = job.metadata.nFrames;
@@ -67,7 +67,7 @@ if isfield(job.dataStruct{1},'tracks')
         scatter(t,nSpots(:,i),100,...
             repmat(coloursByStage(i,:),nFrames,1), symbolByPlane);
     end
-    legend(stagesLegend);
+    legend(stagesLegend,'Location','southeast');
     xlabel('Time (s)');
     ylabel('Number of spots');
     title('Performance of each stage of KiT in tracking kinetochores');
