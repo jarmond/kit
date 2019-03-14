@@ -55,10 +55,10 @@ end
 
 hold on;
 for i=1:size(y,2)
-    plot(t,y(:,i),['-' colours(i)]);
+    plot(t,y(:,i),['-' colours(i)],'linewidth',3);
     if ~isempty(ye)
-        plot(t,y(:,i)+ye(:,i),[':' colours(i)]);
-        plot(t,y(:,i)-ye(:,i),[':' colours(i)]);
+        plot(t,y(:,i)+ye(:,i),[':' colours(i)],'linewidth',3);
+        plot(t,y(:,i)-ye(:,i),[':' colours(i)],'linewidth',3);
     end
 end
 
@@ -83,6 +83,7 @@ hold off;
 xlabel('Time lag (s)');
 ylabel('Correlation');
 title(plotTitle);
+set(gca,'fontsize',20);
 
 % Save.
 if ~isempty(output)
