@@ -1,4 +1,4 @@
-function job = jonathanExampleGroupSistersTest(job,verbose,movie,theta)
+function job = jonathanExampleGroupSistersTest(job,verbose,movie,theta,channel)
 % Perform and test tracking
 %
 % take output from jonathanExampleDetectionTest.m and
@@ -9,8 +9,6 @@ function job = jonathanExampleGroupSistersTest(job,verbose,movie,theta)
 % movie input optional for visualisation
 % Jonathan U Harrison 2019-02-12
 %%%%%%%%%%
-
-channel = 1;
 
 %%%%% can get output from metaphase example by rerunning previous tests
 if nargin <1
@@ -44,7 +42,9 @@ else %use input, can set up as optimization problem
     opts.useAnaphase=0;
     opts.robust=0;
 end
-
+if nargin < 5
+ channel = 1;
+end
 
 job.dataStruct{channel}.dataProperties.groupSisters=opts;
 

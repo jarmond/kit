@@ -67,7 +67,7 @@ if isfield(job,'dataStruct') && isfield(job.dataStruct{1},'tracks')
         scatter(t,nSpots(:,i),100,...
             repmat(coloursByStage(i,:),nFrames,1), symbolByPlane);
     end
-    legend(stagesLegend,'Location','southeast');
+    legend(stagesLegend,'Location','southwest');
     xlabel('Time (s)');
     ylabel('Number of spots');
     title('Performance of each stage of KiT in tracking kinetochores');

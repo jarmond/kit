@@ -163,7 +163,7 @@ for i=1:nStages
         error('wrong number of fitted planes compared to frames');
     end
 end
-legend(stagesLegend,'Location','southeast');
+legend(stagesLegend,'Location','southwest');
 xlabel('Time (s)');
 ylabel('Number of spots');
 title('Performance of each stage of KiT in tracking kinetochores');
@@ -179,6 +179,7 @@ print(sprintf('%s.eps',savename),'-depsc');
 %call other diagnostics too
 if isfield(job,'dataStruct') %these are meaningless if didnt manage this
 jonathanCheckTracks(job);
+jonathanPlotHowManyTracksOfGivenLength(job, channel);
 jonathanMoreDiagnosticPlots(job,channel,1);
 jonathanVisualiseTrackedAndGroupedSpots(job,movie,channel,...
     round(job.metadata.nFrames/2));
