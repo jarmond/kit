@@ -21,7 +21,7 @@ function dublShowSisterPair(job,varargin)
 %    newFig: {0} or 1. Whether or not to show the sister pair in a new
 %           figure.
 %
-%    plotChannels: {[1 2]} or some subset of [1 2 3]. Vector of channels
+%    channels: {[1 2]} or some subset of [1 2 3]. Vector of channels
 %           for plotting, where typically:
 %               1=red, 2=green, 3=blue.
 %
@@ -58,7 +58,7 @@ end
 opts.channelMap = [2 1 3]; % green, red, blue
 opts.contrast = repmat({[0.1 1]},1,3);
 opts.newFig = 0;
-opts.plotChannels = 1:2;
+opts.channels = 1:2;
 opts.plotTitles = {'mNeonGreen','tagRFP','JF-646'};
 opts.sisterPair = 1;
 opts.subpixelate = 9;
@@ -81,7 +81,8 @@ end
 
 % get coordinate system and plot channels
 coordSysChan = job.options.coordSystemChannel;
-plotChans = sort(opts.plotChannels);
+plotChans = sort(opts.channels);
+showChans = sort(opts.channels);
 nChans = length(plotChans);
 
 % get sister information
@@ -107,7 +108,14 @@ pixelSize = job.metadata.pixelSize;
 % accumulate track information by channel and sister
 coord = nan(3,3,2);
 for c = plotChans
+    
+    if ~isfield(job.dataStruct{c},'tracks')
+    	plotChans = setdiff(plotChans,c);
+        continue
+    end 
+    
     for iSis = 1:2
+        
         tk = trackIDs(iSis);
         track = job.dataStruct{c}.tracks(tk);
         
@@ -157,7 +165,7 @@ if opts.zoom
 end
 
 % produce raw image
-for c = plotChans
+for c = showChans
     
     % read stack
     img = kitReadImageStack(reader,md,timePoint,c,job.ROI.crop,0);
@@ -184,7 +192,7 @@ if opts.zoom
     xReg = [centrePxl(1)-cropSpread(1) centrePxl(1)+cropSpread(1)];
     yReg = [centrePxl(2)-cropSpread(2) centrePxl(2)+cropSpread(2)];
     
-    for c = plotChans
+    for c = showChans
         if opts.transpose
             rgbCrpd(:,:,mapChans(c)) = rgbImg(xReg(1):xReg(2),yReg(1):yReg(2),mapChans(c));
         else
@@ -194,7 +202,7 @@ if opts.zoom
     
     % produce chromatic shifted image
     first = 1;
-    for c = setdiff(plotChans,coordSysChan) 
+    for c = setdiff(showChans,coordSysChan) 
       if first
 
         [img1,img2] = ... 
@@ -219,7 +227,7 @@ if opts.zoom
     end
     
     % define contrast stretch for shifted cropped, and apply
-    for c = plotChans
+    for c = showChans
         if iscell(opts.contrast)
             irange = stretchlim(rgbCrpdCS(:,:,mapChans(c)),opts.contrast{c});
         elseif strcmp(opts.contrast,'help')
@@ -245,7 +253,7 @@ else
     
     % produce chromatic shifted image
     first = 1;
-    for c = setdiff(plotChans,coordSysChan) 
+    for c = setdiff(showChans,coordSysChan) 
       if first
         
         [img1,img2] = ... 
@@ -270,7 +278,7 @@ else
     end
     
     % define contrast stretch for cropped images, and apply
-    for c = plotChans
+    for c = showChans
         if iscell(opts.contrast)
             irange = stretchlim(rgbImgCS(:,:,mapChans(c)),opts.contrast{c});
         elseif strcmp(opts.contrast,'help')
@@ -342,7 +350,7 @@ if opts.zoom
     bigImgInd = [];
     if nChans > 1
         for c = 1:nChans
-            pc = plotChans(c);
+            pc = showChans(c);
             subplot(nChans,nChans+1,c*(nChans+1))
             hold on
             imshow(plotImgCrpd(:,:,mapChans(pc)))
@@ -361,7 +369,8 @@ if opts.zoom
     hold on
     % plot coordinates
     for c = 1:nChans
-        pc = plotChans(c);
+        pc = showChans(c);
+        if ~ismember(plotChans,pc); continue; end
         for i = 1:2
             subplot(nChans,nChans+1,bigImgInd)
             if opts.transpose
@@ -391,7 +400,8 @@ else
     hold on
     % plot tracked channel's coordinates (points too close together on full image)
     for c = 1:nChans
-        pc = plotChans(c);
+        pc = showChans(c);
+        if ~ismember(plotChans,pc);
         for i = 1:2
             if opts.transpose
                 plot(plotCoord(pc,2,i),plotCoord(pc,1,i),...
