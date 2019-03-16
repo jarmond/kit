@@ -105,7 +105,7 @@ end
 pixelSize = job.metadata.pixelSize;
 
 % accumulate track information by channel and sister
-trackCoord = nan(nChans,3,2);
+coord = nan(3,3,2);
 for c = plotChans
     for iSis = 1:2
         tk = trackIDs(iSis);
@@ -113,9 +113,9 @@ for c = plotChans
         
         startTime = track.seqOfEvents(1,1);
         if timePoint < startTime
-            trackCoord(c,:,iSis) = nan(1,3);
+            coord(c,:,iSis) = nan(1,3);
         else
-            trackCoord(c,:,iSis) = ...
+            coord(c,:,iSis) = ...
                 track.tracksCoordAmpCG(8*(timePoint-(startTime-1))-7:8*(timePoint-(startTime-1))-5);
         end
     end
@@ -123,11 +123,11 @@ end
 
 % calculate pair centre - check whether coordinate system is reference
 if ismember(coordSysChan,plotChans)
-    centrePoint = nanmean(trackCoord(coordSysChan,:,:),3);
+    centrePoint = nanmean(coord(coordSysChan,:,:),3);
 else
     % if not, then use first available channel
     coordSysChan = min(plotChans);
-    centrePoint = nanmean(trackCoord(coordSysChan,:,:),3);
+    centrePoint = nanmean(coord(coordSysChan,:,:),3);
 end
 % convert to pixels
 centrePoint = centrePoint./pixelSize;
@@ -297,14 +297,11 @@ end
 
 %% Find coordinates to plot for each RGB image
 
-% THIS LINE NOT REALLY NECESSARY
-coord = trackCoord;
-
 % adjust to pixels
-for i = 1:2
-    coord(:,:,i) = coord(:,:,i)./repmat(pixelSize,nChans,1);
+for iSis = 1:2
+    coord(:,:,iSis) = coord(:,:,iSis)./repmat(pixelSize,3,1);
 end
-coordCS = coord*opts.subpixelate;    
+coordCS = coord*opts.subpixelate;
 
 % correct coordinates for region position
 if opts.zoom
@@ -345,10 +342,11 @@ if opts.zoom
     bigImgInd = [];
     if nChans > 1
         for c = 1:nChans
+            pc = plotChans(c);
             subplot(nChans,nChans+1,c*(nChans+1))
             hold on
-            imshow(plotImgCrpd(:,:,mapChans(c)))
-            title(opts.plotTitles{c},'FontSize',20,'Color',C(plotChans(c),:))
+            imshow(plotImgCrpd(:,:,mapChans(pc)))
+            title(opts.plotTitles{pc},'FontSize',20,'Color',C(pc,:))
             bigImgInd = [bigImgInd, (c-1)*(nChans+1)+1 : c*(nChans+1)-1 ];
         end
     end
@@ -363,23 +361,24 @@ if opts.zoom
     hold on
     % plot coordinates
     for c = 1:nChans
+        pc = plotChans(c);
         for i = 1:2
             subplot(nChans,nChans+1,bigImgInd)
             if opts.transpose
-                plot(plotCoord(c,2,i),plotCoord(c,1,i),...
-                    'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+                plot(plotCoord(pc,2,i),plotCoord(pc,1,i),...
+                    'Color',C(pc,:),'Marker',plotStyle(pc),'MarkerSize',15)
             else
-                plot(plotCoord(c,1,i),plotCoord(c,2,i),...
-                    'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+                plot(plotCoord(pc,1,i),plotCoord(pc,2,i),...
+                    'Color',C(pc,:),'Marker',plotStyle(pc),'MarkerSize',15)
             end
             if nChans > 1
                 subplot(nChans,nChans+1,c*(nChans+1))
                 if opts.transpose
-                    plot(plotCoord(c,2,i),plotCoord(c,1,i),...
-                        'Color','k','Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+                    plot(plotCoord(pc,2,i),plotCoord(pc,1,i),...
+                        'Color','k','Marker',plotStyle(pc),'MarkerSize',15)
                 else
-                    plot(plotCoord(c,1,i),plotCoord(c,2,i),...
-                        'Color','k','Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+                    plot(plotCoord(pc,1,i),plotCoord(pc,2,i),...
+                        'Color','k','Marker',plotStyle(pc),'MarkerSize',15)
                 end
             end
         end
@@ -392,13 +391,14 @@ else
     hold on
     % plot tracked channel's coordinates (points too close together on full image)
     for c = 1:nChans
+        pc = plotChans(c);
         for i = 1:2
             if opts.transpose
-                plot(plotCoord(c,2,i),plotCoord(c,1,i),...
-                    'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+                plot(plotCoord(pc,2,i),plotCoord(pc,1,i),...
+                    'Color',C(pc,:),'Marker',plotStyle(pc),'MarkerSize',15)
             else
-                plot(plotCoord(c,1,i),plotCoord(c,2,i),...
-                    'Color',C(plotChans(c),:),'Marker',plotStyle(plotChans(c)),'MarkerSize',15)
+                plot(plotCoord(pc,1,i),plotCoord(pc,2,i),...
+                    'Color',C(pc,:),'Marker',plotStyle(pc),'MarkerSize',15)
             end
         end
     end
