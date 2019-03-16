@@ -6,3 +6,5 @@ loci_tools.jar
 
 /bfmatlab/
 /private/codegen/
+
+/testdata/*

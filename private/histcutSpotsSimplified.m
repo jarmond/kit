@@ -1,11 +1,11 @@
-function spots=histcutSpots(img,options,dataProperties,verbose)
+function spots=histcutSpotsSimplified(img,options,dataProperties,verbose)
 % Find spots using histogram mode cutoff.
 %
 % Based on code from MaKi, by (mostly) K. Jaqaman and J. Dorn.
 %
 % Created by: J. W. Armond
-% Modified by: C. A. Smith
-% Copyright (c) 2016 C. A. Smith
+% Modified by: C. A. Smith and J. U. Harrison
+% Copyright (c) 2019 J. U. Harrison
 
 if nargin<4
   verbose = 0;
@@ -30,8 +30,6 @@ else
   imageF = imgaussfilt3(img,filters.signalP(1:3),'FilterSize',filters.signalP(4:6));
   background = imgaussfilt3(img,filters.backgroundP(1:3),'FilterSize',filters.backgroundP(4:6));
 end
-imageNoise = (img-imageF).^2;
-imageNoise = imfilter(imageNoise,fspecial('average',min(cellfun(@numel,filters.noise))));
 
 % get local maxima from the image
 bw = imregionalmax(imageF);
@@ -44,76 +42,51 @@ end
 
 % get signal strength of maxima
 amp = imageF(localMax1DIndx) - background(localMax1DIndx);
-noise = imageNoise(localMax1DIndx);
-dark = amp./sqrt(noise);
-poisson = amp./sqrt(noise./max(amp,eps));
 
 % Filter out spots by cutting first histogram mode.
 z = zeros(size(amp));
 % amplitude
-cutoff(1) = splitModes(amp(~isApproxEqual(amp,z,[],'absolute')),[],[],[]);
-% amplitude/sqrt(noise) - dark noise
-cutoff(2) = splitModes(dark(~isApproxEqual(dark,z,[],'absolute')),[],[],[]);
-% amplitude/sqrt(noise/amp) - poisson
-cutoff(3) = splitModes(poisson(~isApproxEqual(poisson,z,[],'absolute')),[],[],[]);
+cutoff = splitModes(amp(~isApproxEqual(amp,z,[],'absolute')),[],[],[]);
 
 if verbose
   figure(1)
-  subplot(3,1,1);
   histogram(amp);
   hold on;
   yl = ylim;
-  plot(repmat(cutoff(1),[1 2]),yl,'r');
+  plot(repmat(cutoff,[1 2]),yl,'r');
   title('amplitude');
-
-  subplot(3,1,2);
-  histogram(dark);
-  hold on;
-  yl = ylim;
-  plot(repmat(cutoff(2),[1 2]),yl,'r');
-  title('dark noise');
-
-  subplot(3,1,3);
-  histogram(poisson);
-  hold on;
-  yl = ylim;
-  plot(repmat(cutoff(3),[1 2]),yl,'r');
-  title('poisson noise');
-  hold off
 end
 
 % Check if sufficient spots found in descending order of cutoff strictness.
-nn(1,:) = sum(amp>cutoff(1));
-nn(2,:) = sum(dark>cutoff(2));
-nn(3,:) = sum(poisson>cutoff(3));
+nn = sum(amp>cutoff);
 nn = (nn - options.minSpotsPerFrame)/(options.maxSpotsPerFrame-options.minSpotsPerFrame);
-% If number of spots does not fall within range, take the closest.
-if all(nn > 1)
-  idx = find(min(nn));
-elseif all(nn < 0)
-  idx = find(max(nn));
+% If number of spots does not fall within range, then try a different threshold. Limit number of iterations of this
+%
+iter = 0;
+realisticNumSpots = 0;
+while (~realisticNumSpots && (iter < 5)) %TODO: set num iter as an option
+    fprintf('entered loop');
+if nn > 1
+  %too many spots detected, increase threshold
+  cutoff = cutoff*2;
+  nn = sum(amp>cutoff);  
+  nn = (nn - options.minSpotsPerFrame)/(options.maxSpotsPerFrame-options.minSpotsPerFrame);
+elseif nn < 0
+  %too few spots detected
+  cutoff = cutoff/2;
+  nn = sum(amp>cutoff);
+  nn = (nn - options.minSpotsPerFrame)/(options.maxSpotsPerFrame-options.minSpotsPerFrame);
 else
-% Otherwise, use the method within the range with the highest number.
-  idx = find(nn == max(nn(nn<=1)));
+% Otherwise, cutoff gives acceptable number of spots, so use it
+  realisticNumSpots=1;
 end
-% If multiple methods provide the same number, use 'poisson' over 'dark'
-% over 'amp'.
-if length(idx)>1
-  idx = idx(end);
+iter = iter+1;
 end
-switch idx
-  case 1
+
     passIdx = (amp > cutoff(1));
-  case 2
-    passIdx = (dark > cutoff(2));
-  case 3
-    passIdx = (poisson > cutoff(3));
-end
 
 % keep these spots
 spots = locMax(passIdx,:);
-%candsBg = background(localMax1DIndx(passIdx));
-%candsAmp = imageF(localMax1DIndx(passIdx));
 
 if verbose
   h = figure(2);

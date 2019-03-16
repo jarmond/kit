@@ -1,4 +1,5 @@
-function [spots,threshold] = adaptiveSpots(movie,lambda,verbose);
+function [spots,threshold] = adaptiveSpots(movie,lambda,...
+                                           realisticNumSpots,verbose)
 % ADAPTIVESPOTS Adaptive thresholding for spot detection.
 %
 % Copyright 2015 J. W. Armond
@@ -7,7 +8,11 @@ if nargin<2 || isempty(lambda)
   lambda = 0;
 end
 
-if nargin<3 || isempty(verbose)
+if nargin<3 || isempty(realisticNumSpots)
+  realisticNumSpots = 100;
+end
+
+if nargin<4 || isempty(verbose)
   verbose = 0;
 end
 
@@ -97,6 +102,7 @@ function [stop,options,optchanged] = progress(optimvalues,options,flag)
 end
 
 function y = objective(t)
+    %objective to minimize as a function of the threshold value, t
   m = zeros(length(locs)-1,1);
   n = zeros(length(locs),1);
   for i=1:length(locs)-1
@@ -110,7 +116,7 @@ function y = objective(t)
     n(i) = size(s1,1);
   end
   n(end) = size(s2,2);
-  y = mean(m) + lambda/(max(1,mean(n)));
+  y = mean(m) + lambda*mean(abs(n-realisticNumSpots));
 end
 
 function s=findSpots(locMax,amp,th)
