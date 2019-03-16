@@ -392,22 +392,31 @@ emptyTracks = struct('tracksFeatIndxCG',0,...
                     
 for iChan = opts.coordChans
     
+    % get dataStruct for this channel
+    dS = job.dataStruct{iChan};
+    
+    % check whether any sisters allocated, or if this channel failed in
+    % detection
+    if isempty(sisterIdxArray) || (isfield(dS,'failed') && dS.failed)
+        continue
+    end
+    
     % construct new sisterList
     sisterList = emptySisterList;
     sisterList(1).trackPairs(:,1) = 1:size(sisterIdxArray,1);
     sisterList(1).trackPairs(:,2) = sisterList(1).trackPairs(:,1)+size(sisterIdxArray,1);
     
     % get microscope coordinates and standard deviations in µm
-    if isfield(job.dataStruct{iChan},'initCoord')
-      coords = job.dataStruct{iChan}.initCoord(1).allCoord;
-      amps = job.dataStruct{iChan}.initCoord(1).amp;
+    if isfield(dS,'initCoord')
+      coords = dS.initCoord(1).allCoord;
+      amps = dS.initCoord(1).amp;
     else
       coords = [];
       amps = [];
     end
     % get plane coordinates if applicable
-    if isfield(job.dataStruct{iChan},'planeFit') && ~isempty(job.dataStruct{iChan}.planeFit(1).plane)
-      rotCoords = job.dataStruct{iChan}.planeFit(1).rotatedCoord;
+    if isfield(dS,'planeFit') && ~isempty(dS.planeFit(1).plane)
+      rotCoords = dS.planeFit(1).rotatedCoord;
     else
       rotCoords = coords;
     end
@@ -425,11 +434,6 @@ for iChan = opts.coordChans
         sisterList(iSis).coords2 = NaN(1,6);
         sisterList(iSis).distances = NaN(1,2);
       end
-    end
-    
-    if isempty(sisterIdxArray)
-      % assign in the case no sisters found
-      tracks = emptyTracks;
     end
     
     % construct new tracks
@@ -459,8 +463,9 @@ for iChan = opts.coordChans
       end
     end
                  
-    job.dataStruct{iChan}.tracks = tracks;
-    job.dataStruct{iChan}.sisterList = sisterList;
+    dS.tracks = tracks;
+    dS.sisterList = sisterList;
+    job.dataStruct{iChan} = dS;
     job = kitExtractTracks(job,iChan);
     
 end
