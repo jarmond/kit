@@ -1,12 +1,15 @@
-function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost)
-%LAP solves the linear assignment problem for a given cost matrix
+function [x, y] = lapMosek(cc, NONLINK_MARKER, augmentCC, noLinkCost)
+%
+%LAPMOSEK solves the linear assignment problem for a given cost matrix
+%using the mosek optimization library, which requires separate installation
+%See: https://www.mosek.com/ Free academic licenses available 
 %
 % A linear assignment tries to establish links between points in two sets.
 % One point in set A can only link to one point in set B and vice versa.
 % The cost associated with the link from element i of A to element j of B
 % is given by cc(i,j).
 %
-% SYNOPSIS [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost)
+% SYNOPSIS [x, y] = lapMosek(cc, NONLINK_MARKER, augmentCC, noLinkCost)
 %
 % INPUT:  cc: cost matrix, which has to be square. Set cost(i,j) to the
 %             value of NONLINK_MARKER, if the link is not allowed. cc can
@@ -47,63 +50,8 @@ function [x, y] = lap(cc, NONLINK_MARKER, extendedTesting, augmentCC, noLinkCost
 %         y: The point B(j) links to A(y(j))
 %
 %            Any x > m or y > n indicates that this point is not linked.
-%
-% EXAMPLE
-%
-% % Make a set of points p1 and slightly shift the points in p2
-% p1 = rand(5,2)*10;
-% p2 = p1+rand(5,2);
-% % plot the data
-% figure,plot(p1(:,1),p1(:,2),'.r',p2(:,1),p2(:,2),'.b')
-% % invert the order of p2 (to make it a bit more interesting) and remove the
-% % third point
-% p2 = p2(end:-1:1,:);
-% p2(3,:) = [];
-% % calculate distance matrix between the point sets
-% dm = distMat2(p1,p2);
-% % remove all links that are longer than a threshold (mark with -1)
-% dm(dm>5) = -1;
-% % print distance matrix
-% disp(dm)
-% % link via LAP. nonlinkmarker=-1, augment the matrix and show
-% [links12, links21] = lap(dm,-1,0,1)
-% % links12 should now look something like
-% % links12 =
-% %
-% %            4
-% %            3
-% %            7
-% %            2
-% %            1
-% %            9
-% %            5
-% %            6
-% %            8
-% %
-% % For links12, the first five entries are relevant (because p1 consists of
-% % 5 points). The first point in p1 links to point #4 in set 2
-% % (link12(1)==4). The third point in p1 links nowhere - there are only 4
-% % points in links21, so an index above 4 means that a link to a virtual
-% % point had to be made.
-% % Links21 is analogous, except that only the first four entries count.
-%
-%
-% lapjv is implemented through a MEX DLL.
-%
-% Author: Ge Yang, LCCB, TSRI, Dec. 10, 2004
-% extended by jonas 6/05
-
-
-% Basically, what this function does is to automatically extract the sparse matrix
-% representation of cc.
-
-% int *col = new int[size * NEIGHBOR_NUM_MAX + 1];
-% int *first = new int[size + 2];
-% int *x = new int[size + 1];
-% int *y = new int[size + 1];
-% double *u = new double[size + 1];
-% double *v = new double[size + 1];
-% double  *cc = new double[size * NEIGHBOR_NUM_MAX + 1];
+% Jonathan U Harrison 2019-18-01 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %=====================
@@ -149,12 +97,8 @@ else
 end
 
 % extended testing has been made mandatory
-%
-% if nargin < 3 || isempty(extendedTesting)
-%     extendedTesting = true;
-% end
 
-if nargin < 5 || isempty(noLinkCost)
+if nargin < 4 || isempty(noLinkCost)
     noLinkCost = max(max(cc)) + 1;
 end
 
@@ -167,8 +111,7 @@ if noLinkCost == NONLINK_MARKER
     end
 end
 
-
-%=======================
+%%%%%%%%%%%%%%%%%%
 
 %=================================
 % AUGMENT COST MATRIX IF SELECTED
@@ -237,19 +180,7 @@ if augmentCC
     clear costLR colIdx rowIdx
 
 end
-
-
-%=============================
-% CALCULATE SPARSE MATRIX
-%=============================
-
-% Calculate sparse representation of cost matrix with compactCC (all
-% significant elements of cc), fst and kk. Read cc in rows, not cols!
-
-% fst: for every first significant element of a row: index into compactCC
-% kk : for every significant element: column
-
-% do the work on the transposed cost matrix!
+%%%%%%%%%%%
 cc = cc';
 % find the significant elements. If sparse input, find nonzero elements
 if issparse(cc)
@@ -259,8 +190,10 @@ else
     val = cc(cc ~= NONLINK_MARKER);
 end
 
+nonLinkIdx = setdiff(1:numel(cc),sub2ind(scc,rowIdx,colIdx));
+[nlmRow, nlmCol] = ind2sub(scc, nonLinkIdx);
 
-    % test that all cols and all rows are filled, and that there are no nans
+% test that all cols and all rows are filled, and that there are no nans
     if issparse(cc)
         if (~all(sum(cc,1)) || ~all(sum(cc,2)))
             error('LAP:BadCostMatrix',...
@@ -277,63 +210,57 @@ end
         error('LAP:NanCostMatrix','Cost matrix cannot contain NaNs or Inf!')
     end
 
+%%%%%%%%%%%%%%
+import mosek.fusion.*;
 
-%clear cc to save memory
-%clear cc;
+M = Model('lapMosek');  
+xx = M.variable([scc(1),scc(2)], Domain.binary());
 
-% %I have re-written this section to save memory --Khuloud
-% % write value vector, pad a zero
-% compactCC = [0; val];
-% % write kk, pad a zero
-% kk = [0; rowIdx];
-%
-% % colIdx is already sorted, so we can find out the number of entries per
-% % column via diff. Wherever there is a jump in the column, the deltaIdx
-% % will be 1, and its rowIdx will equal fst
-% deltaIdx = diff([0;colIdx]);
-% % add 0 and length+1
-% fst = [0;find(deltaIdx);length(val)+1];
+%each value only once per dim
+for d = 1:2
+    M.constraint(Expr.sum(xx,d-1), Domain.lessThan(2.));
+    M.constraint(Expr.sum(xx,d-1), Domain.greaterThan(1.));
+end
+%add constraint for non link markers
+for i = 1:length(nlmRow)
+        M.constraint(xx.index(nlmRow(i),nlmCol(i)),Domain.equalsTo(0.0));
+end
+% Set max solution time
+M.setSolverParam('mioMaxTime', 60.0);
+% Set max relative gap (to its default value)
+M.setSolverParam('mioTolRelGap', 1e-4);
+% Set max absolute gap (to its default value)
+M.setSolverParam('mioTolAbsGap', 0.0);
 
+% Set the objective function to (c^T * x)
+M.objective('obj', ObjectiveSense.Minimize, Expr.dot(cc, xx));
 
-% save some more memory: re-write values into row/col-idx. Do in the order
-% row, col, val, because int32 needs less memory, and col shrinks a lot
-% (but requires diff).
-% Also, type the variables here already. Val should be a double, anyway,
-% but better make sure, as the mex function is not forgiving.
-rowIdx = int32([0;rowIdx]);
-%colIdx = int32([0;find(diff([0;colIdx]));length(val)]);
-val = double([0; val]);
-
-%==================================
-
-
-%==================================
-% CALL MEX-FUNCTION
-%==================================
-
-% %I have re-written the following line to save memory --Khuloud
-% [x, y, u, v] = mexLap(double(scc(1)), int32(length(compactCC)), double(compactCC), int32(kk), int32(fst));
-
-% [x, y, u, v] = mexLap(double(scc(1)), int32(length(val)), double(val), ...
-%     int32([0; rowIdx]), int32([0;find(diff([0;colIdx]));length(val)]));
-
-% I saved some more memory --Jonas
-% The function wants to give four outputs. u and v seem to be the costs
-% associated with links in x and y, respectively.
-% For some really weird reason, there is a seg-fault if colIdx is not being
-% assigned above. WTF.
-[x, y, u, v] = ...
-    mexLap(double(scc(1)), int32(length(val)), val, ...
-    rowIdx, int32([0;find(diff([0;colIdx]));length(val)])); %#ok<NASGU>
-
-%==================================
-
-% remove first element from output vectors, as it is a meaningless 0.
-x = x(2:end);
-y = y(2:end);
-
+% Solve the problem
+%M.setLogHandler(java.io.PrintWriter(java.lang.System.out)); 
+M.solve();
+% Get the solution values
+sol = xx.level();
+% sum(cc(:).*sol)
+% 
+% %New problem initialized by first one
+% M2 = M;
+% xx2 = M2.variable([scc(1),scc(2)], Domain.binary());
+% xx2.setLevel( sol ); %use solution as initial
+% %M.GetAcc PrimalObjValue
+% 
+% %each value only once per dim
+% for d = 1:2
+%     M2.constraint(Expr.sum(xx2,d-1), Domain.lessThan(2.));
+%     M2.constraint(Expr.sum(xx2,d-1), Domain.greaterThan(1.));
+% end
+% M2.solve();
+% sol = xx2.level();
+[x,y,~] = find(reshape(round(sol),scc)); %output indices of chosen connections
+x = int32(x);
+y = int32(y);
 totalcost = 0;
 for i=1:scc(1)/2
-   totalcost = totalcost + full(cc(x(i),i));
+   totalcost = totalcost + cc(x(i),i);
 end
 totalcost
+%M.PrimalObjValue

@@ -1,4 +1,4 @@
-function job = jonathanExampleGroupSistersTest(job,verbose,movie,theta,channel)
+function job = jonathanExampleGroupSistersTest(job,allowMulti,verbose,movie,theta,channel)
 % Perform and test tracking
 %
 % take output from jonathanExampleDetectionTest.m and
@@ -49,7 +49,7 @@ end
 job.dataStruct{channel}.dataProperties.groupSisters=opts;
 
 job.dataStruct{channel} = kitGroupSisters(job.dataStruct{channel},...
-    verbose);
+    verbose,allowMulti);
 
 %how many sisters does this give us on average through the movie?
 nFrames = job.metadata.nFrames;
