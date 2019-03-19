@@ -96,7 +96,7 @@ timePoint = opts.timePoint;
 % if only one channel, run the single channel version
 if nChans == 1
     kitLog('Only one channel being shown. Running kitShowSisterPair instead.');
-    kitShowSisterPair(job,'channel',plotChans,'contrast',opts.contrast,'newFig',opts.newFig,...
+    kitShowSisterPair(job,'channel',plotChans,'contrast',opts.contrast{plotChans},'newFig',opts.newFig,...
         'sisterPair',sisPair,'timePoint',timePoint,'title',opts.plotTitles{1},'transpose',opts.transpose,...
         'withinFig',0,'zoomScale',opts.zoomScale,'zoom',opts.zoom,'zProject',opts.zProject);
     return
@@ -107,7 +107,7 @@ pixelSize = job.metadata.pixelSize;
 
 % accumulate track information by channel and sister
 coord = nan(3,3,2);
-for c = plotChans
+for c = unique([plotChans coordSysChan])
     
     if ~isfield(job.dataStruct{c},'tracks')
     	plotChans = setdiff(plotChans,c);
@@ -130,13 +130,7 @@ for c = plotChans
 end
 
 % calculate pair centre - check whether coordinate system is reference
-if ismember(coordSysChan,plotChans)
-    centrePoint = nanmean(coord(coordSysChan,:,:),3);
-else
-    % if not, then use first available channel
-    coordSysChan = min(plotChans);
-    centrePoint = nanmean(coord(coordSysChan,:,:),3);
-end
+centrePoint = nanmean(coord(coordSysChan,:,:),3);
 % convert to pixels
 centrePoint = centrePoint./pixelSize;
 centrePxl = round(centrePoint);
@@ -401,7 +395,7 @@ else
     % plot tracked channel's coordinates (points too close together on full image)
     for c = 1:nChans
         pc = showChans(c);
-        if ~ismember(plotChans,pc);
+        if ~ismember(plotChans,pc); continue; end
         for i = 1:2
             if opts.transpose
                 plot(plotCoord(pc,2,i),plotCoord(pc,1,i),...
