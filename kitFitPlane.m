@@ -260,6 +260,11 @@ for t=1:nTimePoints
 
 end %(for t=1:nTimePoints)
 
+if isfield(opts,'smoothPlaneOrigin') && opts.smoothPlaneOrigin
+%optionally smooth the origin time series
+planeFit = smoothOriginTimeSeries(planeFit, opts.debug.showPlaneFit);
+end
+
 %if there are enough good frames, go over potentially good frames and
 %convert them into good frames if they come after good frames
 goodFrames = goodFrames1;

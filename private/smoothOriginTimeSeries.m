@@ -1,0 +1,23 @@
+function planeFit = smoothOriginTimeSeries(planeFit, verbose)
+%% Smooth the jumpy movement of the coordinate origin.
+%% These movements may be partially due to
+%%%%%%%%%%%%%%%%%%%%
+nFrames = length(planeFit);
+originCoords = zeros(nFrames,3);
+for j=1:nFrames
+    originCoords(j,:) = planeFit(j).planeOrigin;
+end
+smoothedOriginCoords = smoothdata(originCoords,'movmean',10);
+
+if verbose
+    figure;
+    for i=1:3        
+        subplot(3,1,i);
+        plot(originCoords(:,i),'linewidth',3);
+        hold all;
+        plot(smoothedOriginCoords(:,i),'linewidth',3);
+        xlabel('Frame');
+        ylabel(sprintf('Position, um'));
+        set(gca,'fontsize',20);
+    end
+end

@@ -59,6 +59,7 @@ opts.maxSisterAlignmentAngle = 30; % degrees
 opts.maxSisterSeparation = 1.5; % um
 opts.minSisterTrackOverlap = 10; % percent of movie length to require overlap
 opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in anaphase.
+opts.smoothPlaneOrigin = 1; %Average origin position over a window of width 10 to smooth
 
 direction.assignMode = 'voting'; % directional (AP or P) assignment, can also be 'absolute'
 direction.assignExpWeight = 1; % exponentially weight displacements
@@ -124,6 +125,7 @@ debug.groupSisters = 0; % 1 - plot 4 frames with sisters assignment
                         % 2 - plot all tracks
 debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
+debug.makePlaneFitMovie = 0; %make a mp4 movie of detections and planes per frame
 debug.showCentroidFinal = 0; % visualize centroid final spots.
 debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
 debug.showWaveletAdapt = 0; % 1 to show adaptation of wavelet threshold.

@@ -30,6 +30,7 @@ end
   planeChan = job.options.coordSystemChannel;
   job.options.debug.showPlaneFit = 2;
   job.options.debug.makePlaneFitMovie = makeMovie;
+  job.options.smoothPlaneOrigin = 1;
   kitLog('Fitting plane in channel %d', planeChan);
   if strcmp(job.options.coordMode{planeChan}, 'none')
     % No spot tracking in plane channel so populate dataStruct.
