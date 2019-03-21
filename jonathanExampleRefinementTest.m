@@ -48,7 +48,8 @@ mmf.maxMmfTime = 300; % Maximum per-frame time (sec) to attempt mixture model fi
 mmf.addSpots = 0; % Try fitting multiple Gaussians to spots to identify overlaps
 job.options.mmf = mmf;
 
-
+% job.dataStruct{channel}.dataProperties.FILTERPRM(1:3) = job.dataStruct{channel}.dataProperties.FILTERPRM(1:3)/2;
+% job.dataStruct{channel}.dataProperties.FT_SIGMA = job.dataStruct{channel}.dataProperties.FT_SIGMA/2;
 %compute filters to use for background etc
 filters = createFilters(ndims,job.dataStruct{channel}.dataProperties);
 

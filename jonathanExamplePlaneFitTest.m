@@ -1,4 +1,4 @@
-function job = jonathanExamplePlaneFitTest(job)
+function job = jonathanExamplePlaneFitTest(job,makeMovie)
 % Perform and test plane fitting
 %
 %take output from jonathanExampleDetectionTest.m and
@@ -10,6 +10,10 @@ function job = jonathanExamplePlaneFitTest(job)
 if nargin <1
     [spots, movie, job] = jonathanExampleDetectionTest();
     job = jonathanExampleRefinementTest(spots,movie,job);
+end
+
+if nargin<2
+    makeMovie=0; %make a movie of the planes for each frame
 end
 
 %read in movie
@@ -25,6 +29,7 @@ end
 % Fit plane in chosen channel.
   planeChan = job.options.coordSystemChannel;
   job.options.debug.showPlaneFit = 2;
+  job.options.debug.makePlaneFitMovie = makeMovie;
   kitLog('Fitting plane in channel %d', planeChan);
   if strcmp(job.options.coordMode{planeChan}, 'none')
     % No spot tracking in plane channel so populate dataStruct.

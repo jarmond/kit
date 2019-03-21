@@ -90,20 +90,20 @@ for j=1:length(opts.subset)
 
   if opts.overlay == 0
       subplot(fig_m,fig_n,j);
-      plot(t,x1);
+      plot(t,x1,'linewidth',3);
       title(['Track ' num2str(i)]);
       xlim([0 max(t)])
-      xlabel('time, s'); ylabel('x-position, µm');
-      set(gca,'FontSize',8)
+      xlabel('Time, s'); ylabel('x-position, µm');
+      set(gca,'FontSize',20)
   else
       for h=opts.plotAx
           subplot(length(opts.plotAx),1,h)
           hold on
           title(axName(h))
           x1=trackList(i).coords(:,h);
-          plot(t,x1);
+          plot(t,x1,'linewidth',3);
           xlim([0 max(t)])
-          xlabel('time, s'); ylabel('position, µm');
+          xlabel('Time, s'); ylabel('Position, µm');
           ylim([-12 12])
           set(gca,'FontSize',20)
       end
@@ -127,7 +127,7 @@ if opts.plotPole && ~isempty(poleSub)
         subplot(fig_m,fig_n,j);
         title(['Track ' num2str(i)]);
         pause(1)
-        plot(t,x1);
+        plot(t,x1,'linewidth',3);
         xlim([0 max(t)])
         xlabel('time, s'); ylabel('x-position, µm');
         set(gca,'FontSize',20)

@@ -18,15 +18,19 @@ if nargin <1
     job = jonathanExampleTrackTest(job);
 end
 
-if nargin<2 || isempty(verbose)
+if nargin<2
+    allowMulti=0;
+end
+
+if nargin<3 || isempty(verbose)
     verbose = 1;
 end
 
-if nargin<3
+if nargin<4
     movie = []; %then ignore the movie argument
 end
 
-if nargin<4
+if nargin<5
     %set default options for grouping sisters
     opts.useAlignment = 1;
     opts.maxAngle = 30;
@@ -42,7 +46,7 @@ else %use input, can set up as optimization problem
     opts.useAnaphase=0;
     opts.robust=0;
 end
-if nargin < 5
+if nargin < 6
  channel = 1;
 end
 
@@ -56,7 +60,10 @@ nFrames = job.metadata.nFrames;
 nSisters = size(job.dataStruct{channel}.sisterList,1);
 doesSisterPairExist = zeros(nFrames,nSisters);
 if ~isempty(job.dataStruct{channel}.sisterList(1).coords1)
+    job.dataStruct{1}.sisterList
+    size(doesSisterPairExist)
     for j = 1:nSisters
+            size(job.dataStruct{channel}.sisterList(j).coords1(:,1))
         %put ones where a paired sister exists
         doesSisterPairExist(:,j)= ~isnan(...
             job.dataStruct{channel}.sisterList(j).coords1(:,1));

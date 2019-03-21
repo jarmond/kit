@@ -236,31 +236,15 @@ M.setSolverParam('mioTolAbsGap', 0.0);
 M.objective('obj', ObjectiveSense.Minimize, Expr.dot(cc, xx));
 
 % Solve the problem
-%M.setLogHandler(java.io.PrintWriter(java.lang.System.out)); 
 M.solve();
 % Get the solution values
 sol = xx.level();
-% sum(cc(:).*sol)
-% 
-% %New problem initialized by first one
-% M2 = M;
-% xx2 = M2.variable([scc(1),scc(2)], Domain.binary());
-% xx2.setLevel( sol ); %use solution as initial
-% %M.GetAcc PrimalObjValue
-% 
-% %each value only once per dim
-% for d = 1:2
-%     M2.constraint(Expr.sum(xx2,d-1), Domain.lessThan(2.));
-%     M2.constraint(Expr.sum(xx2,d-1), Domain.greaterThan(1.));
-% end
-% M2.solve();
-% sol = xx2.level();
+
 [x,y,~] = find(reshape(round(sol),scc)); %output indices of chosen connections
 x = int32(x);
 y = int32(y);
-totalcost = 0;
-for i=1:scc(1)/2
-   totalcost = totalcost + cc(x(i),i);
-end
-totalcost
-%M.PrimalObjValue
+% totalcost = 0;
+% for i=1:scc(1)/2
+%    totalcost = totalcost + cc(x(i),i);
+% end
+% totalcost

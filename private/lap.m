@@ -332,8 +332,8 @@ val = double([0; val]);
 x = x(2:end);
 y = y(2:end);
 
-totalcost = 0;
-for i=1:scc(1)/2
-   totalcost = totalcost + full(cc(x(i),i));
-end
-totalcost
+% totalcost = 0;
+% for i=1:scc(1)/2
+%    totalcost = totalcost + full(cc(x(i),i));
+% end
+% totalcost

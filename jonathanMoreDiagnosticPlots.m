@@ -28,7 +28,7 @@ if isfield(job.dataStruct{channel},'sisterList') && ...
     ylabel('Normalized frequency','Interpreter','Latex');
     set(gca,'fontsize',20)
     if ableToSave
-        savename = sprintf('%sSisterSpearation.eps',job.output);
+        savename = sprintf('%sSisterSpearation',kitGenerateOutputFilename(job));
         print(sprintf('%s.eps',savename),'-depsc');
     end
 else
@@ -51,7 +51,7 @@ if isfield(job.dataStruct{channel},'trackList')
     ylabel('Normalized frequency','Interpreter','Latex');
     set(gca,'fontsize',20)
     if ableToSave
-        savename = sprintf('%sFramewiseDist.eps',job.output);
+        savename = sprintf('%sFramewiseDist',kitGenerateOutputFilename(job));
         print(sprintf('%s.eps',savename),'-depsc');
     end
 else

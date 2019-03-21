@@ -47,6 +47,7 @@ function dataStruct = kitGroupSisters(dataStruct,verbose,allowMulti)
 %         The code cannot handle merged/splitted tracks!
 %
 % Copyright (c) 2007 Jonas Dorn, Khuloud Jaqaman
+% Edited Jonathan U Harrison 2019-03-20
 
 %% TEST INPUT & READ PARAMETERS
 
@@ -216,6 +217,7 @@ for jTrack = 1:nGoodTracks % loop cols
 
                 %get the angle between distance vector and normal
                 [distance,distanceVectorN] = normList(distanceVector);
+distanceVectorN(:,1)
                 alpha = acos(abs(distanceVectorN(:,1)));
 
                 % average alpha, rather than tan to be nice to pairs that will
@@ -246,8 +248,8 @@ for jTrack = 1:nGoodTracks % loop cols
                 %assign alignment cost for pair if the average angle is less
                 %than maxAngle degrees. Otherwise, keep as NaN to prohibit the link
                 if meanAlpha < maxAngle
-%                fprintf('\nrobust mean distance is %f pm %f compared to %f\n',rMean,rStd,maxDist);
-%                fprintf('\nrobust mean allignment is %f pm %f compared to %f\n',meanAlpha,stdAlpha,maxAngle);
+                fprintf('\nrobust mean distance is %f pm %f compared to %f\n',rMean,rStd,maxDist);
+                fprintf('\nrobust mean allignment is %f pm %f compared to %f\n',meanAlpha,stdAlpha,maxAngle);
                     [alignment(jTrack,iTrack),alignment(iTrack,jTrack)]...
                         = deal(2*sqrt(3)*tan(meanAlpha)+1);
                 end
@@ -547,6 +549,15 @@ function [r2c,c2r,costMat,linkedIdx] = linkTracks(distances,variances,...
     alignment,nGoodTracks,maxDist,useAlignment,allowMulti)
 
 % cutoff distances
+figure; 
+ecdf(distances(:))
+title('Distances');
+figure;
+ecdf(variances(:))
+title('Variances');
+figure;
+ecdf(alignment(:))
+title('Alignment');
 distCutoffIdx = distances>maxDist;
 sum(sum(distCutoffIdx))
 distances(distCutoffIdx) = NaN;
@@ -563,7 +574,7 @@ end
 
 % replace NaNs with -1
 costMat(isnan(costMat)) = -1;
-
+sum(costMat(:)~=-1)
 % lap costMat
 if all(costMat==-1)
     r2c = NaN(2*nGoodTracks,1);
