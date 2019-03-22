@@ -262,7 +262,8 @@ end %(for t=1:nTimePoints)
 
 if isfield(opts,'smoothPlaneOrigin') && opts.smoothPlaneOrigin
 %optionally smooth the origin time series
-planeFit = smoothOriginTimeSeries(planeFit, opts.debug.showPlaneFit);
+fprintf('Smoothing the origin time series ...\n');
+planeFit = smoothOriginTimeSeries(planeFit, 1); %opts.debug.showPlaneFit);
 end
 
 %if there are enough good frames, go over potentially good frames and
@@ -455,7 +456,7 @@ if nConsecFrames >= minConsecFrames && ~isempty(goodFrames)
       % define plane vectors etc.
       goodNormals(:,t) = eigenVectors(:,eigenVecAssign(normalIndx,t),goodFrames(t));
       e_plane = calcPlaneVectors(goodNormals(:,t));
-      planeFit(goodFrames(t)).plane = [goodNormals(:,t)',meanCoordFull(goodFrames(t),:)*goodNormals(:,t)];
+      planeFit(goodFrames(t)).plane = [goodNormals(:,t)',planeFit.planeOrigin(goodFrames(t),:)*goodNormals(:,t)];
       planeFit(goodFrames(t)).planeVectors = e_plane;
 
       % assignment of metaphase or anaphase; distinction of late prometaphase

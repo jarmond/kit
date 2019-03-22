@@ -141,9 +141,8 @@ an.nLoadedCells = nROIs;
 an.maxTrackLength = size(an.sisterCoords1,1);
 % Time vector.
 t = job.metadata.frameTime;
-an.dt = t(1,2)-t(1,1)
-an.time = (0:an.maxTrackLength-1)'*an.dt
-an.time
+an.dt = t(1,2)-t(1,1);
+an.time = (0:an.maxTrackLength-1)'*an.dt;
 an.nChannels = length(an.trackInt);
 
 % Record stage.

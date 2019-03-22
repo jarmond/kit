@@ -60,6 +60,7 @@ opts.maxSisterSeparation = 1.5; % um
 opts.minSisterTrackOverlap = 10; % percent of movie length to require overlap
 opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in anaphase.
 opts.smoothPlaneOrigin = 1; %Average origin position over a window of width 10 to smooth
+opts.deconvolvedDataCorrection = 0;
 
 direction.assignMode = 'voting'; % directional (AP or P) assignment, can also be 'absolute'
 direction.assignExpWeight = 1; % exponentially weight displacements

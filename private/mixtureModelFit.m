@@ -295,9 +295,9 @@ for i=1:nClusters
   % Amplitude testing. 1-sided t-test.
   % Repeat while some amplitudes not signifcant.
   while numCands > 0
-% clusterAmp
-% clusterAmpVar
-% residVar
+ clusterAmp
+ clusterAmpVar
+ residVar
     testStat = clusterAmp./sqrt(clusterAmpVar+residVar);
     pValue = 1-tcdf(testStat,numDegFree); %%% HAD A TRY FUNCTION HERE, WITH p=1 IF FAILED, SO MIGHT ENCOUNTER THIS LATER
     [pValueMax,indxBad] = max(pValue);

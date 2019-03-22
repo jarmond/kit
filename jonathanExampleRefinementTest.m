@@ -23,16 +23,22 @@ if nargin<6 || isempty(debug)
 end
 method = 'gaussian'; %could also test centroid fitting method
 ndims = 3;
-%get data properties rather than setting manually for test
-ds = kitMakeMakiDatastruct(job,channel);
-job.dataStruct{channel}.dataProperties = ds.dataProperties;
-% set more options for use later in MMF fitting
+
+% set options for use later in MMF fitting
 job.options.debug.showMmfFinal = debug;
 job.options.debug.showMmfPvals = debug;
 job.options.debug.mmfVerbose = verbose;
 job.options.spotMode{1} = 'adaptive';
 job.options.chrShift.result{1,1} = zeros(1,6);
 job.options.coordSystemChannel = 1;
+job.options.deconvolvedDataCorrection = 1; %change psf for deconvolved data
+
+%get data properties rather than setting manually for test
+ds = kitMakeMakiDatastruct(job,channel);
+% ds.dataProperties.psfSigma = [1,1.2];
+% ds.dataProperties.FT_SIGMA = [1,1,1.2];
+% ds.dataProperties.FILTERPRM = [1,1,1.2,9,9,11];
+job.dataStruct{channel}.dataProperties = ds.dataProperties;
 
 %default optins for mmf fitting
 mmf.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole

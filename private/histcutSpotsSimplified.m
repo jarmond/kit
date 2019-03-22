@@ -65,7 +65,6 @@ nn = (nn - options.minSpotsPerFrame)/(options.maxSpotsPerFrame-options.minSpotsP
 iter = 0;
 realisticNumSpots = 0;
 while (~realisticNumSpots && (iter < 5)) %TODO: set num iter as an option
-    fprintf('entered loop');
 if nn > 1
   %too many spots detected, increase threshold
   cutoff = cutoff*2;

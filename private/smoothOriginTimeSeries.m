@@ -8,7 +8,9 @@ for j=1:nFrames
     originCoords(j,:) = planeFit(j).planeOrigin;
 end
 smoothedOriginCoords = smoothdata(originCoords,'movmean',10);
-
+for j=1:nFrames
+    planeFit(j).planeOrigin = smoothedOriginCoords(j,:);
+end
 if verbose
     figure;
     for i=1:3        

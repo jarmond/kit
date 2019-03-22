@@ -217,7 +217,6 @@ for jTrack = 1:nGoodTracks % loop cols
 
                 %get the angle between distance vector and normal
                 [distance,distanceVectorN] = normList(distanceVector);
-distanceVectorN(:,1)
                 alpha = acos(abs(distanceVectorN(:,1)));
 
                 % average alpha, rather than tan to be nice to pairs that will
@@ -550,14 +549,20 @@ function [r2c,c2r,costMat,linkedIdx] = linkTracks(distances,variances,...
 
 % cutoff distances
 figure; 
-ecdf(distances(:))
+[f,x] = ecdf(distances(:));
+stairs(x,f,'linewidth',3);
 title('Distances');
+set(gca,'fontsize',20);
 figure;
-ecdf(variances(:))
+[f,x] = ecdf(variances(:));
+stairs(x,f,'linewidth',3);
 title('Variances');
+set(gca,'fontsize',20);
 figure;
-ecdf(alignment(:))
+[f,x] = ecdf(alignment(:));
+stairs(x,f,'linewidth',3);
 title('Alignment');
+set(gca,'fontsize',20);
 distCutoffIdx = distances>maxDist;
 sum(sum(distCutoffIdx))
 distances(distCutoffIdx) = NaN;

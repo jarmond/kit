@@ -33,7 +33,6 @@ dataProperties.IDopt= [];
 dataProperties.PATCHSIZE=7;
 dataProperties.CH_MAXNUMINTERV=1000;
 dataProperties.OVERLPSIZE=[15 15 15];
-dataProperties.sigmaCorrection=[1.5 1.5];
 dataProperties.split=[];
 dataProperties.MAXSPOTS=500;
 dataProperties.T_TEST_PROB=0.0500;
@@ -43,6 +42,11 @@ dataProperties.fitNPlusOne = 1; % super-resolution fitting in detector
 dataProperties.waveIdx = channel; % current wavelength
 dataProperties.movieType = 'sorger'; % also: 'sedat', 'misteli', 'synth'
 dataProperties.name = '';
+dataProperties.sigmaCorrection=[1.5 1.5];
+if isfield(options,'deconvolvedDataCorrection') && options.deconvolvedDataCorrection
+% assume a smaller PSF by a factor 2 to correct for less dispersion of spots
+dataProperties.sigmaCorrection=dataProperties.sigmaCorrection/2;
+end
 
 % linker properties
 dataProperties.linker_relativeMaxDistance = -1; % don't use
