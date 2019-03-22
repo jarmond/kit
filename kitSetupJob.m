@@ -258,6 +258,8 @@ function hs = createControls()
   taby = tabtoplabely;
   hs.mmfAddSpots = checkbox(hs.tabs{tabID},'Resolve sub-resolution spots',[labx taby w h],'',tinyfont);
   taby = taby-h;
+  hs.mmfDeconvolvedDataCorrection = checkbox(hs.tabs{tabID},'Using deconvolved data', [labx taby w h],'',tinyfont);
+  taby = taby-h;
   hs.maxMmfTimeText = label(hs.tabs{tabID},'Max MMF time per frame (s)',[labx taby labw h],tinyfont);
   hs.maxMmfTime = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
   taby = taby-lh;
@@ -478,6 +480,7 @@ function updateControls(jobset)
   hs.maxSpots.String = num2str(opts.maxSpotsPerFrame);
   hs.manualFrameSpace.String = num2str(opts.manualDetect.frameSpacing);
   hs.mmfAddSpots.Value = opts.mmf.addSpots;
+  hs.mmfDeconvolvedDataCorrection.Value = opts.deconvolvedDataCorrection;
   hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
   for iChan=1:3
     hs.alphaA{iChan}.String = num2str(opts.mmf.alphaA(iChan));
@@ -771,6 +774,7 @@ end
 function refineModeCB(hObj,event)
   if strcmp(mapStrings(handles.refineMode.Value,spotRefineValues),'MMF')
     handles.mmfAddSpots.Enable = 'on';
+    handles.mmfDeconvolvedDataCorrection.Enable = 'on';
     handles.maxMmfTimeText.Enable = 'on';
     handles.maxMmfTime.Enable = 'on';
     handles.alphaAText.Enable = 'on';
@@ -785,6 +789,7 @@ function refineModeCB(hObj,event)
     end
   else
     handles.mmfAddSpots.Enable = 'off';
+    handles.mmfDeconvolvedDataCorrection.Enable = 'off';
     handles.maxMmfTimeText.Enable = 'off';
     handles.maxMmfTime.Enable = 'off';
     handles.alphaAText.Enable = 'off';
@@ -1156,6 +1161,8 @@ function updateJobset()
   % MMF options.
   mmf = opts.mmf;
   mmf.addSpots = handles.mmfAddSpots.Value;
+  opts.deconvolvedDataCorrection = handles.mmfDeconvolvedDataCorrection.Value;
+
   mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
   for iChan=1:3
     mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
