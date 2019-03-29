@@ -44,7 +44,7 @@ dataProperties.movieType = 'sorger'; % also: 'sedat', 'misteli', 'synth'
 dataProperties.name = '';
 dataProperties.sigmaCorrection=[1.5 1.5];
 if isfield(options,'deconvolvedDataCorrection') && options.deconvolvedDataCorrection
-% assume a smaller PSF by a factor 2 to correct for less dispersion of spots
+% assume a smaller PSF by a factor 4 to correct for less dispersion of spots
 dataProperties.sigmaCorrection=dataProperties.sigmaCorrection/2;
 end
 
@@ -54,9 +54,6 @@ dataProperties.linker_absoluteMaxDistance=-1; % don't use
 dataProperties.linker_relAmpWeight=1/1.5; % weighs distance more
 dataProperties.linker_useCOM = 1; % use center of mass to correct
 dataProperties.linker_fuseRatio = 1.5; % fuse if less than 1.5 RL separated
-
-% detector properties
-dataProperties.detector_spotfind = 1; %1: standard 2: mammalian
 
 % tracking settings
 tracksParam.rotate = 1;

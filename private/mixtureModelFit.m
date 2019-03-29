@@ -17,7 +17,8 @@ if nargin < 5 || isempty(updProg)
 end
 
 % Set optimization options.
-optoptions = optimset('Jacobian','on','Display','off','Tolfun',mmf.mmfTol,'TolX',1e-6);
+optoptions = optimset('Jacobian','on','Display',...
+  'off','Tolfun',mmf.mmfTol,'TolX',1e-6,'UseParallel',true);
 alphaA = mmf.alphaA; % amplitude t-test cutoff.
 alphaF = mmf.alphaF; % N vs N+1 F-test cutoff.
 alphaD = mmf.alphaD;
