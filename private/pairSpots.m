@@ -88,7 +88,8 @@ if ~isempty(coords)
   end
   unpairedIdx = [];
   doublePairingIdx = [];
-  
+
+try  
   % produce image file
   fullImg = zeros([cropSize([1 2]) 3]);
   for iChan = opts.imageChans
@@ -97,6 +98,16 @@ if ~isempty(coords)
     irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
     fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
   end
+catch %image may be transposed
+  % produce image file
+  fullImg = zeros([cropSize([2 1]) 3]);
+  for iChan = opts.imageChans
+    img(:,:,:,iChan) = kitReadImageStack(reader, md, 1, iChan, crop, 0);
+    fullImg(:,:,chanOrder(iChan)) = max(img(:,:,:,iChan),[],3); % full z-project
+    irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
+    fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
+  end
+end
   
   % produce figure environment
   f = figure(1);

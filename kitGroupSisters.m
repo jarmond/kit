@@ -547,6 +547,7 @@ dataStruct.sisterList = sisterList;
 function [r2c,c2r,costMat,linkedIdx] = linkTracks(distances,variances,...
     alignment,nGoodTracks,maxDist,useAlignment,allowMulti)
 
+if verbose
 % cutoff distances
 figure; 
 [f,x] = ecdf(distances(:));
@@ -563,6 +564,7 @@ figure;
 stairs(x,f,'linewidth',3);
 title('Alignment');
 set(gca,'fontsize',20);
+end
 distCutoffIdx = distances>maxDist;
 sum(sum(distCutoffIdx))
 distances(distCutoffIdx) = NaN;

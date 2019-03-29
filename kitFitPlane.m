@@ -263,7 +263,7 @@ end %(for t=1:nTimePoints)
 if isfield(opts,'smoothPlaneOrigin') && opts.smoothPlaneOrigin
 %optionally smooth the origin time series
 fprintf('Smoothing the origin time series ...\n');
-planeFit = smoothOriginTimeSeries(planeFit, 1); %opts.debug.showPlaneFit);
+planeFit = smoothOriginTimeSeries(planeFit, opts.debug.showPlaneFit);
 end
 
 %if there are enough good frames, go over potentially good frames and
