@@ -42,6 +42,8 @@ while ~handles.stop
 
     % check whether there is any data contained within this movie
     if ~isfield(job{iMov},'dataStruct') || ~isfield(job{iMov}.dataStruct{iChan},'failed') || job{iMov}.dataStruct{iChan}.failed
+        fprintf('Analysis failed, or no data contained in this movie, so skipping to next movie \n');
+        handles.movID = handles.movID+1;
         continue
     end
     % get dataStruct
