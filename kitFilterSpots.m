@@ -70,7 +70,7 @@ while ~handles.stop
     job{iMov}.dataStruct{iChan} = dS;
     
     % get number of spots
-    nSpots = length(dS.initCoord.allCoord);
+    nSpots = size(dS.initCoord.allCoord,1);
     handles.nSpots = nSpots;
 
     % show all spots - defined using tracks
@@ -95,7 +95,7 @@ while ~handles.stop
         % get the colour for this spot
         keep = handles.keep(iSpot);
         icol = handles.col(keep+1,:);
-        
+        iSpot
         % draw the rectangle
         rectangle('Position',[rectPos(iSpot,:)-0.5 rectWid rectWid],...
             'EdgeColor',icol,'LineWidth',3);
