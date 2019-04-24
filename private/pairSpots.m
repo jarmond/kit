@@ -98,6 +98,7 @@ try
     irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
     fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
   end
+  isTransposed = 0; %use this to check later which case we are in
 catch %image may be transposed
   % produce image file
   fullImg = zeros([cropSize([2 1]) 3]);
@@ -107,6 +108,7 @@ catch %image may be transposed
     irange(iChan,:) = stretchlim(fullImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
     fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
   end
+  isTransposed = 1; %use this to check later
 end
   
   % produce figure environment
@@ -183,10 +185,15 @@ while ~isempty(unallocatedIdx)
     coordRange = [max(1,centreCoords(1)-cropRange(1)) min(centreCoords(1)+cropRange(1),cropSize(1));...
                   max(1,centreCoords(2)-cropRange(2)) min(centreCoords(2)+cropRange(2),cropSize(2));...
                   max(1,centreCoords(3)-opts.zProjRange) min(centreCoords(3)+opts.zProjRange,cropSize(3))];
-    cropImg = zeros(coordRange(1,2)-coordRange(1,1)+1,...
-                    coordRange(2,2)-coordRange(2,1)+1,...
-                    3);
-    
+    if isTransposed
+          cropImg = zeros(coordRange(2,2)-coordRange(2,1)+1,...
+                coordRange(1,2)-coordRange(1,1)+1,...
+                3);
+    else
+          cropImg = zeros(coordRange(1,2)-coordRange(1,1)+1,...
+            coordRange(2,2)-coordRange(2,1)+1,...
+            3);
+    end
 	% plot image in figure 1
     f = figure(1);
     clf
@@ -279,7 +286,11 @@ while ~isempty(unallocatedIdx)
             
             subplot(2,4,[1,2,5,6])
             % get zoomed image
-            tempImg = img(coordRange(1,1):coordRange(1,2), coordRange(2,1):coordRange(2,2), :, :);
+            if isTransposed
+                tempImg = img(coordRange(2,1):coordRange(2,2), coordRange(1,1):coordRange(1,2), :, :);
+            else %again due to transpose. Image has been flipped and crops should be too.
+                tempImg = img(coordRange(1,1):coordRange(1,2), coordRange(2,1):coordRange(2,2), :, :);
+            end
             for iChan = opts.imageChans
                 cropImg(:,:,chanOrder(iChan)) = max(tempImg(:,:, coordRange(3,1):coordRange(3,2), iChan),[],3);
                 irange(iChan,:) = stretchlim(cropImg(:,:,chanOrder(iChan)),opts.contrast{iChan});

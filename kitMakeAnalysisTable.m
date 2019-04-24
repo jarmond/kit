@@ -16,8 +16,8 @@ nMovs = length(job);
 
 nFrames = job{1}.metadata.nFrames;
 if nFrames > 1 %treat time sereies and single time points differently
-    varnames = {'Position','Amplitude','Frame','SisterPairID','SisterID'};
-    analysisTable = cell2table(cell(0,6),cat(2,varnames,'movieID'));
+    varnames = {'Position','Amplitude','Frame','Time','SisterPairID','SisterID'};
+    analysisTable = cell2table(cell(0,7),'VariableNames',cat(2,varnames,'movieID'));
 else
     varnames = {'Position','Amplitude'};
     if isfield(job{1},'categories')
@@ -69,8 +69,8 @@ for jobInd = 1:nMovs
                     end
                 end
             end
-            
-            T = table(position,amplitude,frame,sisterPairID,sisterID,...
+            dt = dataStruct.dataProperties.frameTime(1,2)-dataStruct.dataProperties.frameTime(1,1);
+            T = table(position,amplitude,frame,(frame-1)*dt,sisterPairID,sisterID,...
                 'VariableNames', varnames);
         else
             error('No sisterList found but need paired joblist to make table from');
