@@ -449,14 +449,12 @@ if use2D && ~useInputPlane
 end
 
 if nConsecFrames >= minConsecFrames && ~isempty(goodFrames)
-
   if ~useInputPlane
     for t = 1:length(goodFrames)
-
       % define plane vectors etc.
       goodNormals(:,t) = eigenVectors(:,eigenVecAssign(normalIndx,t),goodFrames(t));
       e_plane = calcPlaneVectors(goodNormals(:,t));
-      planeFit(goodFrames(t)).plane = [goodNormals(:,t)',planeFit.planeOrigin(goodFrames(t),:)*goodNormals(:,t)];
+      planeFit(goodFrames(t)).plane = [goodNormals(:,t)',planeFit(goodFrames(t)).planeOrigin*goodNormals(:,t)];
       planeFit(goodFrames(t)).planeVectors = e_plane;
 
       % assignment of metaphase or anaphase; distinction of late prometaphase

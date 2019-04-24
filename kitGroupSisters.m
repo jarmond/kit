@@ -86,7 +86,7 @@ trackLength = squeeze(trackStats(2,1,:)-trackStats(1,1,:)+1);
 
 % select tracks whose length is larger than the minimum overlap
 goodTracks = find(trackLength>=minOverlap);
-nGoodTracks = length(goodTracks)
+nGoodTracks = length(goodTracks);
 
 %% READ TRACK INFORMATION
 
@@ -247,8 +247,10 @@ for jTrack = 1:nGoodTracks % loop cols
                 %assign alignment cost for pair if the average angle is less
                 %than maxAngle degrees. Otherwise, keep as NaN to prohibit the link
                 if meanAlpha < maxAngle
-                fprintf('\nrobust mean distance is %f pm %f compared to %f\n',rMean,rStd,maxDist);
-                fprintf('\nrobust mean allignment is %f pm %f compared to %f\n',meanAlpha,stdAlpha,maxAngle);
+		            if verbose
+                        fprintf('\nrobust mean distance is %f pm %f compared to %f\n',rMean,rStd,maxDist);
+                        fprintf('\nrobust mean allignment is %f pm %f compared to %f\n',meanAlpha,stdAlpha,maxAngle);
+                    end
                     [alignment(jTrack,iTrack),alignment(iTrack,jTrack)]...
                         = deal(2*sqrt(3)*tan(meanAlpha)+1);
                 end
@@ -264,7 +266,7 @@ end %(for jTrack = 1:nGoodTracks)
 
 [r2c,c2r,costMat,linkedIdx] = ...
     linkTracks(distances,variances,alignment,...
-    nGoodTracks,maxDist,useAlignment,allowMulti);
+    nGoodTracks,maxDist,useAlignment,allowMulti,verbose);
 
 if all(isnan(r2c))
     sisterList = struct('trackPairs',[],'coords1',[],...
@@ -545,7 +547,7 @@ dataStruct.sisterList = sisterList;
 
 %% link tracks
 function [r2c,c2r,costMat,linkedIdx] = linkTracks(distances,variances,...
-    alignment,nGoodTracks,maxDist,useAlignment,allowMulti)
+    alignment,nGoodTracks,maxDist,useAlignment,allowMulti, verbose)
 
 if verbose
 % cutoff distances
@@ -566,7 +568,6 @@ title('Alignment');
 set(gca,'fontsize',20);
 end
 distCutoffIdx = distances>maxDist;
-sum(sum(distCutoffIdx))
 distances(distCutoffIdx) = NaN;
 variances(distCutoffIdx) = NaN;
 alignment(distCutoffIdx) = NaN;
