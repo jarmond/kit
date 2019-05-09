@@ -209,6 +209,8 @@ function hs = createControls()
   t = label(hs.tabs{tabID},'Primary spot detection',[labx taby labw h],smallfont);
   t.FontWeight = 'Bold';
   taby = taby-h;
+  hs.flatBackground = checkbox(hs.tabs{tabID},'Use flat background', [labx taby w h],'',tinyfont);
+  taby = taby-h;
   hs.minSpotsText = label(hs.tabs{tabID},'Min spots per frame',[labx taby labw h],tinyfont);
   hs.minSpots = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
   taby = taby-h;
@@ -476,6 +478,7 @@ function updateControls(jobset)
     autoRadiiCB();
   end
   
+  hs.flatBackground.Value = opts.flatBackground;
   hs.minSpots.String = num2str(opts.minSpotsPerFrame);
   hs.maxSpots.String = num2str(opts.maxSpotsPerFrame);
   hs.manualFrameSpace.String = num2str(opts.manualDetect.frameSpacing);
@@ -755,11 +758,13 @@ function detectModeCB(hObj,event)
     handles.minSpotsText.Enable = 'on';
     handles.maxSpots.Enable = 'on';
     handles.maxSpotsText.Enable = 'on';
+    handles.flatBackground.Enable = 'off';
   else
     handles.minSpots.Enable = 'off';
     handles.minSpotsText.Enable = 'off';
     handles.maxSpots.Enable = 'off';
     handles.maxSpotsText.Enable = 'off';
+    handles.flatBackground.Enable = 'on';
   end
   if strcmp(mapStrings(handles.detectMode.Value,spotDetectValues),'Manual')
     handles.manualFrameSpaceText.Enable = 'on';
@@ -1158,6 +1163,7 @@ function updateJobset()
   opts.minSpotsPerFrame = str2double(handles.minSpots.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpots.String);
   opts.manualDetect.frameSpacing = str2double(handles.manualFrameSpace.String);
+  opts.flatBackground = handles.flatBackground.Value;
   % MMF options.
   mmf = opts.mmf;
   mmf.addSpots = handles.mmfAddSpots.Value;

@@ -60,8 +60,12 @@ switch spotMode
     if ~isfield(options,'realisticNumSpots')
       options.realisticNumSpots = 100;
     end
+    if ~isfield(options, 'flatBackground')
+      options.flatBackground = 0;
+    end
     spots = adaptiveSpots(movie,options.adaptiveLambda,...
-                          options.realisticNumSpots,options.debug.showAdaptive);
+                          options.realisticNumSpots,options.flatBackground,...
+                          options.debug.showAdaptive);
 
   case 'wavelet'
     kitLog('Detecting particle candidates using multiscale wavelet product');
