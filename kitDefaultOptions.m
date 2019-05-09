@@ -135,4 +135,8 @@ debug.asserts = 0; % check things that shouldn't go wrong
 debug.disableSave = 0; % don't save job at each step
 opts.debug = debug;
 
+%options for adaptive detection method
+opts.realisticNumSpots = 92; %how many spots do we expect
+opts.adaptiveLambda = 1; %regularistaion parameter
+
 job.options = opts;

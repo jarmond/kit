@@ -76,6 +76,9 @@ startTime = clock;
     end
     clusterAmpT = image(clusterCands1D);
     numCandsT = size(clusterCandsT,1);
+if numCandsT>10
+warning('Trying to fit a large cluster of %d candidates',numCandsT);
+end
     if verbose
       kitLog('Fitting cluster %d, %d cands',i,numCandsT);
     end

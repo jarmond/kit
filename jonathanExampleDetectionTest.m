@@ -1,5 +1,5 @@
 function [spots, movie, job] = jonathanExampleDetectionTest(job, channel,...
-                            useAdaptive, adaptiveLambda, verbose)
+                            useAdaptive, adaptiveLambda, verbose, ignoreTests)
 % Perform detection on metaphase example downloaded from the bitbucket repo
 %
 % Jonathan U Harrison 2019-02-06
@@ -30,7 +30,11 @@ end
 if nargin<5 || isempty(verbose)
     verbose=0;
 end
+if nargin<6 || isempty(ignoreTests)
+    ignoreTests=0;
+end
 realisticNumSpots=92;
+flatBackground = 1;
 
 %create reader to read movie
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,7 +59,7 @@ movie = kitReadWholeMovie(reader,job.metadata,channel,job.ROI(1).crop,0,1);
 
 
 if useAdaptive
-    spots = adaptiveSpots(movie,adaptiveLambda,realisticNumSpots,0);
+    spots = adaptiveSpots(movie,adaptiveLambda,realisticNumSpots,flatBackground,0);
 else
     %fix some parameters used in the histcut algorithm
     options.minSpotsPerFrame=80;
@@ -72,7 +76,7 @@ else
 end
 %max project and show spots
 if verbose
-    t_frame = 1;
+    t_frame = 20;
     figure;
     imshow(max(movie(:,:,:,t_frame),[],3));
     hold on;
@@ -85,7 +89,7 @@ end
 % should be
 %%%%%%%%%%%%%%%%%%%
 %% Test1: spots has the right dimensions
-
+if ~ignoreTests
 assert(length(spots)==size(movie,4),'Missing spots output for some frames')
 assert(size(spots{1},2)==3,'Expecting a 3D movie to test on')
 assert(size(spots{1},1)>0, ...
@@ -107,3 +111,4 @@ assert(all(spots{1}(1,:)>0), 'Spot coords should be positive')
 %     'First spot in first frame should have nonzero amplitude')
 % assert(all(movie([spots{1}(1,:),1])>median(median(median(median(movie))))), ...
 %     'First spot in first frame should have amplitude grater than average')
+end
