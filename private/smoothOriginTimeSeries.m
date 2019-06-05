@@ -3,6 +3,7 @@ function planeFit = smoothOriginTimeSeries(planeFit, verbose)
 %% These movements may be partially due to
 %%%%%%%%%%%%%%%%%%%%
 nFrames = length(planeFit);
+probDim = size(planeFit(1).planeOrigin,2); 
 originCoords = zeros(nFrames,3);
 for j=1:nFrames
     originCoords(j,:) = planeFit(j).planeOrigin;
@@ -13,8 +14,8 @@ for j=1:nFrames
 end
 if verbose
     figure;
-    for i=1:3        
-        subplot(3,1,i);
+    for i=1:probDim        
+        subplot(probDim,1,i);
         plot(originCoords(:,i),'linewidth',3);
         hold all;
         plot(smoothedOriginCoords(:,i),'linewidth',3);

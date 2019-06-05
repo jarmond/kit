@@ -220,7 +220,7 @@ for t=1:nTimePoints
     else
       [eigenVectors(:,:,t), eigenValues(t,:), meanCoord(t,:)] = ...
           eigenCalc(initCoord(t).allCoord(inlierIdx,1:probDim));
-      meanCoordFull(t,:) = meanCoord(t,:); % needed only for 3D center of mass
+      meanCoordFull(t,1:probDim) = meanCoord(t,1:probDim); % needed only for 3D center of mass
     end
 
     % fill in the center of mass into the planeOrigin no matter whether

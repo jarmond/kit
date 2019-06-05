@@ -60,9 +60,15 @@ elseif isfield(job.dataStruct{opts.plotChan},'failed') && job.dataStruct{opts.pl
   coordsPix = [];
   skip = 1;
 else
-  coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,[2 1 3]);
-  coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,[2 1 3]);
-  skip = 0;
+    isTransposed = any(size(kitReadImageStack(reader,md,1,2,crop,0)) ~= cropSize);
+    if isTransposed
+        xyz_ind = [1 2 3];
+    else
+        xyz_ind = [2 1 3];
+    end
+    coords = job.dataStruct{opts.plotChan}.initCoord(1).allCoord(:,xyz_ind);
+    coordsPix = job.dataStruct{opts.plotChan}.initCoord(1).allCoordPix(:,xyz_ind);
+    skip = 0;
 end
 nCoords = size(coords,1);
 
@@ -99,7 +105,7 @@ try
     fullImg(:,:,chanOrder(iChan)) = imadjust(fullImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
   end
   isTransposed = 0; %use this to check later which case we are in
-catch %image may be transposed
+catch ME %image may be transposed
   % produce image file
   fullImg = zeros([cropSize([2 1]) 3]);
   for iChan = opts.imageChans
@@ -204,7 +210,11 @@ while ~isempty(unallocatedIdx)
         case 'zoom'
     
             % get zoomed image centred at origin coordinate
-            tempImg = img(coordRange(1,1):coordRange(1,2), coordRange(2,1):coordRange(2,2), :, :);
+            if isTransposed
+                tempImg = img(coordRange(2,1):coordRange(2,2), coordRange(1,1):coordRange(1,2), :, :);
+            else
+                tempImg = img(coordRange(1,1):coordRange(1,2), coordRange(2,1):coordRange(2,2), :, :);                
+            end
             for iChan = opts.imageChans
                 if iChan ~= opts.plotChan
                     iCoordRange = coordRange - pixChrShift{opts.plotChan,iChan}(1:2);
@@ -292,11 +302,16 @@ while ~isempty(unallocatedIdx)
                 tempImg = img(coordRange(1,1):coordRange(1,2), coordRange(2,1):coordRange(2,2), :, :);
             end
             for iChan = opts.imageChans
-                cropImg(:,:,chanOrder(iChan)) = max(tempImg(:,:, coordRange(3,1):coordRange(3,2), iChan),[],3);
+                if iChan ~= opts.plotChan
+                    iCoordRange = coordRange - pixChrShift{opts.plotChan,iChan}(1:2);
+                else
+                    iCoordRange = coordRange;
+                end
+                cropImg(:,:,chanOrder(iChan)) = max(tempImg(:,:, iCoordRange(3,1):iCoordRange(3,2), iChan),[],3);
                 irange(iChan,:) = stretchlim(cropImg(:,:,chanOrder(iChan)),opts.contrast{iChan});
                 cropImg(:,:,chanOrder(iChan)) = imadjust(cropImg(:,:,chanOrder(iChan)),irange(iChan,:), []);
             end
-            
+           
             if length(opts.imageChans) == 1
                 imshow(cropImg(:,:,chanOrder(opts.imageChans)));
             else
@@ -306,6 +321,7 @@ while ~isempty(unallocatedIdx)
             
             % PLOTTING ZOOMED COORDINATES
             hold on
+            if ~isTransposed
             % origin coordinates in white
             scatter(iCoordsPix(:,2) - coordRange(2,1)+1, iCoordsPix(:,1) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
@@ -314,7 +330,17 @@ while ~isempty(unallocatedIdx)
             scatter(unpairedCoordsPix(:,2) - coordRange(2,1)+1, unpairedCoordsPix(:,1) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
             % paired in red
             scatter(pairedCoordsPix(:,2) - coordRange(2,1)+1, pairedCoordsPix(:,1) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
-            
+            else
+                % origin coordinates in white
+                scatter(iCoordsPix(:,1) - coordRange(1,1)+1, iCoordsPix(:,2) - coordRange(2,1)+1,'xw','sizeData',200,'LineWidth',1.25);
+                % unallocated in green
+                scatter(unallCoordsPix(:,1) - coordRange(1,1)+1, unallCoordsPix(:,2) - coordRange(2,1)+1,'xg','sizeData',200,'LineWidth',1.25);
+                % unpaired in yellow
+                scatter(unpairedCoordsPix(:,1) - coordRange(1,1)+1, unpairedCoordsPix(:,2) - coordRange(2,1)+1,'xy','sizeData',200,'LineWidth',1.25);
+                % paired in red
+                scatter(pairedCoordsPix(:,1) - coordRange(1,1)+1, pairedCoordsPix(:,2) - coordRange(2,1)+1,'xr','sizeData',200,'LineWidth',1);
+            end
+                
     end
     
     
