@@ -216,6 +216,22 @@ function invertCB(hObj,event)
   end
 end
 
+function deselectAllCB(hObj, event)
+  hs = handles;
+  % force all stops to be ignored
+  handles.keep = 0.*handles.keep;
+  for i = 1:hs.nSpots
+
+    % get the colour for this spot
+    keepStat = handles.keep(i);
+    jcol = handles.col(keepStat+1,:);
+
+    % draw the rectangle
+    rectangle('Position',[hs.rectPos(i,:)-0.5 hs.rectWid hs.rectWid],...
+        'EdgeColor',jcol,'LineWidth',3);
+  end
+end
+
 function prevMovCB(hObj,event)
   % update the handles
   handles.movID = handles.movID-1;

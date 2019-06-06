@@ -292,7 +292,11 @@ while ~isempty(unallocatedIdx)
             % PLOTTING COORDINATES
             hold on
             % origin coordinates in white
-            scatter(iCoordsPix(:,2),iCoordsPix(:,1),'xw','sizeData',200,'LineWidth',1.25);
+            if isTransposed
+                scatter(iCoordsPix(:,1),iCoordsPix(:,2),'xw','sizeData',200,'LineWidth',1.25);
+            else    
+                scatter(iCoordsPix(:,2),iCoordsPix(:,1),'xw','sizeData',200,'LineWidth',1.25);
+            end
             
             subplot(2,4,[1,2,5,6])
             % get zoomed image
@@ -323,22 +327,22 @@ while ~isempty(unallocatedIdx)
             hold on
             if ~isTransposed
             % origin coordinates in white
-            scatter(iCoordsPix(:,2) - coordRange(2,1)+1, iCoordsPix(:,1) - coordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
+            scatter(iCoordsPix(:,2) - iCoordRange(2,1)+1, iCoordsPix(:,1) - iCoordRange(1,1)+1,'xw','sizeData',200,'LineWidth',1.25);
             % unallocated in green
-            scatter(unallCoordsPix(:,2) - coordRange(2,1)+1, unallCoordsPix(:,1) - coordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
+            scatter(unallCoordsPix(:,2) - iCoordRange(2,1)+1, unallCoordsPix(:,1) - iCoordRange(1,1)+1,'xg','sizeData',200,'LineWidth',1.25);
             % unpaired in yellow
-            scatter(unpairedCoordsPix(:,2) - coordRange(2,1)+1, unpairedCoordsPix(:,1) - coordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
+            scatter(unpairedCoordsPix(:,2) - iCoordRange(2,1)+1, unpairedCoordsPix(:,1) - iCoordRange(1,1)+1,'xy','sizeData',200,'LineWidth',1.25);
             % paired in red
-            scatter(pairedCoordsPix(:,2) - coordRange(2,1)+1, pairedCoordsPix(:,1) - coordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
+            scatter(pairedCoordsPix(:,2) - iCoordRange(2,1)+1, pairedCoordsPix(:,1) - iCoordRange(1,1)+1,'xr','sizeData',200,'LineWidth',1);
             else
                 % origin coordinates in white
-                scatter(iCoordsPix(:,1) - coordRange(1,1)+1, iCoordsPix(:,2) - coordRange(2,1)+1,'xw','sizeData',200,'LineWidth',1.25);
+                scatter(iCoordsPix(:,1) - iCoordRange(1,1)+1, iCoordsPix(:,2) - iCoordRange(2,1)+1,'xw','sizeData',200,'LineWidth',1.25);
                 % unallocated in green
-                scatter(unallCoordsPix(:,1) - coordRange(1,1)+1, unallCoordsPix(:,2) - coordRange(2,1)+1,'xg','sizeData',200,'LineWidth',1.25);
+                scatter(unallCoordsPix(:,1) - iCoordRange(1,1)+1, unallCoordsPix(:,2) - iCoordRange(2,1)+1,'xg','sizeData',200,'LineWidth',1.25);
                 % unpaired in yellow
-                scatter(unpairedCoordsPix(:,1) - coordRange(1,1)+1, unpairedCoordsPix(:,2) - coordRange(2,1)+1,'xy','sizeData',200,'LineWidth',1.25);
+                scatter(unpairedCoordsPix(:,1) - iCoordRange(1,1)+1, unpairedCoordsPix(:,2) - iCoordRange(2,1)+1,'xy','sizeData',200,'LineWidth',1.25);
                 % paired in red
-                scatter(pairedCoordsPix(:,1) - coordRange(1,1)+1, pairedCoordsPix(:,2) - coordRange(2,1)+1,'xr','sizeData',200,'LineWidth',1);
+                scatter(pairedCoordsPix(:,1) - iCoordRange(1,1)+1, pairedCoordsPix(:,2) - iCoordRange(2,1)+1,'xr','sizeData',200,'LineWidth',1);
             end
                 
     end

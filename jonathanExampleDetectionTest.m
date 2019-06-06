@@ -76,7 +76,7 @@ else
 end
 %max project and show spots
 if verbose
-    t_frame = 20;
+    t_frame = 1;
     figure;
     imshow(max(movie(:,:,:,t_frame),[],3));
     hold on;
