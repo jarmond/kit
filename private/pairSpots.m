@@ -358,11 +358,20 @@ while ~isempty(unallocatedIdx)
         
         % correct user-provided information if zoomed
         if any(strcmp(opts.mode,{'dual','zoom'}))
-            userX = userX + coordRange(2,1)-1; userY = userY + coordRange(1,1)-1;
+            if isTransposed
+                userX = userX + iCoordRange(1,1)-1; userY = userY + iCoordRange(2,1)-1;
+            else
+                userX = userX + iCoordRange(2,1)-1; userY = userY + iCoordRange(1,1)-1;
+            end
         end
         
         % find the user-selected cross
-        userNNdist = createDistanceMatrix([userX userY],frameCoordsPix(:,[2 1]));
+        if isTransposed
+            coordsInd = [1 2];
+        else
+            coordsInd = [2 1];
+        end
+        userNNdist = createDistanceMatrix([userX userY],frameCoordsPix(:,coordsInd));
         [~,userIdx] = min(userNNdist);
         [userIdx,~] = find((coordsPix - repmat(frameCoordsPix(userIdx,:),size(coordsPix,1),1)) == 0);
         userIdx = userIdx(1);
