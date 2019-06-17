@@ -22,8 +22,11 @@ function kitPlotTracks(job,varargin)
 %    faintSubset: {no tracks} Plot this subset of trajectories faint in the
 %    background in grey
 %
-%    usePairs: {0} or 1 Plot trajectories of sister pairs or individual
+%    usePairs: {0} or 1. Plot trajectories of sister pairs or individual
 %    sisters
+%
+%    identifyLazyKTs: {0} or 1. Overwrites other subset options. Will
+%    determine the lazy or lagging KTs and plot these with others in faint.
 %
 %    minLength: {0.25} or number. Minimum number of tracked frames. Overridden by subset option.
 %   
@@ -45,6 +48,7 @@ opts.plotPole = 0;
 opts.nLongest = 0;
 opts.minLength = 0.25;
 opts.usePairs = 0;
+opts.identifyLazyKTs = 0;
 % Process options
 opts = processOptions(opts, varargin{:});
 
@@ -91,14 +95,20 @@ clf;
 hold on
 axName = ['x','y','z'];
 
-if opts.usePairs
-    trackPairs = dataStruct.sisterList(1).trackPairs(:,1:2);
-    subset = trackPairs(opts.subset,1:2); subset = subset(:)';
-    faintSubset = trackPairs(opts.faintSubset,1:2); faintSubset = faintSubset(:)';
+if opts.identifyLazyKTs
+    lazyKTs = kitIdentifyLazyKTs(job,opts.channel);
+    subset = unique(lazyKTs);
+    faintSubset = 1:length(job.dataStruct{opts.channel}.trackList);
 else
     subset = opts.subset;
     faintSubset = opts.faintSubset;
+    if opts.usePairs
+        trackPairs = dataStruct.sisterList(1).trackPairs(:,1:2);
+        subset = trackPairs(subset,1:2); subset = subset(:)';
+        faintSubset = trackPairs(faintSubset,1:2); faintSubset = faintSubset(:)';
+    end
 end
+
 for k=faintSubset 
     for h=opts.plotAx
         x1=trackList(k).coords(:,h);
