@@ -14,13 +14,19 @@ function kitPlotTracks(job,varargin)
 %
 %    overlay: 0 or {1}. Overlays tracks for each coordinate.
 %
-%    plotAx: {[1,2,3]} or subset of the default. Plot the specified axes,
+%    plotAx: {1} or subset of the default. Plot the specified axes,
 %    where 1=x, 2=y, 3=z.
 %
 %    subset: {all tracks} or some vector of tracks. Subset of tracks for plotting.
 %
-%    minLength: {0.25} or number. Minimum number of tracked frames. Overridden by subset option.
+%    faintSubset: {no tracks} Plot this subset of trajectories faint in the
+%    background in grey
 %
+%    usePairs: {0} or 1 Plot trajectories of sister pairs or individual
+%    sisters
+%
+%    minLength: {0.25} or number. Minimum number of tracked frames. Overridden by subset option.
+%   
 % Created by: Jonathan W. Armond 2013
 % Edited by:  Chris Smith 10/2013
 
@@ -34,9 +40,11 @@ opts.cutoff = 1000;
 opts.overlay = 1;
 opts.plotAx = 1;
 opts.subset = [];
+opts.faintSubset = [];
 opts.plotPole = 0;
 opts.nLongest = 0;
 opts.minLength = 0.25;
+opts.usePairs = 0;
 % Process options
 opts = processOptions(opts, varargin{:});
 
@@ -47,6 +55,11 @@ dataStruct = job.dataStruct{opts.channel};
 trackList = dataStruct.trackList;
 nTracks = length(trackList);
 maxTime = dataStruct.dataProperties.movieSize(4);
+
+if isempty(dataStruct.sisterList(1).trackPairs)
+  fprintf('\nNo sisters found in this movie.\n\n');
+  return
+end
 
 if isempty(opts.subset)
   if isempty(opts.minLength)
@@ -78,15 +91,38 @@ clf;
 hold on
 axName = ['x','y','z'];
 
-for j=1:length(opts.subset)
+if opts.usePairs
+    trackPairs = dataStruct.sisterList(1).trackPairs(:,1:2);
+    subset = trackPairs(opts.subset,1:2); subset = subset(:)';
+    faintSubset = trackPairs(opts.faintSubset,1:2); faintSubset = faintSubset(:)';
+else
+    subset = opts.subset;
+    faintSubset = opts.faintSubset;
+end
+for k=faintSubset 
+    for h=opts.plotAx
+        x1=trackList(k).coords(:,h);
+        t = ((1:length(x1))-1)*dt; 
+        subplot(length(opts.plotAx),1,h)
+        title(axName(h))
+        plot(t,x1,'color',[0 0 0 0.1],'linewidth',1);
+        xlim([0 max(t)])
+        xlabel('Time, s'); ylabel('Position, µm');
+        ylim([-12 12]);
+        set(gca,'FontSize',20);
+        hold on
+    end
+end
 
-  i = opts.subset(j);
+for j=1:length(subset)
+  
+  i = subset(j);
 
   x1 = trackList(i).coords(:,1);
+  t = ((1:length(x1))-1)*dt;
   if abs(nanmean(x1))>opts.cutoff && sum(isnan(x1))<ceil(0.5*maxTime);
       poleSub = [poleSub;i];
   end
-  t = ((1:length(x1))-1)*dt;
 
   if opts.overlay == 0
       subplot(fig_m,fig_n,j);
@@ -101,7 +137,7 @@ for j=1:length(opts.subset)
           hold on
           title(axName(h))
           x1=trackList(i).coords(:,h);
-          plot(t,x1,'linewidth',3);
+          transparentplt = plot(t,x1,'linewidth',3);
           xlim([0 max(t)])
           xlabel('Time, s'); ylabel('Position, µm');
           ylim([-12 12])
