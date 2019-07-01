@@ -1,4 +1,9 @@
-function analysisTable = kitMakeAnalysisTable(jobset,channel)
+function analysisTable = kitMakeAnalysisTable(jobset,saveToCSV, channel)
+%% kitMakeAnalysisTable(jobset,saveToCSV, channel)
+%%
+%% jobset - processed paired jobset object
+%% saveToCSV - logical, should output be saved 
+%% channel - int, relevant channel
 %%
 %%Take a processed, paired jobset file and convert analysis to a convenient
 %%table format
@@ -6,8 +11,12 @@ function analysisTable = kitMakeAnalysisTable(jobset,channel)
 %%Jonathan U Harrison 2019-04-12
 %%%%%%%%%%%%%
 
-if nargin <2
-    channel=1;
+if nargin < 2
+    saveToCSV = 0; %save output as csv format
+end
+
+if nargin < 3
+    channel = 1;
 end
 
 %get the data
@@ -91,5 +100,10 @@ for jobInd = 1:nMovs
     end
     T.movieID = jobInd*ones(size(T,1),1);
     analysisTable = [analysisTable; T];
+if saveToCSV
+    outname = kitGenerateOutputFilename(jobset);
+    outname = strcat(outname(1:(end-3)),'csv'); %replace file ending of mat with csv 
+    writetable(analysisTable, outname);
+end
 end
 
