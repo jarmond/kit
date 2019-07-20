@@ -5,9 +5,12 @@ function kitShowImage(job,varargin)
 %
 %    Options, defaults in {}:-
 %
-%    chanOrder: {'rgb'} or other permutation of r (red), g (green) and b
-%       (blue). Order in which channels provided in the job file are
-%       represented as colours in the rgb image.
+%    channels: {[1 2]} or subset of [1,2,3]. Channels in which to show
+%       images.
+%
+%    chanOrder: {'grb'} or other permutation of r (red), g (green), b
+%       (blue) and m (magenta). Order in which channels provided in the job
+%       file are represented as colours in the RGB image.
 %
 %    contrast: {{[0.1 1],[0.1 1],[0.1 1]}}, 'help', or similar. Upper and
 %       lower contrast limits for each channel. Values must be in range
@@ -25,9 +28,6 @@ function kitShowImage(job,varargin)
 %
 %    jobsetMovie: {[]} or positive integer. The number movie to use when
 %       providing a jobset rather than job structure.
-%
-%    imageChans: {[1 2]} or subset of [1,2,3]. Channels in which to show
-%       images.
 %
 %    projectionRange: {[]}, 'help', or subset of other coordinate's full
 %       range. The range of pixels over which to project the third
@@ -60,12 +60,12 @@ function kitShowImage(job,varargin)
 % Copyright (c) 2017 C. A. Smith
 
 % define default options
+opts.channels = [1 2];
 opts.chanOrder = 'grb';
 opts.contrast = repmat({[0.1 1]},1,3);
 opts.coords = 'xy';
 opts.crop = 1; % use -1 to show crop on a full image
 opts.jobsetMovie = [];
-opts.imageChans = [1 2];
 opts.projectionRange = [];
 opts.scaleBarLabel = 0;
 opts.scaleBarSize = 3; % in µm, length of scale bar
@@ -94,18 +94,19 @@ switch opts.coords
 end
 
 % convert channel order into numbers
-if length(opts.chanOrder) < length(opts.imageChans)
-    error('Number of channels in channel order (n=%i) does not reflect the number of channels being imaged (n=%i).',length(opts.chanOrder),length(opts.imageChans));
+if length(opts.chanOrder) < length(opts.channels)
+    error('Number of channels in channel order (n=%i) does not reflect the number of channels being imaged (n=%i).',...
+        length(opts.chanOrder),length(opts.channels));
 else
-    chanOrder = [3 3 3];
-    colours = {'r','g','b'};
-    for iChan = 3:-1:1
+    chanOrder = repmat(4,1,length(opts.channels));
+    colours = {'r','g','b','m'};
+    for iChan = 4:-1:1
         tempLoc = find(opts.chanOrder == colours{iChan});
         if ~isempty(tempLoc)
             chanOrder(tempLoc) = iChan;
         end
     end
-    if sum(chanOrder == 3) > 1
+    if sum(chanOrder == 4) > 1
         error('More channels required in channel order. Please provide at least 2.');
     end
 end
@@ -147,12 +148,12 @@ pixelSize = md.pixelSize(1:3);
 chrShift = job.options.chrShift.result;
 
 % check image channels
-if length(opts.imageChans) > md.nChannels
-    error('Too many channels requested for image. Revise ''imageChans'' option.');
+if length(opts.channels) > md.nChannels
+    error('Too many channels requested for image. Revise ''channels'' option.');
 end
 
 % subpixelate value
-if length(opts.imageChans)==1
+if length(opts.channels)==1
     opts.subpixelate = 1;
 end
 
@@ -178,18 +179,16 @@ end
 
 % produce structure to hold images, dependent on transposing
 if opts.transpose
-    rgbImg = zeros([cropSize(fliplr(opts.coords)), 3]);
-    rgbImgShift = zeros([cropSize(fliplr(opts.coords))*opts.subpixelate, 3]);
+    rgbImg = zeros([cropSize(fliplr(opts.coords))*opts.subpixelate, 3]);
 else
-    rgbImg = zeros([cropSize(opts.coords), 3]);
-    rgbImgShift = zeros([cropSize(opts.coords)*opts.subpixelate, 3]);
+    rgbImg = zeros([cropSize(opts.coords)*opts.subpixelate, 3]);
 end
 
 % get images for each channel
 if strcmp(opts.contrast,'help')
     fprintf('\nCONTRAST GUIDANCE:\n');
 end
-for iChan = opts.imageChans
+for iChan = opts.channels
     
     % get image stack for this timepoint
     img = kitReadImageStack(reader, md, opts.timePoint, iChan, crop, 0);
@@ -233,17 +232,29 @@ for iChan = opts.imageChans
     else
         irange(iChan,:) = opts.contrast(iChan,:);
     end
-    rgbImg(:,:,chanOrder(iChan)) = imadjust(img, irange(iChan,:), []);
 
-end
-
-% do chromatic shift correction of image
-for iChan = opts.imageChans(opts.imageChans~=coordSysChan)
+    % do chromatic shift correction of image
+    if iChan ~= coordSysChan
+        [~,img,~] = ...
+            chrsComputeCorrectedImage(img, img,...
+            chrShift{coordSysChan,iChan},'coords',opts.coords,'pixelSize',pixelSize,...
+            'transpose',opts.transpose,'subpixelate',opts.subpixelate);
+    else
+        [~,img,~] = ...
+            chrsComputeCorrectedImage(img, img,...
+            chrShift{coordSysChan,iChan},'coords',opts.coords,'pixelSize',pixelSize,...
+            'transpose',opts.transpose,'subpixelate',opts.subpixelate);
+    end
     
-    [ rgbImgShift(:,:,chanOrder(coordSysChan)) , rgbImgShift(:,:,chanOrder(iChan)) , ~ ] = ...
-        chrsComputeCorrectedImage(rgbImg(:,:,chanOrder(coordSysChan)), rgbImg(:,:,chanOrder(iChan)),...
-        chrShift{coordSysChan,iChan},'coords',opts.coords,'pixelSize',pixelSize,...
-        'transpose',opts.transpose,'subpixelate',opts.subpixelate);
+%     rgbImg(:,:,chanOrder(iChan)) = imadjust(img, irange(iChan,:), []);
+    if chanOrder(iChan)==4 % the magenta case
+      rgbImg(:,:,1) = rgbImg(:,:,1) + imadjust(img, irange(iChan,:), []);
+      rgbImg(:,:,3) = rgbImg(:,:,3) + imadjust(img, irange(iChan,:), []);
+    else
+      rgbImg(:,:,chanOrder(iChan)) = rgbImg(:,:,chanOrder(iChan)) + ...
+          imadjust(img, irange(iChan,:), []);
+    end
+
 end
 
 %% Plotting the image
@@ -252,10 +263,10 @@ if ~opts.withinFig
     figure(1)
     clf
 end
-if length(opts.imageChans) == 1
-    imshow(rgbImg(:,:,chanOrder(opts.imageChans)));
+if length(opts.channels) == 1
+    imshow(rgbImg(:,:,chanOrder(opts.channels)));
 else
-    imshow(rgbImgShift)
+    imshow(rgbImg)
 end
 if opts.crop == -1
     hold on
