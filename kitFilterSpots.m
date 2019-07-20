@@ -1,5 +1,5 @@
-function kitFilterSpots(jobset,varargin)
-% KITFILTERSPOTS(JOBSET,...) Displays a GUI to allow removal of erroneous
+function kitFilterSpots(jobset)
+% KITFILTERSPOTS(JOBSET) Displays a GUI to allow removal of erroneous
 % spots from a JOBSET.
 %
 % Copyright (c) 2018 C. A. Smith
@@ -22,7 +22,7 @@ if nFrames > 1
   error('This function cannot yet be used for movies.')
 end
 
-% Predefine some handles required during looping
+% Predefine some handles required during looping.
 handles.movID = 1;
 handles.prevEnable = 'off';
 handles.nextEnable = 'on';
@@ -34,24 +34,21 @@ prog = kitProgress(0);
 % Start while loop until aborted
 handles.stop = 0;
 while ~handles.stop
-        
-    % get this image ID
+    
     iMov = handles.movID;
-    % get this channel ID
     iChan = handles.chanID;
 
-    % check whether there is any data contained within this movie
+    % Check whether there is any data contained within this movie.
     if ~isfield(job{iMov},'dataStruct') || ~isfield(job{iMov}.dataStruct{iChan},'failed') || job{iMov}.dataStruct{iChan}.failed
         continue
     end
-    % get dataStruct
+    
     dS = job{iMov}.dataStruct{iChan};
-    % get the full initCoord and spotInt
     iC = dS.initCoord;
-    % get IDs for all spots not previously filtered
+    % Get IDs for all spots not previously filtered.
     nonNaNs = find(~isnan(iC.allCoord(:,1)));
     
-    % back up the full initCoord and spotInt
+    % Back up the full initCoord and spotInt.
     if isfield(dS,'rawData')
       iC = dS.rawData.initCoord;
       if isfield(dS.rawData,'spotInt')
@@ -67,14 +64,14 @@ while ~handles.stop
     dS.rawData = raw;
     job{iMov}.dataStruct{iChan} = dS;
     
-    % get number of spots
+    % Get and store number of spots.
     nSpots = length(dS.initCoord.allCoord);
     handles.nSpots = nSpots;
 
-    % show all spots - defined using tracks
+    % Show all spots, numbered by track.
     rectDims = griddedSpots(job{iMov},'channel',handles.chanID);
     
-    % get image information
+    % Get image information
     rectPos = rectDims(:,1:2);
     rectWid = rectDims(1,3);
     handles.rectPos = rectPos;
@@ -84,17 +81,17 @@ while ~handles.stop
     else
       handles.keep = ismember(1:nSpots,nonNaNs);
     end
-    % reset channel information if necessary
+    
+    % Reset channel information if necessary.
     handles.nextChan = 0;
     
-    % draw rectangles
+    % Draw rectangles.
     hold on
     for iSpot = 1:nSpots
-        % get the colour for this spot
+        % Get the colour for this spot.
         keep = handles.keep(iSpot);
         icol = handles.col(keep+1,:);
         
-        % draw the rectangle
         rectangle('Position',[rectPos(iSpot,:)-0.5 rectWid rectWid],...
             'EdgeColor',icol,'LineWidth',3);
     end
@@ -103,11 +100,11 @@ while ~handles.stop
     btnw = [12 7]; btnh = 2; h = 1.5;
     figpos = get(gcf,'Position');
     dx = 2.5; ddx = 1;
-    % make label at top left for instructions
+    % Label at top left for instructions.
     x = dx; y = figpos(4)-(btnh+ddx);
     labw = 60;
     handles.instructions = label(gcf,'Click on spots to keep (green) or remove (red).',[x y labw h],12);
-    % add all buttons: finish, next and previous
+    % Finish, next and previous.
     x = figpos(3)-(btnw(1)+dx);
     handles.finishBtn = button(gcf,'Finish',[x y btnw(1) btnh],@finishCB);
     x = x-(btnw(2)+ddx);
@@ -116,80 +113,73 @@ while ~handles.stop
     x = x-(btnw(2)+ddx/2);
     handles.prevBtn = button(gcf,'Prev',[x y btnw(2) btnh],@prevMovCB);
     handles.prevBtn.Enable = handles.prevEnable;
-    % deselect all
+    % Invert.
     x = figpos(3)-(btnw(1)+dx); y = dx;
 %     handles.deselectBtn = button(gcf,'Deselect all',[x y btnw(1) btnh],@deselectAllCB);
     handles.invertBtn = button(gcf,'Invert all',[x y btnw(1) btnh],@invertCB);
+    % Next channel.
     x = x-(btnw(1)+dx); y = dx;
     handles.nextChanBtn = button(gcf,'Next chan',[x y btnw(1) btnh],@nextChanCB);
     
-    % set up remove environment
+    % Set up remove environment.
     set(get(gca,'Children'),'ButtonDownFcn',@rmvCB);
     
-    % GUI now set up, wait for user
+    % GUI now set up, wait for user...
     uiwait(gcf);
     
-    % check whether user asked to switch channel
     if handles.nextChan
-        % close the figure for the next channel
+        % Close the figure for the next channel.
         close(gcf);
         continue
     end
     
-    % get the spots requiring removal
+    % Get the spots requiring removal, and check for any not in the list.
     rmvList = find(~handles.keep);
-    
-    % check for any sisters not in the list, provide warning and
-    % remove if so
     incorrect = setdiff(rmvList,1:nSpots);
     if ~isempty(incorrect)
         warning('The following selected spots do not exist: %s. Will ignore.',num2str(incorrect));
     end
 
-    % process the list
+    % Push all removed spots to NaNs.
     if ~isempty(rmvList)
+      % initCoord.
       for jChan = handles.chans
-        % push all removed spots to NaNs
         dS = job{iMov}.dataStruct{jChan};
         iC = dS.initCoord;
-        % push to initCoord
         iC.allCoord(rmvList,:) = NaN;
         iC.allCoordPix(rmvList,:) = NaN;
         iC.nSpots = sum(~isnan(iC.allCoord(:,1)));
         iC.amp(rmvList,:) = NaN;
         iC.bg(rmvList,:) = NaN;
         
-        % back up results
+        % Back up results.
         dS.initCoord = iC;
         job{iMov}.dataStruct{jChan} = dS;
       end
-    
-      % process the list
+      % spotInt.  
       for jChan = find(job{iMov}.options.intensity.execute)
-        % push all removed spots to NaNs
         dS = job{iMov}.dataStruct{jChan};
         sI = dS.spotInt;
-        % push to spotInt
         sI.intensity_mean(rmvList,:) = NaN;
         sI.intensity_median(rmvList,:) = NaN;
         sI.intensity_min(rmvList,:) = NaN;
         sI.intensity_max(rmvList,:) = NaN;
         sI.intensity_ratio(rmvList,:) = NaN;
         
-        % back up results
+        % Back up results.
         dS.spotInt = sI;
         job{iMov}.dataStruct{jChan} = dS;
       end
       
     end
     
-    % save results
+    % Save results.
     job{iMov} = kitSaveJob(job{iMov});
 
-    % update progress
+    % Update progress.
     prog = kitProgress(iMov/handles.nMovs,prog);
     
-    % close the figure for the next movie
+    % Close the figure for the next movie.
     close(gcf);
 
 end
@@ -202,7 +192,7 @@ kitRunJob(jobset,'existing',1,'tasks',[2 6]);
 
 %% Callback functions
 
-function rmvCB(hObj,event)
+function rmvCB
   
   % get the position of the click
   pos=get(gca,'CurrentPoint');
@@ -240,7 +230,7 @@ function rmvCB(hObj,event)
   
 end
 
-function deselectAllCB(hObj,event)
+function deselectAllCB
   hs = handles;
   % force all stops to be ignored
   handles.keep(1,:) = 0;
@@ -251,7 +241,7 @@ function deselectAllCB(hObj,event)
   end
 end
 
-function invertCB(hObj,event)
+function invertCB
   hs = handles;
   % force all stops to be ignored
   handles.keep = ~handles.keep;
@@ -267,7 +257,7 @@ function invertCB(hObj,event)
   end
 end
 
-function prevMovCB(hObj,event)
+function prevMovCB
   % update the handles
   handles.movID = handles.movID-1;
   if handles.movID == 1
@@ -279,7 +269,7 @@ function prevMovCB(hObj,event)
   uiresume(gcf);
 end
 
-function nextMovCB(hObj,event)
+function nextMovCB
   % update the handles
   handles.movID = handles.movID+1;
   handles.prevEnable = 'on';
@@ -291,7 +281,7 @@ function nextMovCB(hObj,event)
   uiresume(gcf);
 end
 
-function nextChanCB(hObj,event)
+function nextChanCB
   % update the handles
   idx = find(handles.chanID==handles.chans);
   if idx == length(handles.chans)
@@ -304,7 +294,7 @@ function nextChanCB(hObj,event)
   uiresume(gcf);
 end
 
-function finishCB(hObj,event)
+function finishCB
   % force stop
   handles.stop = 1;
   % continue the function
