@@ -9,6 +9,9 @@ function kitShowSisterPair(job,varargin)
 %
 %    channel: {1}, 2 or 3. Which channel to show.
 %
+%    channelLabel: {[]} or a string. The title for the image. When left empty, the
+%           title will reflect the sister number and time point chosen.
+%
 %    contrast: {[0.1 1]} or similar two-element vector. Range over which to
 %           contrast images. Tips:
 %               - Increase brightness by changing to [0.1 0.9]
@@ -20,9 +23,6 @@ function kitShowSisterPair(job,varargin)
 %    sisterPair: {1} or number. Sister pair within JOB being plotted.
 %
 %    timePoint: {1} or number. Timepoint at which to plot the sister pair.
-%
-%    title: {[]} or a string. The title for the image. When left empty, the
-%           title will reflect the sister number and time point chosen.
 %
 %    transpose: {0} or 1. Whether to transpose the image.
 %
@@ -40,7 +40,7 @@ function kitShowSisterPair(job,varargin)
 %    zProject: 0, 1 or {-1}. Whether or not to project in the z-direction.
 %           -1 will project in the 5 z-slices surrounding the sister pair.
 %
-% Copyright (c) 2017 C. A. Smith
+% Copyright (c) 2019 C. A. Smith
 
 if nargin<1
   error('Must supply a job.');
@@ -49,10 +49,10 @@ end
 % set default options
 opts.contrast = [0.1 1];
 opts.channel = 1;
+opts.channelLabel = [];
 opts.newFig = 0;
 opts.sisterPair = 1;
 opts.timePoint = 1;
-opts.title = [];
 opts.transpose = 0;
 opts.withinFig = 0;
 opts.zoomScale = 1;
@@ -192,10 +192,10 @@ for iSis = 1:2
 end
 
 % aesthetics
-if isempty(opts.title)
+if isempty(opts.channelLabel)
   opts.title = sprintf('Sister pair %i, time point %i',opts.sisterPair,opts.timePoint);
 end
-title(opts.title,'FontSize',20)
+title(opts.channelLabel,'FontSize',20)
 
 hold off
 
