@@ -107,7 +107,6 @@ scatter(allCoords(:,1),allCoords(:,2),15*fig_m,'k','x')
 figtit = sprintf('Spot filtering: Image %i%s, channel %i',job.index,nROIs,opts.channel);
 set(gcf,'Resize','off','Name',figtit,'Units','characters',...
     'Position',[70 35 80 50],'NumberTitle','off');
-movegui(gcf,'center');
 
 % save image dimensions and positions
 imgDims = [rnge repmat(imgWidth,nSpots,1)];
