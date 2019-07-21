@@ -114,7 +114,6 @@ function hs = createControls(desc)
   x = x+btnw+ddx;
   btnw = 17.5;
   hs.spotCatBtn = button(hs.fig,'Categorise spots',[x y btnw btnh],@spotCatCB);
-  hs.spotCatBtn.Enable = 'off';
   y = y-lh;
   
   % Analysis tools sub-title.
@@ -275,6 +274,26 @@ function filterSpotsCB(hObj,event)
   set(guiObj,'Enable','inactive');
   
   kitFilterSpots(hs.jobset);
+  
+  % Re-activate GUI.
+  set(guiObj,'Enable','on');
+  
+end
+
+function spotCatCB(hObj,event)
+  hs = handles;
+  % check if a jobset is loaded
+  if ~isfield(hs,'jobset') || isempty(hs.jobset)
+    errorbox('No job yet created or loaded.')
+    return
+  end
+  kitLog('Starting spot categorisation')
+  
+  % Turn off the GUI during processing.
+  guiObj=findobj(handles.fig,'Enable','on');
+  set(guiObj,'Enable','inactive');
+  
+  kitSpotCategories(hs.jobset,desc)
   
   % Re-activate GUI.
   set(guiObj,'Enable','on');
