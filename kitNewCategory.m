@@ -1,8 +1,8 @@
-function kitCategoriseSpots(jobset,varargin)
-% KITCATEGORISESPOTS(JOBSET,...) Displays a GUI to allow selection of spots
-% from a JOBSET into a category.
+function kitNewCategory(jobset,varargin)
+% KITNEWCATEGORY(JOBSET,...) Displays a GUI to allow selection of spots
+% from a JOBSET into a new category.
 %
-%    KITCATEGORISESPOTS(JOBSET,...)
+%    KITNEWCATEGORY(JOBSET,...)
 %
 %    Options, defaults in {}:-
 %
@@ -12,22 +12,23 @@ function kitCategoriseSpots(jobset,varargin)
 %    category: {'newCategory'} or string. The name under which the
 %           categorisation will be saved.
 %
+%    showExisting: 0 or {1}. Whether or not to show existing categories.
+%
 % Copyright (c) 2019 C. A. Smith
 
 % Process options.
 opts.channel = jobset.options.coordSystemChannel;
 opts.category = 'newCategory';
+opts.showExisting = 1;
 opts = processOptions(opts,varargin{:});
 
 % Define colours for rectangles.
 handles.col = [1 0   0;...
                0 0.75 0];
-           
 handles.labcol = [ 1 , 1 , 0;
                    0 , 1 , 1;
                   0.5, 1 ,0.5;
-                  0.6, 0 , 1;
-                   1 , 1 , 1];
+                  0.6, 0 , 1];
            
 % Get the data.
 job = kitLoadAllJobs(jobset);
@@ -64,6 +65,10 @@ while ~handles.stop
     
     % check whether there is any data contained within this movie
     if ~isfield(job{iMov},'dataStruct') || ~isfield(job{iMov}.dataStruct{channel},'failed') || job{iMov}.dataStruct{channel}.failed
+        handles.movID = handles.movID+1;
+        if handles.movID > handles.nMovs
+            handles.stop = 1;
+        end
         continue
     end
     % get dataStruct
@@ -123,9 +128,11 @@ while ~handles.stop
             'EdgeColor',icol,'LineWidth',3);
     end
     
-    % label existing categories
-    for iCat = 1:nCats
-        labelCategory(gca,excats(iCat),rectDims,iCat);
+    if opts.showExisting
+        % label existing categories
+        for iCat = 1:nCats
+            labelCategory(gca,excats(iCat),rectDims,iCat);
+        end
     end
     
     % Buttons and labels.
@@ -149,30 +156,31 @@ while ~handles.stop
     handles.prevBtn = button(gcf,'Prev',[x y btnw(2) btnh],@prevMovCB);
     handles.prevBtn.Enable = handles.prevEnable;
     % categories key
-    labw = 17.5;
-    x = dx;
-    handles.categories = label(gcf,'Existing categories:',[x y labw h],12);
-    x = x+labw; y = y-h;
-    labw = 20+(3*ddx);
-    t = label(gcf,'',[x y labw 2*h],12); t.BackgroundColor = [0 0 0];
-    y = y+h; x = x+ddx;
-    labw = (labw-3*ddx)/2;
-    for iCat = 1:nCats
-        if iCat == 2
-            x = x+(labw+ddx);
-        elseif iCat == 3
-            y = y-h;
-        elseif iCat == 4
-            x = x-(labw+ddx);
-        end
-        handles.catLab = label(gcf,excats(iCat).label,[x y labw h],10);
-        handles.catLab.ForegroundColor = handles.labcol(iCat,:);
-        handles.catLab.BackgroundColor = [0 0 0];
-        if ismember(iCat,2:3)
-            handles.catLab.HorizontalAlignment = 'right';
+    if opts.showExisting
+        labw = 17.5;
+        x = dx;
+        handles.categories = label(gcf,'Existing categories:',[x y labw h],12);
+        x = x+labw; y = y-h;
+        labw = 20+(3*ddx);
+        t = label(gcf,'',[x y labw 2*h],12); t.BackgroundColor = [0 0 0];
+        y = y+h; x = x+ddx;
+        labw = (labw-3*ddx)/2;
+        for iCat = 1:nCats
+            if iCat == 2
+                x = x+(labw+ddx);
+            elseif iCat == 3
+                y = y-h;
+            elseif iCat == 4
+                x = x-(labw+ddx);
+            end
+            handles.catLab = label(gcf,excats(iCat).label,[x y labw h],10);
+            handles.catLab.ForegroundColor = handles.labcol(iCat,:);
+            handles.catLab.BackgroundColor = [0 0 0];
+            if ismember(iCat,2:3)
+                handles.catLab.HorizontalAlignment = 'right';
+            end
         end
     end
-    
     % set up remove environment
     set(get(gca,'Children'),'ButtonDownFcn',@rmvCB);
     
