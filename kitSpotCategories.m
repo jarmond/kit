@@ -224,6 +224,7 @@ function delCB(hObj,event)
       jobs{iJob} = kitSaveJob(jobs{iJob});
   end
   hs.categories.Value = 1;
+  hs.nCats = hs.nCats - 1;
   handles = hs;
   
 end
