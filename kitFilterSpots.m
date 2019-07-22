@@ -25,7 +25,11 @@ end
 % Predefine some handles required during looping.
 handles.movID = 1;
 handles.prevEnable = 'off';
-handles.nextEnable = 'on';
+if length(job) > 1
+    handles.nextEnable = 'on';
+else
+    handles.nextEnable = 'off';
+end
 handles.nextChan = 0;
 
 % Start progress.
@@ -40,6 +44,9 @@ while ~handles.stop
 
     % Check whether there is any data contained within this movie.
     if ~isfield(job{iMov},'dataStruct') || ~isfield(job{iMov}.dataStruct{iChan},'failed') || job{iMov}.dataStruct{iChan}.failed
+        if handles.movID > handles.nMovs
+            handles.stop = 1;
+        end
         continue
     end
     
@@ -192,7 +199,7 @@ kitRunJob(jobset,'existing',1,'tasks',[2 6]);
 
 %% Callback functions
 
-function rmvCB
+function rmvCB(hObj,event)
   
   % get the position of the click
   pos=get(gca,'CurrentPoint');
@@ -230,7 +237,7 @@ function rmvCB
   
 end
 
-function deselectAllCB
+function deselectAllCB(hObj,event)
   hs = handles;
   % force all stops to be ignored
   handles.keep(1,:) = 0;
@@ -241,7 +248,7 @@ function deselectAllCB
   end
 end
 
-function invertCB
+function invertCB(hObj,event)
   hs = handles;
   % force all stops to be ignored
   handles.keep = ~handles.keep;
@@ -257,7 +264,7 @@ function invertCB
   end
 end
 
-function prevMovCB
+function prevMovCB(hObj,event)
   % update the handles
   handles.movID = handles.movID-1;
   if handles.movID == 1
@@ -269,7 +276,7 @@ function prevMovCB
   uiresume(gcf);
 end
 
-function nextMovCB
+function nextMovCB(hObj,event)
   % update the handles
   handles.movID = handles.movID+1;
   handles.prevEnable = 'on';
@@ -281,7 +288,7 @@ function nextMovCB
   uiresume(gcf);
 end
 
-function nextChanCB
+function nextChanCB(hObj,event)
   % update the handles
   idx = find(handles.chanID==handles.chans);
   if idx == length(handles.chans)
@@ -294,7 +301,7 @@ function nextChanCB
   uiresume(gcf);
 end
 
-function finishCB
+function finishCB(hObj,event)
   % force stop
   handles.stop = 1;
   % continue the function
