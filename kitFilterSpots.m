@@ -72,7 +72,7 @@ while ~handles.stop
     job{iMov}.dataStruct{iChan} = dS;
     
     % Get and store number of spots.
-    nSpots = length(dS.initCoord.allCoord);
+    nSpots = size(dS.initCoord.allCoord,1);
     handles.nSpots = nSpots;
 
     % Show all spots, numbered by track.
