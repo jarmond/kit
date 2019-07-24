@@ -150,7 +150,6 @@ catch
   warning('Missing metadata: Assuming NA = 1.4');
   md.na = 1.4; % Assume default.
 end
-
 % Physical pixel size
 try
   if md.is3D
@@ -177,10 +176,10 @@ catch
       1];
   end
 end
-
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) >= 1) || ...
     md.pixelSize(3) > 5
-  warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
+  warning('Pixel sizes are strange: %f x %f x %f \n Make sure to validate metadata', ...
+  md.pixelSize(1),md.pixelSize(2),md.pixelSize(3));
 end
 
 % Automatically-obtained means user has not manually validated.
