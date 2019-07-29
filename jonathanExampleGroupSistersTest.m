@@ -60,10 +60,7 @@ nFrames = job.metadata.nFrames;
 nSisters = size(job.dataStruct{channel}.sisterList,1);
 doesSisterPairExist = zeros(nFrames,nSisters);
 if ~isempty(job.dataStruct{channel}.sisterList(1).coords1)
-    job.dataStruct{1}.sisterList
-    size(doesSisterPairExist)
     for j = 1:nSisters
-            size(job.dataStruct{channel}.sisterList(j).coords1(:,1))
         %put ones where a paired sister exists
         doesSisterPairExist(:,j)= ~isnan(...
             job.dataStruct{channel}.sisterList(j).coords1(:,1));

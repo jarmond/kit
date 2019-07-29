@@ -217,6 +217,9 @@ function hs = createControls()
   hs.maxSpotsText = label(hs.tabs{tabID},'Max spots per frame',[labx taby labw h],tinyfont);
   hs.maxSpots = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
   taby = taby-h;
+  hs.realisticNumSpotsText = label(hs.tabs{tabID},'Realistic number of spots',[labx taby labw h],tinyfont);
+  hs.realisticNumSpots = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
+  taby = taby-h;
   hs.manualFrameSpaceText = label(hs.tabs{tabID},'Manual detection frame spacing',[labx taby labw h],tinyfont);
   hs.manualFrameSpace = editbox(hs.tabs{tabID},[],[editx taby editw h],tinyfont);
   taby = taby-lh;
@@ -481,6 +484,7 @@ function updateControls(jobset)
   hs.flatBackground.Value = opts.flatBackground;
   hs.minSpots.String = num2str(opts.minSpotsPerFrame);
   hs.maxSpots.String = num2str(opts.maxSpotsPerFrame);
+  hs.realisticNumSpots.String = num2str(opts.realisticNumSpots);
   hs.manualFrameSpace.String = num2str(opts.manualDetect.frameSpacing);
   hs.mmfAddSpots.Value = opts.mmf.addSpots;
   hs.mmfDeconvolvedDataCorrection.Value = opts.deconvolvedDataCorrection;
@@ -623,6 +627,13 @@ function tf=checkControls()
     return
   end
 
+  v = str2double(hs.realisticNumSpots.String);
+  if ~isfinite(v) || v < 0
+    errorbox('Invalid value for min spots per frame. Should be a positive number.')
+    tf = false;
+    return
+  end
+
   v = str2double(hs.maxMmfTime.String);
   if (hs.mmfAddSpots.Value == hs.mmfAddSpots.Max) && (~isfinite(v) || v < 0)
     errorbox('Invalid value for min spots per frame. Should be a positive number or zero.')
@@ -758,12 +769,16 @@ function detectModeCB(hObj,event)
     handles.minSpotsText.Enable = 'on';
     handles.maxSpots.Enable = 'on';
     handles.maxSpotsText.Enable = 'on';
+    handles.realisticNumSpots.Enable = 'off';
+    handles.realisticNumSpotsText.Enable = 'off';
     handles.flatBackground.Enable = 'off';
   else
     handles.minSpots.Enable = 'off';
     handles.minSpotsText.Enable = 'off';
     handles.maxSpots.Enable = 'off';
     handles.maxSpotsText.Enable = 'off';
+    handles.realisticNumSpots.Enable = 'on';
+    handles.realisticNumSpotsText.Enable = 'on';
     handles.flatBackground.Enable = 'on';
   end
   if strcmp(mapStrings(handles.detectMode.Value,spotDetectValues),'Manual')
@@ -1162,6 +1177,7 @@ function updateJobset()
   % Primary spot detection options.
   opts.minSpotsPerFrame = str2double(handles.minSpots.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpots.String);
+  opts.realisticNumSpots = str2double(handles.realisticNumSpots.String);
   opts.manualDetect.frameSpacing = str2double(handles.manualFrameSpace.String);
   opts.flatBackground = handles.flatBackground.Value;
   % MMF options.

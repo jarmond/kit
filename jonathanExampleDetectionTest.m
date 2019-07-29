@@ -33,8 +33,8 @@ end
 if nargin<6 || isempty(ignoreTests)
     ignoreTests=0;
 end
-realisticNumSpots=92;
-flatBackground = 1;
+realisticNumSpots = job.options.realisticNumSpots;
+flatBackground = job.options.flatBackground;
 
 %create reader to read movie
 %%%%%%%%%%%%%%%%%%%%%%%%%
