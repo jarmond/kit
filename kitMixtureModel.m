@@ -17,7 +17,7 @@ chrShift = job.options.chrShift.result{options.coordSystemChannel,channel};
 %DISABLING rescaling of alphaA. TODO: find out why this was used at all
 %% calculate alphaA based on pixel size
 %% (standards: 0.05 at 138.1nm; 0.5 at 69.4nm)
-%options.mmf.alphaA = options.mmf.alphaA.*(options.mmf.alphaA + (0.1381-pixelSize(1))*8)/0.05;
+options.mmf.alphaA = options.mmf.alphaA.*(options.mmf.alphaA + (0.1381-pixelSize(1))*8)/0.05;
 %% NOTE TO SELF: Use scaling factor = 6.5 for 0.5, or 8 for 0.6
 
 % get number of frames
