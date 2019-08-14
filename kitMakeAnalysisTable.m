@@ -2,7 +2,7 @@ function analysisTable = kitMakeAnalysisTable(jobset,saveToCSV, channel)
 %% kitMakeAnalysisTable(jobset,saveToCSV, channel)
 %%
 %% jobset - processed paired jobset object
-%% saveToCSV - logical, should output be saved 
+%% saveToCSV - logical, should output be saved
 %% channel - int, relevant channel
 %%
 %%Take a processed, paired jobset file and convert analysis to a convenient
@@ -23,20 +23,6 @@ end
 job = kitLoadAllJobs(jobset);
 nMovs = length(job);
 
-nFrames = job{1}.metadata.nFrames;
-if nFrames > 1 %treat time sereies and single time points differently
-    varnames = {'Position','Amplitude','Frame','Time','SisterPairID','SisterID'};
-    analysisTable = cell2table(cell(0,7),'VariableNames',cat(2,varnames,'movieID'));
-else
-    varnames = {'Position','Amplitude'};
-    if isfield(job{1},'categories')
-        numVars = 3 + numel(fieldnames(job{1}.categories));
-        analysisTable = cell2table(cell(0,numVars),'VariableNames',cat(2,varnames,fieldnames(job{1}.categories)),'movieID');
-    else
-        numVars = 3;
-        analysisTable = cell2table(cell(0,numVars),'VariableNames',cat(2,varnames,'movieID'));
-    end
-end
 for jobInd = 1:nMovs
     dataStruct = job{jobInd}.dataStruct{channel};
     
@@ -50,6 +36,19 @@ for jobInd = 1:nMovs
     end
     
     nFrames = job{jobInd}.metadata.nFrames;
+    if nFrames > 1 %treat time sereies and single time points differently
+        varnames = {'Position','Amplitude','Frame','Time','SisterPairID','SisterID'};
+        analysisTable = cell2table(cell(0,7),'VariableNames',cat(2,varnames,'movieID'));
+    else
+        varnames = {'Position','Amplitude'};
+        if isfield(job{1},'categories')
+            numVars = 3 + numel(fieldnames(job{1}.categories));
+            analysisTable = cell2table(cell(0,numVars),'VariableNames',cat(2,varnames,fieldnames(job{1}.categories)),'movieID');
+        else
+            numVars = 3;
+            analysisTable = cell2table(cell(0,numVars),'VariableNames',cat(2,varnames,'movieID'));
+        end
+    end
     if nFrames > 1
         warning('Categories cannot yet be used for movies. Making a basic table')
         if isfield(dataStruct,'sisterList')
@@ -100,10 +99,10 @@ for jobInd = 1:nMovs
     end
     T.movieID = jobInd*ones(size(T,1),1);
     analysisTable = [analysisTable; T];
-if saveToCSV
-    outname = kitGenerateOutputFilename(jobset);
-    outname = strcat(outname(1:(end-3)),'csv'); %replace file ending of mat with csv 
-    writetable(analysisTable, outname);
-end
+    if saveToCSV
+        outname = kitGenerateOutputFilename(job{jobInd});
+        outname = strcat(outname(1:(end-3)),'csv'); %replace file ending of mat with csv
+        writetable(analysisTable, outname);
+    end
 end
 
