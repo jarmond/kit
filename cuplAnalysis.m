@@ -350,7 +350,7 @@ function autocorrCB(hObj,event)
   analysis = cuplAutocorrelation(analysis);
   updateStatus('');
   autocorrs = analysis.autocorrs;
-  [~,locs] = findpeaks(autocorrs.sisters.m_dx,autocorrs.t);  
+  [~,locs] = findpeaks(-autocorrs.sisters.m_dx,autocorrs.t);  
   fprintf('Minima in the autocorrelation plot are at %f suggesting the period is %f s\n',locs(1),2*locs(1));
   cuplPlotCorrelation(autocorrs.t,autocorrs.sisters.m_dx,autocorrs.sisters.e_dx,...
     'PlotTitle','Mean autocorrelation of sister pair centres, dx');
