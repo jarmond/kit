@@ -24,6 +24,7 @@ job = kitLoadAllJobs(jobset);
 nMovs = length(job);
 
 for jobInd = 1:nMovs
+    try
     dataStruct = job{jobInd}.dataStruct{channel};
     
     if ~isfield(job{jobInd},'dataStruct')
@@ -104,5 +105,10 @@ for jobInd = 1:nMovs
         outname = strcat(outname(1:(end-3)),'csv'); %replace file ending of mat with csv
         writetable(analysisTable, outname);
     end
+    catch
+        fprintf('Unsuccessful in converting to table: job %d run correctly?\n',jobInd);
+        continue
+    end
+    fprintf('Successful in converting to table for job %d.\n',jobInd);
 end
 
