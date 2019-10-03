@@ -22,7 +22,7 @@ function cuplPlotCorrelation(t,y,ye,varargin)
 % Copyright (c) 2013 Jonathan Armond
 
 % Defaults.
-colours = 'krbgmcy';
+colours = 'krbgmcykrbgmcykrbgmcykrbgmcykrbgmcy';
 maxTime = 0;
 plotTitle = '';
 plotYLim = [];

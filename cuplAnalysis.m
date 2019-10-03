@@ -354,6 +354,8 @@ function autocorrCB(hObj,event)
   fprintf('Minima in the autocorrelation plot are at %f suggesting the period is %f s\n',locs(1),2*locs(1));
   cuplPlotCorrelation(autocorrs.t,autocorrs.sisters.m_dx,autocorrs.sisters.e_dx,...
     'PlotTitle','Mean autocorrelation of sister pair centres, dx');
+  cuplPlotCorrelation(autocorrs.t,autocorrs.sisters.cm_dx,autocorrs.sisters.ce_dx, ...
+    'PlotTitle','Mean autocorrelation by cell of sister pair centres, dx');
 end
 
 function distsCB(hObj,event)

@@ -104,7 +104,7 @@ else
     faintSubset = opts.faintSubset;
     if opts.usePairs
         trackPairs = dataStruct.sisterList(1).trackPairs(:,1:2);
-        subset = trackPairs(subset,1:2); subset = subset(:)';
+        subset = trackPairs(subset,1:2); %subset = subset(:)';
         faintSubset = trackPairs(faintSubset,1:2); faintSubset = faintSubset(:)';
     end
 end
@@ -124,37 +124,9 @@ for k=faintSubset
     end
 end
 
-for j=1:length(subset)
-  
-  i = subset(j);
-
-  x1 = trackList(i).coords(:,1);
-  t = ((1:length(x1))-1)*dt;
-  if abs(nanmean(x1))>opts.cutoff && sum(isnan(x1))<ceil(0.5*maxTime);
-      poleSub = [poleSub;i];
-  end
-
-  if opts.overlay == 0
-      subplot(fig_m,fig_n,j);
-      plot(t,x1,'linewidth',3);
-      title(['Track ' num2str(i)]);
-      xlim([0 max(t)])
-      xlabel('Time, s'); ylabel('x-position, µm');
-      set(gca,'FontSize',20)
-  else
-      for h=opts.plotAx
-          subplot(length(opts.plotAx),1,h)
-          hold on
-          title(axName(h))
-          x1=trackList(i).coords(:,h);
-          transparentplt = plot(t,x1,'linewidth',3);
-          xlim([0 max(t)])
-          xlabel('Time, s'); ylabel('Position, µm');
-          ylim([-12 12])
-          set(gca,'FontSize',20)
-      end
-  end
-
+for ii =1:(opts.usePairs+1)
+poleSub = plot_subset_highlighted_tracks(subset(:,ii)',trackList,opts,...
+                      dt,maxTime,poleSub,fig_n,fig_m,axName);
 end
 
 if opts.plotPole && ~isempty(poleSub)
@@ -180,4 +152,52 @@ if opts.plotPole && ~isempty(poleSub)
 
     end
 
+end
+end
+
+function poleSub = plot_subset_highlighted_tracks(subset,trackList,opts,...
+                      dt,maxTime,poleSub,fig_n,fig_m,axName)
+ColorOdrCustom = [0 0 1;...
+    0 1 0;...
+    1 0 0;...
+    0 1 1;...
+    1 0 1;...
+    1 0.69 0.39;...
+    0.6 0.2 0;...
+    0 0.75 0.75;...
+    0.22 0.44 0.34;...
+    0.32 0.19 0.19]; %10x3 RGB array See https://uk.mathworks.com/matlabcentral/answers/133676-change-automatically-colors-and-$
+
+                  
+for j=1:length(subset)
+  
+  i = subset(j);
+  x1 = trackList(i).coords(:,1);
+  t = ((1:length(x1))-1)*dt;
+  if abs(nanmean(x1))>opts.cutoff && sum(isnan(x1))<ceil(0.5*maxTime);
+      poleSub = [poleSub;i];
+  end
+
+  if opts.overlay == 0
+      subplot(fig_m,fig_n,j);
+      plot(t,x1,'color',ColorOdrCustom(mod(j,10)+1,:),'linewidth',3);
+      title(['Track ' num2str(i)]);
+      xlim([0 max(t)])
+      xlabel('Time, s'); ylabel('x-position, µm');
+      set(gca,'FontSize',20)
+  else
+      for h=opts.plotAx
+          subplot(length(opts.plotAx),1,h)
+          hold on
+          title(axName(h))
+          x1=trackList(i).coords(:,h);
+          transparentplt = plot(t,x1,'color',ColorOdrCustom(mod(j,10)+1,:),'linewidth',3);
+          xlim([0 max(t)])
+          xlabel('Time, s'); ylabel('Position, µm');
+          ylim([-12 12])
+          set(gca,'FontSize',20)
+      end
+  end
+
+end
 end

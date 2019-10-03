@@ -105,7 +105,8 @@ if opts.usePairs
         plot(y1,z1,'color',ColorOdrCustom(mod(j,10)+1,:),'linewidth',3);
         y1 = trackList(iPair).coords(:,2);
         z1 = trackList(iPair).coords(:,3);
-        plot(y1,z1,'color',ColorOdrCustom(mod(j+1,10)+1,:),'linewidth',3);
+        %make pairs similar but slightly different colours
+        plot(y1,z1,'color',[max(min(ColorOdrCustom(mod(j,10)+1,:)+0.5*randn(1,3),1),0),0.5],'linewidth',3);
         xlabel('Y Position (um)');
         ylabel('Z Position (um)');
         ylim([-12 12])

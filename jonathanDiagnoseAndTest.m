@@ -123,10 +123,10 @@ end
 t = job.metadata.frameTime(1,:);
 if nStages ==5
     coloursByStage = ...
-        [228,26,28
-        55,126,184
-        77,175,74
-        152,78,163
+        [228,26,28;
+        55,126,184;
+        77,175,74;
+        152,78,163;
         255,127,0]/256;
 %         [127,201,127;
 %         190,174,212;
@@ -150,15 +150,15 @@ planeFitted = logical(planeFitted); %else 0s or 1s not treated properly
 figure;
 hold all;
 for i=1:nStages
-    if sum(planeFitted)>0
+    if (sum(planeFitted)>0)
         scatter(t(planeFitted),nSpots(planeFitted,i),100,...
-            repmat(coloursByStage(i,:),nFrames,1), symbolByPlane(1));
+            repmat(coloursByStage(i,:),sum(planeFitted),1), symbolByPlane(1));
     elseif sum(planeFitted)<nFrames
         warning('not all frames got a plane fitted, as shown by %s',...
             symbolByPlane(2));
         %plot different symbol for planes that don't have a plane fitted
-        scatter(t(~planeFitted),nSpots(~planeFitted,i),200, ...
-            repmat(coloursByStage(i,:),nFrames,1), symbolByPlane(2));
+        scatter(t(~planeFitted),nSpots(~planeFitted,i),200)
+%            repmat(coloursByStage(i,:),sum(planeFitted),1), symbolByPlane(2));
     else
         error('wrong number of fitted planes compared to frames');
     end
