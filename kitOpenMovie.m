@@ -122,9 +122,13 @@ for i=1:nTimepoints
         try
             md.frameTime(j,i) = metaTable.getPlaneDeltaT(0, idx).doubleValue();
         catch
+          try
+            md.frameTime(j,i) = metaTable.getPlaneDeltaT(0, idx).value.double/1000; %in milliseconds
+          catch
             % Use default, if missing metadata.
             md.frameTime(j,i) = defT;
             warnT = 1;
+	  end
         end
         idx = idx+1;
     end
