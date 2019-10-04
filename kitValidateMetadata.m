@@ -82,8 +82,12 @@ else
         try
           md.frameTime(iPlane,iTime) = metaTable.getPlaneDeltaT(0, counter).doubleValue();
         catch
-          % Use default, if missing metadata.
-          md.frameTime(iPlane,iTime) = defT;
+	  try
+	    md.frameTime(iPlane,iTime) = metaTable.getPlaneDeltaT(0, counter).value.double/1000; % in this format provided in milliseconds
+	  catch
+            % Use default, if missing metadata.
+            md.frameTime(iPlane,iTime) = defT;
+	  end
         end
         counter = counter+1;
       end
