@@ -35,7 +35,14 @@ if mode == 1
     kitLog('Opening movie: %s', movieFileName);
 end
 if ~exist(movieFileName,'file')
-    error('Could not find file: %s',movieFileName);
+    warning('Could not find file: %s',movieFileName);
+    fprintf('Trying to replace any spaces in filename\n');
+    movieFileName = strrep(movieFileName,' ','\ ');
+    if ~exist(movieFileName,'file')
+        error('Still could not find file: %s',movieFileName);
+    else
+        fprintf('Now able to find file. Perhaps be more careful with file names in future\n');
+    end
 end
 
 addpath bfmatlab;
@@ -122,9 +129,13 @@ for i=1:nTimepoints
         try
             md.frameTime(j,i) = metaTable.getPlaneDeltaT(0, idx).doubleValue();
         catch
+          try
+            md.frameTime(j,i) = metaTable.getPlaneDeltaT(0, idx).value.double/1000; %in milliseconds
+          catch
             % Use default, if missing metadata.
             md.frameTime(j,i) = defT;
             warnT = 1;
+	  end
         end
         idx = idx+1;
     end
