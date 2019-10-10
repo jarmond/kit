@@ -104,8 +104,10 @@ else
     faintSubset = opts.faintSubset;
     if opts.usePairs
         trackPairs = dataStruct.sisterList(1).trackPairs(:,1:2);
-        subset = trackPairs(subset,1:2); %subset = subset(:)';
+        subset = trackPairs(subset,1:2) %subset = subset(:)';
         faintSubset = trackPairs(faintSubset,1:2); faintSubset = faintSubset(:)';
+    else
+        subset = subset';
     end
 end
 
