@@ -50,7 +50,7 @@ opts.minLength = 0.25;
 opts.usePairs = 0;
 opts.identifyLazyKTs = 0;
 opts.movie = [];
-opts.makeMovie = 0;
+opts.makeMovie = 1;
 % Process options
 opts = processOptions(opts, varargin{:});
 
