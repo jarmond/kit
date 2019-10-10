@@ -264,11 +264,11 @@ for i =1:length(trackList)
         chrShift = job.options.chrShift.result{refChan,opts.channel}(1:3);
         pixelSize = job.metadata.pixelSize;
         makeMovie = opts.makeMovie;
-        if makeMovie
             hh = figure;
             if ~verLessThan('matlab','9.5') %this property only added for matlab R2018a onwards
                 hh.WindowState = 'fullscreen'; %make figure full screen
             end
+        if makeMovie
             outname = kitGenerateOutputFilename(job);
             vidfile = VideoWriter(sprintf('%sSelectedTrackMovie_Track%d.mp4',outname,i),'MPEG-4');
             open(vidfile);
