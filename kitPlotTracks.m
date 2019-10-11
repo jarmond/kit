@@ -231,7 +231,7 @@ function LineSelected(ObjectH, EventData, H, trackList, job, opts)
 set(ObjectH, 'LineWidth', 5);
 set(H(H ~= ObjectH), 'LineWidth', 3);
 for i =1:length(trackList)
-    if ObjectH.YData' == trackList(i).coords(:,1)
+    if nansum(abs(ObjectH.YData' - trackList(i).coords(:,1))) < 10^(-12) %test for equality with small tolerance
         fprintf('You have selected the %dth track. Plotting this on movie... \n',i);
         if isempty(opts.movie)
             fprintf('No movie provided so loading movie ...\n')
@@ -295,7 +295,7 @@ for i =1:length(trackList)
                         coords(iSis,:) = coords(iSis,:)./pixelSize;
                     end
                 end
-                imshow(max(movie(:,:,:,tP),[],3),[]); hold on; plot(coords(:,1),coords(:,2),'rx','markerSize',12,'LineWidth',2);
+                imshow(max(movie(:,:,:,tP),[],3),[]); hold on; plot(coords(:,1),coords(:,2),'rx','markerSize',12);
                 if makeMovie
                     drawnow;
                     F(tP) = getframe(hh);
@@ -319,7 +319,7 @@ for i =1:length(trackList)
                     coords = coords + chrShift;
                     coords = coords./pixelSize;
                 end
-                imshow(max(movie(:,:,:,tP),[],3),[]); hold on; plot(coords(1),coords(2),'rx','markerSize',12,'LineWidth',2);
+                imshow(max(movie(:,:,:,tP),[],3),[]); hold on; plot(coords(1),coords(2),'rx','markerSize',12);
                 if makeMovie
                     drawnow;
                     F(tP) = getframe(hh);
