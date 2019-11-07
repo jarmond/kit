@@ -8,6 +8,7 @@ function kitShowGroupedPairs(job,channel,opts)
 if nargin<3
     opts.transpose=0; %whether to flip the image and coordinates
     opts.makeMovie=1; %save the output as an mp4 file
+    opts.joinSisters=1;
 end
 if nargin<2
     channel = 1;
@@ -60,10 +61,12 @@ for timePoint=1:nTimePoints
             plot(coords(iSis,1),coords(iSis,2),...
                 'Color','r','Marker','x');
             end
+            if opts.joinSisters
             %add a line between sisters
             plot(coords(:,1),coords(:,2),...
                 'Color','r');
             hold on;
+            end
         end
     end
     title(sprintf("Frame: %d",timePoint));
