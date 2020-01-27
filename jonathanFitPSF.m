@@ -30,7 +30,7 @@ if nargin < 2
 end
 
 beadSize = 100; % in nm
-pixelSize = [104,104,308*cos(57.2)];%100
+pixelSize = [104,104,100];% [104,104,308*cos(57.2)];%100
 
 %first draft: put in loop. TODO: vetorise this part (only done once though)
 pixelList = zeros(numel(psfMovie),3);
@@ -57,10 +57,10 @@ x0 = [b0,256,size(psfMovie)/2,sigma0(:)'];
 %% perform optimization for initial model
 fprintf('Initializing ...\n');
 [x,~,~,~] = fmincon(fitFun1,x0,[],[],[],[],zeros(1,14),[1,256,...
-    size(psfMovie),10*ones(1,9)]);
+    size(psfMovie),10*ones(1,9)])
 fprintf('Done\n')
 sigma1 = reshape(x(6:end),3,3);
-sigma1 = sigma1*sigma1';
+sigma1 = sigma1*sigma1'
 sigma1 = diag(sigma1)'/4; %matlab filter functions need a diagonal matrix
 %NB. to use non diagonal matrix for gaussian filter, could write something.
 %But bead images fit well to a diagonal gaussian. (off diagonal entries 0
@@ -87,7 +87,7 @@ fprintf('Solving for PSF...\n');
 [x,~,~,~] = fmincon(fitFun2,x1,[],[],[],[],zeros(1,8),[1,256,...
     size(psfMovie),20*ones(1,3)]);
 
-sigmaFitted = x(6:end);
+sigmaFitted = x(6:end)
 %this has been in units of pixels
 %account for pixel size and convert to um for consistency with rest of KiT
 sigmaFitted = sigmaFitted.*pixelSize/10^3; 

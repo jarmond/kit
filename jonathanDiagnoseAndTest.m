@@ -1,4 +1,5 @@
 function jonathanDiagnoseAndTest(job,useExistingAnalysis,applyTests,spots,movie)
+%jonathanDiagnoseAndTest(job,useExistingAnalysis,applyTests,spots,movie)
 %Keep track of how many sisters detected at each step.
 %This may not necessarily be the best way to structure this diagnostic
 %since may stop if a test fails?
