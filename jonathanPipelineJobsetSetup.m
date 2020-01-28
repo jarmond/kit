@@ -10,10 +10,6 @@ if nargin<2
     identifier = 'DonaldDuck_auto_v101';
 end
 
-if nargin<1
-    movieDir = '/Volumes/shared/HCSS1/Shared299/JHOS/Reprocessing_nocodazole_washout/OS_LLSM_191119_MC191_DMSO_washout';
-end
-
 jobset = kitDefaultOptions();
 jobset.options.jobProcess='zandt';
 
@@ -27,15 +23,16 @@ if ~isfield(jobset,'ROI')
 end
 
 jobset.movieDirectory = movieDir; %need to get external input from bash script?
-jobset.movieFiles =  kitFindFiles(movieDir, 'flowdec_deconvolved.ome.tif',1,0,1); %will find deconvolved movies
-%kitFindFiles(movieDir, '*_flowdec_deconvolved.ome.tif',1,0,1);
+movieFiles = kitFindFiles(movieDir, 'flowdec_deconvolved.ome.tif',1,0,1); %will find deconvolved movies
+shortenedMovieFiles = strrep(kitFindFiles(movieDir,'deconvolved'),[movieDir filesep],''); %remove folder part from path
+jobset.movieFiles = shortenedMovieFiles; 
 
 for i=1:length(jobset.movieFiles)
-    [md,~]=kitOpenMovie(jobset.movieFiles{i});
+    [md,~]=kitOpenMovie(movieFiles{i}); %full path
     crop = [1 1 md.frameSize(1:2)];
     cropSize = md.frameSize(1:3);
     r = length(jobset.ROI) + 1;
-    jobset.ROI(r).movie = jobset.movieFiles{i};
+    jobset.ROI(r).movie = jobset.movieFiles{i}; %short path
     jobset.ROI(r).crop = crop;
     jobset.ROI(r).cropSize = cropSize;
 end
