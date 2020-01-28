@@ -24,7 +24,7 @@ end
 
 jobset.movieDirectory = movieDir; %need to get external input from bash script?
 movieFiles = kitFindFiles(movieDir, 'flowdec_deconvolved.ome.tif',1,0,1); %will find deconvolved movies
-shortenedMovieFiles = strrep(kitFindFiles(movieDir,'deconvolved'),[movieDir filesep],''); %remove folder part from path
+shortenedMovieFiles = strrep(kitFindFiles(movieDir,'deconvolved'),[movieDir filesep],''); %remove folder part from path. NB try to make sure it does not already end in a /
 jobset.movieFiles = shortenedMovieFiles; 
 
 for i=1:length(jobset.movieFiles)
@@ -51,9 +51,8 @@ jobset.option.maxSearchRadius = [r(2) 3*r(2) r(2)];
 
 jobset.options.flatBackground = 1;
 
-jobset.filename = ['kitjobset_' datestr(now,'yymmdd') '_' identifier]
-
-
+jobset.filename = ['kitjobset_' datestr(now,'yymmdd') '_' identifier];
+kitSaveJobset(jobset);
 end
 
 
