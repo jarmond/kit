@@ -1,4 +1,4 @@
-function [mu,sigma1] = jonathanEstimateSigma(Movie,verbose,writeToFile)
+function [mu,sigma1] = jonathanEstimateSigma(Movie,verbose,writeToFile,scaleSigma)
 %%%%%%%%%%%%%%%%%%%%
 rng('default');
 if nargin < 1
@@ -30,6 +30,10 @@ if nargin<3
     writeToFile=0; %output to csv
 end
 
+if nargin<4
+    scaleSigma=1; %for spots, helpful to be able to scale the covariance
+end
+
 %first draft: put in loop. TODO: vetorise this part (only done once though)
 pixelList = zeros(numel(Movie),3);
 ind = 0;
@@ -43,19 +47,29 @@ for k=1:size(Movie,3)
 end
 
 %we are first going to fit a single gaussian
-fitFun1 = @(x) singleGaussianObjectiveFun(x,Movie,pixelList);
-sigma0 = rand(3,3);
-sigma0 = sigma0*sigma0'; %ensure positive definite
+fitFun1 = @(x) singleGaussianObjectiveFun(x,Movie,pixelList,scaleSigma);
+if scaleSigma == 1
+    sigma0 = rand(3,3);
+    sigma0 = sigma0*sigma0'; %ensure positive definite
+else 
+    sigma0 = scaleSigma*ones(3,1);
+end
 b0 = mode(Movie,'all'); %initial estimate of background from looking at image values
 mu0 = size(Movie)/2;
-x0 = [b0,256,mu0,sigma0(:)'];
+x0 = [b0,1+255*(scaleSigma==1),mu0,sigma0(:)'];
 %% perform optimization for initial model
 fprintf('Initializing ...\n');
-[x,~,~,~] = fmincon(fitFun1,x0,[],[],[],[],zeros(1,14),[1,256,...
-    size(Movie),10*ones(1,9)])
+num_unknowns = 8 + 6*(scaleSigma==1); %default to learning full covariance and initializing around scale 1ish
+[x,~,~,~] = fmincon(fitFun1,x0,[],[],[],[],zeros(1,num_unknowns),[1,256,...
+    size(Movie),10*ones(1,num_unknowns-5)]);
 fprintf('Done\n')
-sigma1 = reshape(x(6:end),3,3);
-sigma1 = sigma1*sigma1'
+if scaleSigma == 1
+    sigma1 = reshape(x(6:end),3,3);
+    sigma1 = sigma1*sigma1'
+else
+    sigma1 = diag(x(6:end));
+end
+    mu = x(3:5); 
 
 if writeToFile
    if ischar(pathToMovie) && (strcmp(pathToMovie(end-7:end),'.ome.tif'))
@@ -66,31 +80,35 @@ if writeToFile
         csvwrite('~/sigma.csv',sigma1);
     end
 end
-
+    
 if verbose
     figure; subplot(1,2,1);
     imshow(Movie(:,:,round(size(Movie,3)/2)),[],'InitialMagnification',1000)
     set(gca,'YDir','normal')
-    subplot(1,2,2);
-    mu = x(3:5); %// data
-    x = 1:.1:size(Movie,1); %// x axis
-    y = 1:.1:size(Movie,2); %// y axis
+    subplot(1,2,2);    
+    xx = 1:.1:size(Movie,1); %// x axis
+    yy = 1:.1:size(Movie,2); %// y axis
     
-    [X Y] = meshgrid(x,y); %// all combinations of x, y
-    Z = mvnpdf([X(:) Y(:), mu(3)*ones(size(X(:)))],mu,sigma1); %// compute Gaussian pdf
+    [X, Y] = meshgrid(xx,yy); %// all combinations of x, y
+    Z = mvnpdf([X(:) Y(:), round(size(Movie,3)/2)*ones(size(X(:)))],mu,sigma1); %// compute Gaussian pdf
     Z = reshape(Z,size(X)); %// put into same size as X, Y
     contour(X,Y,Z), axis equal  %// contour plot; set same scale for x and y...    
 end
 fprintf('All done\n');
 
 end
-function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList)
+function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList,scaleSigma)
 %% Suppose a model of the form b + a*exp(-(x-mu).^2/sigma^2)
 b = theta(1); %background
 a = theta(2); %amplitude
 mu = theta(3:5); %mean: centre of gaussian
-sigma = reshape(theta(6:end),3,3); %covariance: psf
-sigma = sigma*sigma'; %ensure symmetric and positive definite
+
+if scaleSigma==1
+    sigma = reshape(theta(6:end),3,3); %covariance: psf
+    sigma = sigma*sigma'; %ensure symmetric and positive definite
+else
+    sigma = diag(theta(6:end));
+end
 
 modelMovie = reshape(b + a*mvnpdf(pixelList,mu,sigma),size(psfMovie));
 residual = sum(sum(sum(abs(bsxfun(@minus,psfMovie, modelMovie)))));
