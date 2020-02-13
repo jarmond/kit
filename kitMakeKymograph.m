@@ -101,6 +101,8 @@ for i=1:nFrames
   if all(~isnan(featIdx(i,:)))
     coords1(i,:) = ds.initCoord(i).allCoordPix(featIdx(i,1),[1 2 3]);
     coords2(i,:) = ds.initCoord(i).allCoordPix(featIdx(i,2),[1 2 3]);
+    % coords1(i,:) = ds.planeFit(i).rotatedCoord(featIdx(i,1),[1 2 3]);
+    % coords2(i,:) = ds.planeFit(i).rotatedCoord(featIdx(i,2),[1 2 3]);
   end
 end
 
@@ -122,6 +124,8 @@ irange = nan(3,2);
 valid = zeros(nFrames,1);
 plateDist = nan;
 sisVec = [];
+inits1 = nan;
+initsisVec = nan;
 for i=1:nFrames
   if isnan(coords1(i,1)) && isempty(sisVec);
     continue;
@@ -134,6 +138,10 @@ for i=1:nFrames
     s2 = coords2(i,1:2);
     sisVec = s1-s2;
     sisVec = sisVec / norm(sisVec,2);
+    if isnan(inits1)
+      inits1 = s1;
+      initsisVec = sisVec;
+    end
   end
 
   % Endpoints.
@@ -146,10 +154,10 @@ for i=1:nFrames
       % Fixed by plate.
       pn = planeEqn(i,1:2);
       pd = planeEqn(i,4);
-      if isnan(plateDist)
-        % Compute distance to plate from end of kymograph.
-        plateDist = dot(pn,s1 + marginPix*sisVec) - pd;
-      end
+      % Compute distance to plate from end of kymograph, using initial sister
+      % positions but updated to current plane orientation.
+      %plateDist = dot(pn,s1 + marginPix*sisVec) - pd;
+      plateDist = dot(pn,inits1 + marginPix*initsisVec) - pd;
 
       % Maintain fixed distance to plane, find distance to move along sisVec.
       beta = (pd + plateDist - dot(s1,pn))/dot(sisVec,pn);

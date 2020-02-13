@@ -37,6 +37,7 @@ for jsidx=1:length(jobset)
     catch me
       if strcmp(me.identifier,'MATLAB:load:couldNotReadFile')
         warning('File missing for job %d.',i)
+        continue
       end
     end
     empty = 0;
