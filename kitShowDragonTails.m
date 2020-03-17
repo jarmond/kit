@@ -93,6 +93,6 @@ end
         end
         
         % plot tracks
-        plot(trackCoords(1:opts.tailLength+1,1),trackCoords(1:opts.tailLength+1,2),'g')
-        plot(trackCoords(opts.tailLength+1:end,1),trackCoords(opts.tailLength+1:end,2),'r')
+        plot(trackCoords(1:opts.tailLength+1,1),trackCoords(1:opts.tailLength+1,2),'c','LineWidth',1.5)
+        plot(trackCoords(opts.tailLength+1:end,1),trackCoords(opts.tailLength+1:end,2),'m','LineWidth',1.5)
     end

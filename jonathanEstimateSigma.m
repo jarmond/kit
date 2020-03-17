@@ -65,7 +65,7 @@ num_unknowns = 8 + 6*(scaleSigma==1); %default to learning full covariance and i
 fprintf('Done\n')
 if scaleSigma == 1
     sigma1 = reshape(x(6:end),3,3);
-    sigma1 = sigma1*sigma1'
+    sigma1 = sigma1*sigma1';
 else
     sigma1 = diag(x(6:end));
 end
