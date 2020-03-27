@@ -1,4 +1,4 @@
-function jobset = jonathanPipelineJobsetSetup(movieDir,identifier)
+function jobset = jonathanPipelineJobsetSetup(movieDir,identifier,dt)
 %%make custom kit jobset files for tracking in pipeline
 %% in most cases not a replacement for using kitSetupJob
 %% but helpful when we want to automate creating many standard jobset files
@@ -8,6 +8,10 @@ function jobset = jonathanPipelineJobsetSetup(movieDir,identifier)
 
 if nargin<2
     identifier = 'DonaldDuck_auto_v101';
+end
+
+if nargin<3
+    dt = 4.7;
 end
 
 jobset = kitDefaultOptions();
@@ -38,7 +42,6 @@ for i=1:length(jobset.movieFiles)
 end
 
 %compute avaerage search radius
-dt = 4.7;
 avgDisp = 3.6/60; %um/min -> um/s
 r = zeros(2,1);
 r(2) = 6*avgDisp*dt;

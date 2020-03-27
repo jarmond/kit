@@ -279,7 +279,7 @@ end
 end
 
 function residual = singleGaussianObjectiveFun(theta,psfMovie,pixelList,scaleSigma)
-%% Suppose a model of the form b + a*exp(-(x-mu).^2/sigma^2)
+%% Suppose a model of the form b + a*exp(-(x-mu).^2/2*sigma^2)
 b = theta(1); %background
 a = theta(2); %amplitude
 mu = theta(3:5); %mean: centre of gaussian
