@@ -50,7 +50,7 @@ fig_m=ceil(n/fig_n);
 clf;
 for i=1:nSisters
     subplot(fig_m,fig_n,i);
-    pair = trackPairs(i,1:2);
+    pair = trackPairs(opts.subset(i),1:2);
     if opts.useTracks
       x1 = trackList(pair(1)).coords(:,1);
       x2 = trackList(pair(2)).coords(:,1);

@@ -1,6 +1,8 @@
-function jonathanCheckTracks(job)
+function maxSpots = jonathanCheckTracks(job,saveOutput)
 % As a diagnostic tool it is helpful to investigate the number of tracks
 % covering three consecutive frames
+%
+% saveOutput - boolean to indicate whether to save plots. If false, will close all open figures. 
 %
 %
 %Jonathan U Harrison 2019-02-21
@@ -40,11 +42,12 @@ if isfield(job,'dataStruct') && isfield(job.dataStruct{1},'tracks')
         plot(t(startTime:endTime),j*ones(size(startTime:endTime)),...
             [barcodeColour,'-']);
     end
-    if ableToSave
+    if ableToSave & saveOutput
         print(sprintf('%sBarcode.eps',savename),'-depsc');
     end
     nSpots(:,1) = sum(doesTrackExist,2);
-    
+    maxSpots = max(nSpots(:,1)); %this gives the maximum number of spots that exist at one time (allowing spots that exist for any length of time); potentially using for assessing the number of chromosomes present in each cell
+
     doesTrackEndHere = zeros(nFrames,nTracks);
     for j = 1:nTracks
         %count how many tracks end at the given frame
@@ -74,9 +77,10 @@ if isfield(job,'dataStruct') && isfield(job.dataStruct{1},'tracks')
     grid on;
     box on;
     set(gca,'fontsize',20);
-    if ableToSave
+    if ableToSave & saveOutput
         print(sprintf('%sNumSpotsTrackingDiagnosticPlot.eps',savename),'-depsc');
     end
 else
     warning('tracks field not found. Unable to perform checks')
+    maxSpots = NaN;
 end

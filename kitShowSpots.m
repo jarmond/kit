@@ -13,6 +13,9 @@ function kitShowSpots(job,varargin)
 %               - Increase brightness by changing to [0.1 0.9]
 %               - Decrease background noise by changing to [0.5 1]
 %
+%    cropHalfWidth: {0.5} number in um for size of box to crop spot to.
+%    Will be overwritten if using marker 'i' to show radius of measurement.
+%
 %    marker: {'x'}, '+' or 'i'. Marker used to label spots. 'i' plots
 %           circles with radius within which intensities were measured.
 %
@@ -23,6 +26,9 @@ function kitShowSpots(job,varargin)
 %
 %    timePoint: {1} or number. Timepoint at which to plot spots.
 %
+%    withinFig: {0} or 1. Plot in within current figure environment or in 
+%    a figure 1. 
+%
 %    zProject: {0}, 1 or -1. Whether or not to project in the z-direction.
 %           -1 will project in the 5 z-slices surrounding the spot.
 %
@@ -30,10 +36,12 @@ function kitShowSpots(job,varargin)
 
 opts.channel = 1;
 opts.contrast = [0.1 1];
+opts.cropHalfWidth = 0.5;
 opts.marker = 'x';
 opts.plotCoords = 1;
 opts.subset = [];
 opts.timePoint = 1;
+opts.withinFig = 0;
 opts.zProject = 0;
 opts = processOptions(opts,varargin{:});
 
@@ -66,7 +74,9 @@ end
 opts.imageSize = job.ROI.cropSize;
 
 % set up figure
-figure(1); clf
+if ~opts.withinFig
+    figure(1); clf
+end
 fig_n=ceil(sqrt(nSpots));
 fig_m=ceil(nSpots/fig_n);
 
@@ -76,11 +86,12 @@ fig_m=ceil(nSpots/fig_n);
 img = kitReadImageStack(reader,job.metadata,opts.timePoint,opts.channel,job.ROI.crop,0);
 
 % show each sister
+subplot_ind = 0; %help to index over a subset of spots, rather than all
 for iSpot=opts.subset
-    
+    subplot_ind=subplot_ind+1;
     opts.spotID = iSpot;
     
-    f = subplot(fig_m,fig_n,iSpot);
+    f = subplot(fig_m,fig_n,subplot_ind);
     
     noCoords = showSpot(job,img,opts);
     if noCoords
@@ -109,7 +120,7 @@ if strcmp(opts.marker,'i')
     maskRadius = job.options.intensity.maskRadius;
     cropHalfWidth = maskRadius*1.5;
 else
-    cropHalfWidth = 0.5; %um
+    cropHalfWidth = opts.cropHalfWidth; %um
 end
 
 % get sister information
@@ -162,10 +173,10 @@ else
 end
 
 % produce cropped image around track centre
-xReg = [centrePxl(1)-ceil(cropHalfWidth/pixelSize(1))+1 ...
-           centrePxl(1)+ceil(cropHalfWidth/pixelSize(1))+1];
-yReg = [centrePxl(2)-ceil(cropHalfWidth/pixelSize(2))+1 ...
-           centrePxl(2)+ceil(cropHalfWidth/pixelSize(2))+1];
+xReg = [centrePxl(1)-ceil(cropHalfWidth/pixelSize(1)) ...
+           centrePxl(1)+ceil(cropHalfWidth/pixelSize(1))]; %previously was a +1 shift here. Seems this was not necessary?
+yReg = [centrePxl(2)-ceil(cropHalfWidth/pixelSize(2)) ...
+           centrePxl(2)+ceil(cropHalfWidth/pixelSize(2))];
 xReg(1) = max(xReg(1),1); xReg(2) = min(xReg(2),imageSize(2));
 yReg(1) = max(yReg(1),1); yReg(2) = min(yReg(2),imageSize(1));
 imgCrpd = img(yReg(1):yReg(2),xReg(1):xReg(2));

@@ -30,6 +30,12 @@ function kitPlotTracks(job,varargin)
 %
 %    minLength: {0.25} or number. Minimum number of tracked frames. Overridden by subset option.
 %
+%    dt: {[]} or number. Time step between frames. Otherwise determined from metadata. 
+%    Only needed when there is an error in the metadata. Rescales time on x axis if set.
+%     
+%    overWriteColors: {[]} or array eg. [0.4660    0.6740    0.1880]. Uses this for plotting 
+%    colors instead of the otherwise default custom colours.
+%
 % Created by: Jonathan W. Armond 2013
 % Edited by:  Chris Smith 10/2013
 
@@ -51,11 +57,18 @@ opts.usePairs = 0;
 opts.identifyLazyKTs = 0;
 opts.movie = [];
 opts.makeMovie = 1;
+opts.dt = [];
+opts.overWriteColors = [];
 % Process options
 opts = processOptions(opts, varargin{:});
 
 t = job.metadata.frameTime;
+if isempty(opts.dt)
 dt = t(1,2)-t(1,1);
+else 
+dt = opts.dt;
+t = t*dt/2.0; %rescale to fix incorrect metadata
+end
 
 dataStruct = job.dataStruct{opts.channel};
 trackList = dataStruct.trackList;
@@ -91,10 +104,10 @@ poleSub = [];
 
 figure;
 axes('NextPlot', 'add')
+clf;
 n=length(opts.subset);
 fig_n=ceil(sqrt(n));
 fig_m=ceil(n/fig_n);
-clf;
 hold on
 axName = ['x','y','z'];
 
@@ -186,7 +199,9 @@ ColorOdrCustom = [0 0 1;...
     0 0.75 0.75;...
     0.22 0.44 0.34;...
     0.32 0.19 0.19]; %10x3 RGB array See https://uk.mathworks.com/matlabcentral/answers/133676-change-automatically-colors-and-$
-
+if ~isempty(opts.overWriteColors)
+ColorOdrCustom = repmat(opts.overWriteColors,size(ColorOdrCustom,1),1);
+end
 
 for j=1:length(subset)
     

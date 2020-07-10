@@ -528,7 +528,7 @@ for iPair = 1 : nGoodPairs/2
     
     %find indices of distances larger than maximum allowed
     outlierIndx = find(sisterList(iPair).distances(1:lastFrameNotAna,1) ...
-        > maxSisterDist);
+        > maxSisterDist)
     
     %remove those timepoints from the sister information
     sisterList(iPair).coords1(outlierIndx,:) = NaN;

@@ -59,7 +59,7 @@ movie = kitReadWholeMovie(reader,job.metadata,channel,job.ROI(1).crop,0,1);
 
 
 if useAdaptive
-    spots = adaptiveSpots(movie,adaptiveLambda,realisticNumSpots,flatBackground,0);
+    spots = adaptiveSpotsDev2(movie,adaptiveLambda,realisticNumSpots,flatBackground,0,1);
 else
     %fix some parameters used in the histcut algorithm
     options.minSpotsPerFrame=80;
@@ -83,6 +83,13 @@ if verbose
     spots_max_project = max(spots{t_frame},[],3);
     scatter(spots_max_project(:,2),spots_max_project(:,1),'rx');
 end
+
+nSpotsDetected = zeros(job.metadata.nFrames,1);
+for ii=1:job.metadata.nFrames
+    nSpotsDetected(ii) = size(spots{ii},1);
+end
+figure; plot(1:job.metadata.nFrames,nSpotsDetected);
+mean(nSpotsDetected)
 
 %%%%%%%%%%%%%%%
 % to write tests specify expectations of length of spots, and what spots

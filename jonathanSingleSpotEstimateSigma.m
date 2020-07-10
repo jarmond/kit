@@ -260,21 +260,40 @@ else
 end
 mu = x(3:5);
 
-if verbose
-    figure; imshow(imgCrpd(:,:,round(size(imgCrpd,3)/2)),[],'InitialMagnification',5000)
-    figure; subplot(1,2,1);
-    imshow(Movie(:,:,round(size(Movie,3)/2)),[],'InitialMagnification',1000)
-    set(gca,'YDir','normal')
-    subplot(1,2,2);
+yesplease=1;
+if yesplease | verbose 
+%    figure; imshow(imgCrpd(:,:,round(size(imgCrpd,3)/2)),[],'InitialMagnification',5000)
+%    figure; subplot(1,2,1);
+%    imshow(Movie(:,:,round(size(Movie,3)/2)),[],'InitialMagnification',1000)
+%    set(gca,'YDir','normal')
+%    subplot(1,2,2);
     xx = 1:.1:size(Movie,1); %// x axis
     yy = 1:.1:size(Movie,2); %// y axis
     
     [X, Y] = meshgrid(xx,yy); %// all combinations of x, y
     Z = mvnpdf([X(:) Y(:), round(size(Movie,3)/2)*ones(size(X(:)))],mu,sigma1); %// compute Gaussian pdf
     Z = reshape(Z,size(X)); %// put into same size as X, Y
-    contour(X,Y,Z), axis equal  %// contour plot; set same scale for x and y...
+%    contour(X,Y,Z), axis equal  %// contour plot; set same scale for x and y...
+figure; 
+subplot(1,3,1)
+imshow(Movie(:,:,round(size(Movie,3)/2)),[],'InitialMagnification',1000)
+set(gca,'YDir','normal')
+hold all;
+%pause(0.1);
+%contour(X,Y,Z,'r','linewidth',2), axis equal;
+%pause(0.1);
 end
 %fprintf('All done\n');
+
+subplot(1,3,2);
+curvature = getCurvature(imgCrpd);
+BMIN=-4*10^(-6);
+BMAX=4*10^(-6);
+histogram(curvature,30,'BinLimits',[BMIN,BMAX]);
+subplot(1,3,3);
+imshow(max(curvature,[],3),[],'InitialMagnification',1000);
+iqrdist = getIQRdistance(imgCrpd);
+sum(imgCrpd>0.5*max(imgCrpd(:)),'all')
 
 end
 
