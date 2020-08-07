@@ -550,13 +550,13 @@ if nConsecFrames >= minConsecFrames && ~isempty(goodFrames)
   %if there is a frame labeled 'a', go back in time and, as long as the
   %kinetochore scatter decreases, classify preceding frames as 'a'
   if ~isempty(firstFrameA)
-
-    t = firstFrameA - 1;
-    while t > 0 && (all(dist2planeStd(t) > dist2planeStd(max(1,t-5):max(1,t-1))))
-      planeFit(t).phase = 'a';
-      t = t - 1;
+    if ~opts.skipAnaphaseCountback
+      t = firstFrameA - 1;
+      while t > 0 && (all(dist2planeStd(t) > dist2planeStd(max(1,t-5):max(1,t-1))))
+        planeFit(t).phase = 'a';
+        t = t - 1;
+      end
     end
-
     %if there are no 'a' frames but there are some empty frames toward
     %the end of the movie, label those as 'a' and again go back in time
     %looking for the start of anaphase

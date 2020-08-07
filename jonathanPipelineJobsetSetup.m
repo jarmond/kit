@@ -50,11 +50,12 @@ r(1) = 0.1*avgDisp*dt;
 jobset.options.autoRadiidt = dt;
 jobset.options.autoRadiiAvgDisp = 3.6/60;
 jobset.options.minSearchRadius = [r(1) 3*r(1) r(1)];
-jobset.option.maxSearchRadius = [r(2) 3*r(2) r(2)]; %[0.75,3,0.75];
+jobset.options.maxSearchRadius = [r(2) 3*r(2) r(2)]; %[0.75,3,0.75];
 
 jobset.options.flatBackground = 1;
 jobset.options.spotMode{1} = 'adaptive';
 jobset.options.mmf.maxMmfTime = -1; %no maximum time
+jobset.options.skipAnaphaseCountback=1;
 
 jobset.filename = ['kitjobset_' datestr(now,'yymmdd') '_' identifier '.mat'];
 jobset.filename = fullfile(jobset.movieDirectory,jobset.filename);

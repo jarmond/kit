@@ -77,7 +77,11 @@ maxTime = dataStruct.dataProperties.movieSize(4);
 
 if isempty(dataStruct.sisterList(1).trackPairs)
     fprintf('\nNo sisters found in this movie.\n\n');
+if opts.usePairs
     return
+else
+    fprintf('Atempting to continue with unpaired tracks\n\n');
+end
 end
 
 if isempty(opts.subset)

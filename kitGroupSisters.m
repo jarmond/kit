@@ -63,7 +63,7 @@ end
 nTimepoints = dataStruct.dataProperties.movieSize(4);
 
 % read parameters
-minOverlap = dataStruct.dataProperties.groupSisters.minOverlap;
+minOverlap = min(dataStruct.dataProperties.groupSisters.minOverlap,round(nTimepoints/10));
 % if minOverlap < 10
 %     minOverlap = 10;
 % end
@@ -117,7 +117,6 @@ if isempty(anaphaseFrames)
 else
     lastFrameNotAna = anaphaseFrames(1) - 1;
 end
-
 %if the whole movie is in anaphase, there's no point in looking for
 %sisters. Exit with an empty sisterList.
 if length(anaphaseFrames) == nTimepoints
@@ -239,7 +238,6 @@ for jTrack = 1:nGoodTracks % loop cols
                 %assign distance mean for pair
                 distances(iTrack,jTrack) = rMean;
                 distances(jTrack,iTrack) = rMean;
-
                 %assign distance variance for pair
                 variances(jTrack,iTrack) = rStd^2;
                 variances(iTrack,jTrack) = rStd^2;
@@ -263,7 +261,6 @@ for jTrack = 1:nGoodTracks % loop cols
 end %(for jTrack = 1:nGoodTracks)
 
 %% CREATE COST MATRIX & GROUP
-
 [r2c,c2r,costMat,linkedIdx] = ...
     linkTracks(distances,variances,alignment,...
     nGoodTracks,maxDist,useAlignment,allowMulti,verbose);
@@ -528,7 +525,7 @@ for iPair = 1 : nGoodPairs/2
     
     %find indices of distances larger than maximum allowed
     outlierIndx = find(sisterList(iPair).distances(1:lastFrameNotAna,1) ...
-        > maxSisterDist)
+        > maxSisterDist);
     
     %remove those timepoints from the sister information
     sisterList(iPair).coords1(outlierIndx,:) = NaN;
