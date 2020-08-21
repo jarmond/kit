@@ -356,13 +356,6 @@ function tf=checkControls()
     return
   end
 
-  v = str2double(hs.adaptiveLambda.String);
-  if (~isfinite(v) || v < 0)
-    errorbox('Invalid value for spot weight. Should be a positive number or zero.')
-    tf = false;
-    return
-  end
-
   v = str2double(hs.maxMmfTime.String);
   if (hs.mmfAddSpots.Value == 1) && (~isfinite(v) || v < 0)
     errorbox('Invalid value for min spots per frame. Should be a positive number or zero.')

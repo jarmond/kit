@@ -222,13 +222,6 @@ function hs = createControls()
   t = label(hs.spotDetectTab,'Max spots per frame',[x y labelw h],10);
   hs.maxSpotsPerFrame = editbox(hs.spotDetectTab,[],[editx y editw h],10);
   y = y-h;
-  % Adaptive spot-detection options
-  hs.adaptiveTitle = label(hs.spotDetectTab,'Adaptive',[x y w 1.5],smallfont);
-  hs.adaptiveTitle.FontWeight = 'bold';
-  y = y-h;
-  hs.adaptiveLambdaText = label(hs.spotDetectTab,'Weight for spot count',[x y labelw h],10);
-  hs.adaptiveLambda = editbox(hs.spotDetectTab,[],[editx y editw h],10);
-  y = y-h;
   % Neighbour spot-detection options
   hs.neighbourTitle = label(hs.spotDetectTab,'Neighbour',[x y w 1.5],smallfont);
   hs.neighbourTitle.FontWeight = 'bold';
@@ -255,27 +248,6 @@ function hs = createControls()
   hs.neighbourOrient{1} = editbox(p,[],[editxl edity editw/3 h],10);
   hs.neighbourOrient{2} = editbox(p,[],[editxc edity editw/3 h],10);
   hs.neighbourOrient{3} = editbox(p,[],[editxr edity editw/3 h],10);
-  % Wavelet spot-detection options
-  y = y-4.25*h;
-  hs.waveletTitle = label(hs.spotDetectTab,'Wavelet',[x y w 1.5],smallfont);
-  hs.waveletTitle.FontWeight = 'bold';
-  y = y-h;
-  hs.wletLevelThreshText = label(hs.spotDetectTab,'Threshold level for MAD thresholding',[x y-h/2 labelw lh],10);
-  hs.wletLevelThresh = editbox(hs.spotDetectTab,[],[editx y editw h],10);
-  y = y-lh;
-  hs.wletLevelAdapt = checkbox(hs.spotDetectTab,'Use adaptive threshold level',[x y w h],[],tinyfont);
-  y = y-h;
-  hs.wletNumLevelsText = label(hs.spotDetectTab,'Number of levels',[x y labelw h],10);
-  hs.wletNumLevels = editbox(hs.spotDetectTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.wletLocalMADText = label(hs.spotDetectTab,'Locally-estimated MAD',[x y labelw h],10);
-  hs.wletLocalMAD = editbox(hs.spotDetectTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.wletBackSubText = label(hs.spotDetectTab,'Background subtraction',[x y labelw h],10);
-  hs.wletBackSub = editbox(hs.spotDetectTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.wletMinLevelText = label(hs.spotDetectTab,'Minimum level',[x y labelw h],10);
-  hs.wletMinLevel = editbox(hs.spotDetectTab,[],[editx y editw h],10);
 
   end
   
@@ -375,20 +347,6 @@ function hs = createControls()
       hs.debugCentroidText.FontWeight = 'bold';
       y = y-h;
       hs.showCentroidFinal = checkbox(hs.debugTab,'Show final coordinates',[x y labelw h],[],tinyfont);
-      y = y-lh;
-      hs.debugWaveletText = label(hs.debugTab,'Wavelet spot detection',[x y w 1.5],smallfont);
-      hs.debugWaveletText.FontWeight = 'bold';
-      y = y-h;
-      hs.showWavelet = checkbox(hs.debugTab,'Verbose output',[x y labelw h],@showWaveletCB,tinyfont);
-      y = y-h;
-      hs.saveWaveletImages = checkbox(hs.debugTab,'Save images of output',[x+2.5 y labelw h],[],tinyfont);
-      y = y-h;
-      hs.showWaveletAdapt = checkbox(hs.debugTab,'Show adaptation of wavelet threshold',[x y 1.5*labelw h],[],tinyfont);
-      y = y-lh;
-      hs.debugAdaptText = label(hs.debugTab,'Adaptive spot detection',[x y w 1.5],smallfont);
-      hs.debugAdaptText.FontWeight = 'bold';
-      y = y-h;
-      hs.showAdaptive = checkbox(hs.debugTab,'Verbose output',[x y labelw h],[],tinyfont);
 
   end
 
@@ -423,13 +381,6 @@ function updateControls(opts)
   hs.gaussFilterSpots.Value = opts.intensity.gaussFilterSpots;
   hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
   hs.maxSpotsPerFrame.String = num2str(opts.maxSpotsPerFrame);
-  hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
-  hs.wletLevelThresh.String = num2str(opts.wavelet.levelThresh);
-  hs.wletLevelAdapt.Value = opts.wavelet.levelAdapt;
-  hs.wletNumLevels.String = num2str(opts.wavelet.numLevels);
-  hs.wletLocalMAD.String = num2str(opts.wavelet.localMAD);
-  hs.wletBackSub.String = num2str(opts.wavelet.backSub);
-  hs.wletMinLevel.String = num2str(opts.wavelet.minLevel);
   hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,neighbourMaskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
   for iOrient = 1:3
@@ -553,19 +504,6 @@ function updateControls(opts)
     hs.showIntensityMasks.Value = opts.debug.showIntensityMasks;
     % centroid
     hs.showCentroidFinal.Value = opts.debug.showCentroidFinal;
-    % wavelet
-    if opts.debug.showWavelet == 2
-      hs.showWavelet.Value = 1;
-      hs.saveWaveletImages.Value = 1;
-    else
-      hs.showWavelet.Value = opts.debug.showWavelet;
-    end
-    if tabsToShow(1)
-      showWaveletCB();
-    end
-    hs.showWaveletAdapt.Value = opts.debug.showWaveletAdapt;
-    % adaptive
-    hs.showAdaptive.Value = opts.debug.showAdaptive;
     % MMF
     hs.mmfVerbose.Value = opts.debug.mmfVerbose;
     hs.showMmfCands.Value = find([0 1 -1]==opts.debug.showMmfCands);
@@ -576,34 +514,6 @@ function updateControls(opts)
   if ~any(cellfun(@(x) strcmp(x,'neighbour'),opts.spotMode))
     % disable all neighbour options
     hs.neighbourTitle.Enable = 'off';
-  end
-  if ~any(cellfun(@(x) strcmp(x,'wavelet'),opts.spotMode))
-    % disable all wavelet options
-    hs.waveletTitle.Enable = 'off';
-    hs.wletTitle.Enable = 'off';
-    hs.wletLevelThresh.Enable = 'off';
-    hs.wletLevelThreshText.Enable = 'off';
-    hs.wletLevelAdapt.Enable = 'off';
-    hs.wletNumLevels.Enable = 'off';
-    hs.wletNumLevelsText.Enable = 'off';
-    hs.wletLocalMAD.Enable = 'off';
-    hs.wletLocalMADText.Enable = 'off';
-    hs.wletBackSub.Enable = 'off';
-    hs.wletBackSubText.Enable = 'off';
-    hs.wletMinLevel.Enable = 'off';
-    hs.wletMinLevelText.Enable = 'off';
-    hs.debugWaveletText.Enable = 'off';
-    hs.showWavelet.Enable = 'off';
-    hs.saveWaveletImages.Enable = 'off';
-    hs.showWaveletAdapt.Enable = 'off';
-  end
-  if ~any(cellfun(@(x) strcmp(x,'adaptive'),opts.spotMode))
-    % disable all adaptive options
-    hs.adaptiveTitle.Enable = 'off';
-    hs.adaptiveLambda.Enable = 'off';
-    hs.adaptiveLambdaText.Enable = 'off';
-    hs.debugAdaptText.Enable = 'off';
-    hs.showAdaptive.Enable = 'off';
   end
   if ~any(cellfun(@(x) strcmp(x,'gaussian'),opts.coordMode))
     % disable all MMF debug options
@@ -718,13 +628,6 @@ function tf=checkControls()
   v = str2double(hs.minSpotsPerFrame.String);
   if ~isfinite(v) || v < 0
     errorbox('Invalid value for min spots per frame. Should be a positive number.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.adaptiveLambda.String);
-  if (~isfinite(v) || v < 0)
-    errorbox('Invalid value for spot weight. Should be a positive number or zero.')
     tf = false;
     return
   end
@@ -1095,15 +998,6 @@ function directionMethodsCB(hObj,event)
   end
 end
 
-function showWaveletCB(hObj,event)
-  if handles.showWavelet.Value
-    handles.saveWaveletImages.Enable = 'on';
-  else
-    handles.saveWaveletImages.Enable = 'off';
-    handles.saveWaveletImages.Value = 0;
-  end
-end
-
 function saveCB(hObj,event)
   if ~checkControls()
     return
@@ -1174,15 +1068,6 @@ function updateJobset()
   opts.intensity.gaussFilterSpots = handles.gaussFilterSpots.Value;
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpotsPerFrame.String);
-  opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
-  wavelet = opts.wavelet;
-  wavelet.levelThresh = str2double(handles.wletLevelThresh.String);
-  wavelet.levelAdapt = handles.wletLevelAdapt.Value;
-  wavelet.numLevels = str2double(handles.wletNumLevels.String);
-  wavelet.localMAD = str2double(handles.wletLocalMAD.String);
-  wavelet.backSub = str2double(handles.wletBackSub.String);
-  wavelet.minLevel = str2double(handles.wletMinLevel.String);
-  opts.wavelet = wavelet;
   neighbourSpots = opts.neighbourSpots;
   neighbourSpots.maskShape = mapStrings(handles.neighbourMaskShape.Value,neighbourMaskValuesJS);
   neighbourSpots.maskRadius = str2double(handles.neighbourMaskRadius.String);
@@ -1263,11 +1148,6 @@ function updateJobset()
     opts.debug.showIntensityMasks = handles.showIntensityMasks.Value;
     % centroid
     opts.debug.showCentroidFinal = handles.showCentroidFinal.Value;
-    % wavelet
-    opts.debug.showWavelet = handles.showWavelet.Value + handles.saveWaveletImages.Value;
-    opts.debug.showWaveletAdapt = handles.showWaveletAdapt.Value;
-    % adaptive
-    opts.debug.showAdaptive = handles.showAdaptive.Value;
     % MMF
     opts.debug.mmfVerbose = handles.mmfVerbose.Value;
     debugCodes = [0 1 -1];

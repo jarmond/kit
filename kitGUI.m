@@ -26,8 +26,8 @@ jobProcessValues = {'2D/3D only','Chromatic shift'}; % in GUI
 jobProcessValuesJS = {'zonly','chrshift'}; % in jobset
 coordSystemValues = {'Metaphase plate','Centre of mass'};
 coordSystemValuesJS = {'plate','com'};
-spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual','Neighbour','None'};
-spotDetectValuesJS = {'histcut','adaptive','wavelet','manual','neighbour','none'};
+spotDetectValues = {'Histogram','Neighbour','None'};
+spotDetectValuesJS = {'histcut','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
 spotRefineValuesJS = {'centroid','gaussian','none'};
 maskValues = {'Circle','Semi-circle','Cone'};
@@ -161,8 +161,6 @@ function hs = createControls()
   hs.manualFrameSpaceText = label(hs.fig,'Manual detection frame spacing',[x y labelw h],10);
   hs.manualFrameSpace = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  hs.adaptiveLambdaText = label(hs.fig,'Weight for spot count',[x y labelw h],10);
-  hs.adaptiveLambda = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
   hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
   y = y-h;
@@ -388,7 +386,6 @@ function updateControls(jobset)
   hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
   hs.maxSpotsPerFrame.String = num2str(opts.maxSpotsPerFrame);
   hs.manualFrameSpace.String = num2str(opts.manualDetect.frameSpacing);
-  hs.adaptiveLambda.String = num2str(opts.adaptiveLambda);
   hs.mmfAddSpots.Value = opts.mmf.addSpots;
   hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
   for iChan=1:3
@@ -556,13 +553,6 @@ function tf=checkControls()
     return
   elseif diff(v)<=0
     errorbox('Invalid values for spots per frame. Maximum number should be larger than the minimum.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.adaptiveLambda.String);
-  if (~isfinite(v) || v < 0)
-    errorbox('Invalid value for spot weight. Should be a positive number or zero.')
     tf = false;
     return
   end
@@ -790,13 +780,6 @@ function spotModeCB(hObj,event)
       handles.tPointsMaxText{i}.Enable = 'on';
       handles.tPointsMax{i}.Enable = 'on';
     end
-  end
-  if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Adaptive'),handles.spotMode))
-    handles.adaptiveLambdaText.Enable = 'on';
-    handles.adaptiveLambda.Enable = 'on';
-  else
-    handles.adaptiveLambdaText.Enable = 'off';
-    handles.adaptiveLambda.Enable = 'off';
   end
   if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Manual'),handles.spotMode))
     handles.manualFrameSpaceText.Enable = 'on';
@@ -1243,7 +1226,6 @@ function updateJobset()
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpotsPerFrame.String);
   opts.manualFrameSpace = str2double(handles.manualFrameSpace.String);
-  opts.adaptiveLambda = str2double(handles.adaptiveLambda.String);
   mmf = opts.mmf;
   mmf.addSpots = handles.mmfAddSpots.Value;
   mmf.maxMmfTime = str2double(handles.maxMmfTime.String);

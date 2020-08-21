@@ -23,7 +23,6 @@ if ~isfield(job.options,'spotMode')
   spotMode = 'histcut';
 else
   % Method of identify first spot candidates: Histogram cut 'histcut',
-  % adaptive threshold 'adaptive', or  multiscale wavelet product 'wavelet'.
   spotMode = job.options.spotMode{channel};
 end
 
@@ -61,22 +60,9 @@ switch spotMode
     end
 
   case 'adaptive'
-    kitLog('Detecting particle candidates using adaptive thresholding');
-    spots = adaptiveSpots(movie,options.adaptiveLambda,options.debug.showAdaptive);
-
+    error('Adaptive detection method not available in KiD. Try later versions of KiT to use this');
   case 'wavelet'
-    kitLog('Detecting particle candidates using multiscale wavelet product');
-    if options.waveletLevelAdapt
-     options.waveletLevelThresh = waveletAdapt(movie,options);
-     job.options = options;
-     kitSaveJob(job); % Record used value.
-    end
-
-    for i=1:nFrames
-      img = movie(:,:,:,i);
-      spots{i} = waveletSpots(img,options);
-    end
-    
+    error('Wavelet detection method not available in KiD. Try later versions of KiT to use this');
   case 'neighbour'
     kitLog('Detecting particle candidates using neighbouring channel');
     refDataStruct = job.dataStruct{options.coordSystemChannel};

@@ -181,24 +181,6 @@ else
 end
 newOpts.intensity = intensity;
 
-% Adaptive threshold spot detection.
-newOpts.adaptiveLambda = opts.adaptiveLambda;
-
-% Wavelet multiscale product spot detector options.
-if isfield(opts,'wavelet')
-  wavelet = opts.wavelet;
-else
-  wavelet = newOpts.wavelet;
-  if verbose; kitLog('Wavelet sub-structure generated'); end
-  wavelet.levelThresh = opts.waveletLevelThresh;
-  wavelet.levelAdapt = opts.waveletLevelAdapt;
-  wavelet.numLevels = opts.waveletNumLevels;
-  wavelet.localMAD = opts.waveletLocalMAD;
-  wavelet.backSub = opts.waveletBackSub;
-  wavelet.minLevel = opts.waveletMinLevel;
-end
-newOpts.wavelet = wavelet;
-
 % Manual spot detection options.
 if isfield(opts,'manualDetect')
   manualDetect = opts.manualDetect;

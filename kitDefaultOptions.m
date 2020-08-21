@@ -17,7 +17,7 @@ job.movieDirectory = [];
 job.movieFiles = [];
 
 opts.jobProcess = 'zonly';
-opts.spotMode{1} = 'histcut'; % Possible values: histcut, wavelet, neighbour, manual, none
+opts.spotMode{1} = 'histcut'; % Possible values: histcut, neighbour, none
 opts.spotMode{2} = 'none';
 opts.spotMode{3} = 'none';
 opts.coordMode{1} = 'gaussian'; % Possible values: centroid, gaussian, none
@@ -52,9 +52,6 @@ debug.groupSisters = 0; % 1 - plot 4 frames with sisters assignment
 debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
 debug.showCentroidFinal = 0; % visualize centroid final spots.
-debug.showWavelet = 0; % 1 to show wavelet algorithm stages, 2 to save images.
-debug.showWaveletAdapt = 0; % 1 to show adaptation of wavelet threshold.
-debug.showAdaptive = 0; % 1 to show adaptive thresholding algorithm verbosely.
 debug.asserts = 0; % check things that shouldn't go wrong
 debug.disableSave = 0; % don't save job at each step
 opts.debug = debug;
@@ -123,20 +120,8 @@ intensity.otherSpotSearchRadius = 0;
 intensity.gaussFilterSpots = 0;
 opts.intensity = intensity;
 
-% Adaptive threshold spot detection.
-opts.adaptiveLambda = 10; % Regularization for increasing number of spots.
-
 % Deconvolution.
 opts.deconvolve = 0;
-
-% Wavelet multiscale product spot detector options.
-wavelet.levelThresh = 2; % threshold scale for local MAD thresholding
-wavelet.levelAdapt = 1; % use adaptive setting for above.
-wavelet.numLevels = 3;  % number of wavelet levels
-wavelet.localMAD = 0; % locally estimated MAD
-wavelet.backSub = 0;  % background subtraction
-wavelet.minLevel = 1; % discard wavelet levels below this
-opts.wavelet = wavelet;
 
 % Manual spot detection options.
 manualDetect.warningDist = 0.2; % in um, distance between spots below which to warn user
