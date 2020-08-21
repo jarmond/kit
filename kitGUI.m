@@ -22,8 +22,8 @@ if ~isfield(jobset,'ROI')
   jobset.ROI = [];
 end
 
-jobProcessValues = {'2D/3D and time','2D/3D only','Chromatic shift'}; % in GUI
-jobProcessValuesJS = {'zandt','zonly','chrshift'}; % in jobset
+jobProcessValues = {'2D/3D only','Chromatic shift'}; % in GUI
+jobProcessValuesJS = {'zonly','chrshift'}; % in jobset
 coordSystemValues = {'Metaphase plate','Image moments','Centre of mass'};
 coordSystemValuesJS = {'plate','image','com'};
 spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual','Neighbour','None'};

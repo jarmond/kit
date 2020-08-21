@@ -13,12 +13,7 @@ if diag.failed
 else
   fprintf('Particles per frame: %.1f\n',diag.nSpotsPerFrame);
   if strcmp(process,'zandt')
-    fprintf('# sister pairs tracked: %d\n',diag.nSisters);
-    fprintf('# individual KTs tracked: %d\n',diag.nTracks);
-    fprintf('Average sister pair track length: %.1f\n',diag.avgSisterTrackLength);
-    fprintf('Average KT track length: %.1f\n',diag.avgTrackLength);
-    fprintf('# long sisters (75%% length): %d\n',diag.nLongSisters);
-    fprintf('# full sisters (100%% length): %d\n',diag.nFullSisters);
+    error('Option zandt not available for KiD. Try using a later version of KiT for tracking'); 
   end
   if ~strcmp(process,'chrshift')
     fprintf('Frames with a plane fit: %.2f%%\n',diag.percentWithPlane);

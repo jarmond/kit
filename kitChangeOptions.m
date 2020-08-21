@@ -20,7 +20,7 @@ debugMMFfinalValues = {'-','without pausing','with a pause'};
 
 % get options framework
 opts = jobset.options;
-tabsToShow = ones(1,5);
+tabsToShow = ones(1,4);
     
 % check whether or not debug has been requested
 tabsToShow(1) = ~(nargin<2 || isempty(mode) || ~strcmp(mode,'debug'));
@@ -31,9 +31,6 @@ tabsToShow(2) = (sum(cellfun(@(x) ~strcmp(x,'none'),opts.spotMode))>1 ...
   
 % check whether MMF is required for any channel
 tabsToShow(4) = any(cellfun(@(x) strcmp(x,'gaussian'),opts.coordMode));
-
-% check whether tracking is required here
-tabsToShow(5) = strcmp(opts.jobProcess,'zandt');
 
 % Setup GUI.
 handles = createControls();
@@ -75,9 +72,6 @@ function hs = createControls()
   end
   if tabsToShow(4)
     hs.mmfTab = uitab('Parent', hs.tabs, 'Title', 'MMF');
-  end
-  if tabsToShow(5)
-    hs.trackingTab = uitab('Parent', hs.tabs, 'Title', 'Tracking');
   end
   
   % Set some standard positions and distances
@@ -341,57 +335,6 @@ function hs = createControls()
   
   end
   
-  %% Options - Tracking options, tab 4
-  if tabsToShow(5)
-  
-  w = colwidth-5;
-  lh = 1.5*h;
-  y = toplabely-lh;
-  
-  hs.autoRadii = checkbox(hs.trackingTab,'Calculate search radii from dt',[x y w h],@autoRadiiCB,10);
-  y = y-h;
-  labelw = 0.75*w;
-  editw = 0.2*w;
-  editx = x+w-editw;
-  hs.autoRadiidtText = label(hs.trackingTab,'Frame dt',[x y labelw h],10);
-  hs.autoRadiidt = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.autoRadiiAvgDispText = label(hs.trackingTab,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
-  hs.autoRadiiAvgDisp = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.minSearchRadiusText = label(hs.trackingTab,'Min search radius (um)',[x y labelw h],10);
-  hs.minSearchRadius = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.maxSearchRadiusText = label(hs.trackingTab,'Max search radius (um)',[x y labelw h],10);
-  hs.maxSearchRadius = editbox(hs.trackingTab,[],[editx y editw h],10);
-
-  y = y-h;
-  hs.useSisterAlignment = checkbox(hs.trackingTab,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
-  y = y-h;
-  % Adjust text box pos for multiple lines.
-  hs.maxSisterAlignmentAngleText = label(hs.trackingTab,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
-  hs.maxSisterAlignmentAngle = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-lh;
-  hs.maxSisterDistText = label(hs.trackingTab,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
-  hs.maxSisterDist = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-lh;
-  hs.minSisterTrackOverlapText = label(hs.trackingTab,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
-  hs.minSisterTrackOverlap = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.directionMethodText = label(hs.trackingTab,'Direction assigned by',[x y-h/2 labelw*2/3 lh],10);
-  hs.directionMethod = popup(hs.trackingTab,directionMethodValues,[editx-10 y editw+11 h],@directionMethodsCB,tinyfont);
-  y = y-h;
-  hs.directionWeightText = label(hs.trackingTab,'Weight for direction',[x y-h/2 labelw lh],10);
-  hs.directionWeight = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.directionMinStepsText = label(hs.trackingTab,'Min consecutive time points',[x y-h/2 labelw lh],10);
-  hs.directionMinSteps = editbox(hs.trackingTab,[],[editx y editw h],10);
-  y = y-h;
-  hs.directionSwitchBufferText = label(hs.trackingTab,'Directional switch buffer (time points)',[x y-h/2 labelw lh],10);
-  hs.directionSwitchBuffer = editbox(hs.trackingTab,[],[editx y editw h],10);
-  
-  end
-  
   %% Debugging, tab 0
   if tabsToShow(1)
       
@@ -464,25 +407,6 @@ function updateControls(opts)
   hs.jobsetName.String = jobset.filename(idx+1:end-4);
   
   % Tracking, tab 4
-  hs.autoRadiidt.String = num2str(opts.autoRadiidt);
-  hs.autoRadii.Value = ~isempty(opts.autoRadiidt);
-  if isempty(opts.autoRadiidt)
-    hs.autoRadii.Value = 0; % Off
-    hs.autoRadiidt.Enable = 'off';
-    hs.autoRadiiAvgDisp.Enable = 'off';
-    hs.minSearchRadius.Enable = 'on';
-    hs.maxSearchRadius.Enable = 'on';
-  else
-    hs.autoRadii.Value = 1; % On
-    hs.autoRadiidt.Enable = 'on';
-    hs.autoRadiiAvgDisp.Enable = 'on';
-    hs.minSearchRadius.Enable = 'off';
-    hs.maxSearchRadius.Enable = 'off';
-  end
-  % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
-  hs.autoRadiiAvgDisp.String = num2str(0.06);
-  hs.minSearchRadius.String = num2str(opts.minSearchRadius(1));
-  hs.maxSearchRadius.String = num2str(opts.maxSearchRadius(1));
   hs.useSisterAlignment.Value = opts.useSisterAlignment;
   hs.maxSisterAlignmentAngle.String = num2str(opts.maxSisterAlignmentAngle);
   if ~hs.useSisterAlignment.Value
@@ -710,12 +634,10 @@ function updateControls(opts)
     hs.debugCentroidText.Enable = 'off';
     hs.showCentroidFinal.Enable = 'off';
   end
-  if ~strcmp(opts.jobProcess,'zandt')
     % disable all tracking debug options
     hs.gapClosing.Enable = 'off';
     hs.groupSistersText.Enable = 'off';
     hs.groupSisters.Enable = 'off';
-  end
   if strcmp(opts.coordSystem,'com')
     % disable plate fitting debug option
     hs.showPlaneFit.Enable = 'off';

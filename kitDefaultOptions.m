@@ -16,7 +16,7 @@ job.matlabVersion = version;
 job.movieDirectory = [];
 job.movieFiles = [];
 
-opts.jobProcess = 'zandt';
+opts.jobProcess = 'zonly';
 opts.spotMode{1} = 'histcut'; % Possible values: histcut, wavelet, neighbour, manual, none
 opts.spotMode{2} = 'none';
 opts.spotMode{3} = 'none';

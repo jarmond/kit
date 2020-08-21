@@ -13,7 +13,8 @@ tstart = tic;
 if nargin<2
   switch job.options.jobProcess
     case 'zandt'
-      tasks = 1:8;
+      error('Option zandt not available for KiD. Try using a later version of KiT for tracking');
+%      tasks = 1:8;
     case 'zonly'
       tasks = [1,2,6];
     case 'chrshift'
@@ -165,10 +166,7 @@ if ismember(6,tasks)
         % Assemble tracks and sisterList from initCoord and planeFit structures
         % in neighbour channel.
         if strcmp(opts.jobProcess,{'zandt'})
-          job.dataStruct{c} = kitAssembleNeighbourStructs(job.dataStruct,c,opts);
-          % Extract tracks from tracks and sisterList.
-          kitLog('Extracting individual tracks in channel %d', c);
-          job = kitExtractTracks(job, c);
+          error('Option zandt not available for KiD. Try using a later version of KiT for tracking');
         end
     end
   end
