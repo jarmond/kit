@@ -105,7 +105,8 @@ else
 end
 
 if strcmp(opts.coordSystem, 'image')
-    useImageCov = 1;
+    error('coordSystem image not available in KiD. Try a later version of KiT to use this.');
+%    useImageCov = 1;
 else
     useImageCov = 0;
 end

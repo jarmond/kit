@@ -24,8 +24,8 @@ end
 
 jobProcessValues = {'2D/3D only','Chromatic shift'}; % in GUI
 jobProcessValuesJS = {'zonly','chrshift'}; % in jobset
-coordSystemValues = {'Metaphase plate','Image moments','Centre of mass'};
-coordSystemValuesJS = {'plate','image','com'};
+coordSystemValues = {'Metaphase plate','Centre of mass'};
+coordSystemValuesJS = {'plate','com'};
 spotDetectValues = {'Histogram','Adaptive','Wavelet','Manual','Neighbour','None'};
 spotDetectValuesJS = {'histcut','adaptive','wavelet','manual','neighbour','none'};
 spotRefineValues = {'Centroid','MMF','None'};
