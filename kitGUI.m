@@ -157,9 +157,6 @@ function hs = createControls()
   label(hs.fig,'Max spots per frame',[x y labelw h],10);
   hs.maxSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
-  hs.manualFrameSpaceText = label(hs.fig,'Manual detection frame spacing',[x y labelw h],10);
-  hs.manualFrameSpace = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-h;
   y = y-h;
   hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
   y = y-h;
@@ -176,38 +173,6 @@ function hs = createControls()
   hs.alphaAchText{3} = label(hs.fig,'Ch.3',[x+labelw-3 y-0.15 4 h],10);
   hs.alphaA{3} = editbox(hs.fig,[],[editx y editw h],10);
   y = y-lh;
-  
-  %% Options - Tracking options, column 1
-  hs.trackOptionsText = label(hs.fig,'Tracking',[x y 20 1.5],12);
-  hs.trackOptionsText.FontWeight = 'bold';
-  y = y-h;
-  hs.autoRadii = checkbox(hs.fig,'Calculate search radii from dt',[x y w h],@autoRadiiCB,10);
-  y = y-h;
-  hs.autoRadiidtText = label(hs.fig,'Frame dt',[x y labelw h],10);
-  hs.autoRadiidt = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-h;
-  hs.autoRadiiAvgDispText = label(hs.fig,'Est. avg. disp. of spots (um/s)',[x y labelw h],10);
-  % Assume mean absolute displacment of sisters is about 0.06 μm/s as default.
-  hs.autoRadiiAvgDisp = editbox(hs.fig,num2str(0.06),[editx y editw h],10);
-  y = y-h;
-  hs.minSearchRadiusText = label(hs.fig,'Min search radius (um)',[x y labelw h],10);
-  hs.minSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-h;
-  hs.maxSearchRadiusText = label(hs.fig,'Max search radius (um)',[x y labelw h],10);
-  hs.maxSearchRadius = editbox(hs.fig,[],[editx y editw h],10);
-
-  y = y-h;
-  hs.useSisterAlignment = checkbox(hs.fig,'Use sister alignment',[x y w h],@useSisterAlignmentCB,10);
-  y = y-h;
-  % Adjust text box pos for multiple lines.
-  hs.maxSisterAlignmentAngleText = label(hs.fig,'Max angle between sisters and plate normal (deg)',[x y-h/2 labelw lh],10);
-  hs.maxSisterAlignmentAngle = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-lh;
-  hs.maxSisterDistText = label(hs.fig,'Max average distance between sisters (um)',[x y-h/2 labelw lh],10);
-  hs.maxSisterDist = editbox(hs.fig,[],[editx y editw h],10);
-  y = y-lh;
-  hs.minSisterTrackOverlapText = label(hs.fig,'Min overlap between sister tracks',[x y-h/2 labelw lh],10);
-  hs.minSisterTrackOverlap = editbox(hs.fig,[],[editx y editw h],10);
   
   %% Execution
   h = 2;
@@ -355,32 +320,6 @@ function updateControls(jobset)
       hs.tPointsMax{i}.String = num2str(opts.neighbourSpots.timePoints{i}(end));
     end 
   end
-  hs.autoRadiidt.String = num2str(opts.autoRadiidt);
-  if isempty(opts.autoRadiidt)
-    hs.autoRadii.Value = hs.autoRadii.Min; % Off
-    hs.autoRadiidt.Enable = 'off';
-    hs.autoRadiiAvgDisp.Enable = 'off';
-    hs.minSearchRadius.Enable = 'on';
-    hs.maxSearchRadius.Enable = 'on';
-  else
-    hs.autoRadii.Value = hs.autoRadii.Max; % On
-    hs.autoRadiidt.Enable = 'on';
-    hs.autoRadiiAvgDisp.Enable = 'on';
-    hs.minSearchRadius.Enable = 'off';
-    hs.maxSearchRadius.Enable = 'off';
-  end
-  hs.minSearchRadius.String = num2str(opts.minSearchRadius(1));
-  hs.maxSearchRadius.String = num2str(opts.maxSearchRadius(1));
-  hs.useSisterAlignment.Value = opts.useSisterAlignment;
-  hs.maxSisterAlignmentAngle.String = num2str(opts.maxSisterAlignmentAngle);
-  if ~hs.useSisterAlignment.Value
-    hs.maxSisterAlignmentAngle.Enable = 'off';
-  end
-  hs.maxSisterDist.String = num2str(opts.maxSisterSeparation);
-  hs.minSisterTrackOverlap.String = num2str(opts.minSisterTrackOverlap);
-  hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
-  hs.maxSpotsPerFrame.String = num2str(opts.maxSpotsPerFrame);
-  hs.manualFrameSpace.String = num2str(opts.manualDetect.frameSpacing);
   hs.mmfAddSpots.Value = opts.mmf.addSpots;
   hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
   for iChan=1:3
@@ -467,7 +406,6 @@ function updateControls(jobset)
   coordSysChCB();
   spotModeCB();
   refineModeCB();
-  autoRadiiCB();
   chromaticShiftCB();
   chrShiftFilterCB();
   neighbourOptionsCB();
@@ -483,54 +421,6 @@ function tf=checkControls()
   v = hs.coordSysChNum;
   if ~isfinite(v) || v<1 || v>3
     errorbox('Invalid channel number for coordinate system channel. Should be a number between 1 and 3');
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.autoRadiidt.String);
-  if (hs.autoRadii.Value == hs.autoRadii.Max) && (~isfinite(v) || v<=0)
-    errorbox('Invalid value for frame dt. Should be a positive number.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.autoRadiiAvgDisp.String);
-  if (hs.autoRadii.Value == hs.autoRadii.Max) && (~isfinite(v) || v<0)
-    errorbox('Invalid value for avg. disp. of spots. Should be a positive number.')
-    tf = false;
-    return
-  end
-
-  v1 = str2double(hs.minSearchRadius.String);
-  v2 = str2double(hs.maxSearchRadius.String);
-  if (hs.autoRadii.Value ~= hs.autoRadii.Max) && (~isfinite(v1) || v1 > v2 || v1 < 0)
-    errorbox('Invalid value min search radius. Should be a positive number less than max search radius.')
-    tf = false;
-    return
-  end
-  if (hs.autoRadii.Value ~= hs.autoRadii.Max) && (~isfinite(v2) || v2 < v1 || v2 < 0)
-    errorbox('Invalid value max search radius. Should be a positive number less than min search radius.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.maxSisterAlignmentAngle.String);
-  if (hs.useSisterAlignment.Value == hs.useSisterAlignment.Max) && (~isfinite(v) || v < 0 || v > 180)
-    errorbox('Invalid value for max angle between sisters and plate normal. Should be a positive number.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.maxSisterDist.String);
-  if ~isfinite(v) || v < 0
-    errorbox('Invalid value for max intersister distance. Should be a positive number.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.minSisterTrackOverlap.String);
-  if ~isfinite(v) || v < 0
-    errorbox('Invalid value for min overlap between sister tracks. Should be a positive number.')
     tf = false;
     return
   end
@@ -699,33 +589,6 @@ function jobProcessCB(hObj,event)
     handles.coordSys.Enable = 'on';
     handles.chromaticShift.Enable = 'on';
   end
-  if any(strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),{'2D/3D only','Chromatic shift'}))
-    handles.autoRadii.Value = 0;
-    autoRadiiCB();
-    handles.autoRadii.Enable = 'off';
-    handles.minSearchRadiusText.Enable = 'off';
-    handles.minSearchRadius.Enable = 'off';
-    handles.maxSearchRadiusText.Enable = 'off';
-    handles.maxSearchRadius.Enable = 'off';
-    handles.useSisterAlignment.Value = 0;
-    useSisterAlignmentCB();
-    handles.useSisterAlignment.Enable = 'off';
-    handles.maxSisterDistText.Enable = 'off';
-    handles.maxSisterDist.Enable = 'off';
-    handles.minSisterTrackOverlapText.Enable = 'off';
-    handles.minSisterTrackOverlap.Enable = 'off';
-  else
-    handles.autoRadii.Enable = 'on';
-    handles.autoRadii.Value = 1;
-    autoRadiiCB();
-    handles.useSisterAlignment.Enable = 'on';
-    handles.useSisterAlignment.Value = 1;
-    useSisterAlignmentCB();
-    handles.maxSisterDistText.Enable = 'on';
-    handles.maxSisterDist.Enable = 'on';
-    handles.minSisterTrackOverlapText.Enable = 'on';
-    handles.minSisterTrackOverlap.Enable = 'on';
-  end
   neighbourOptionsCB();
 end
 
@@ -776,13 +639,6 @@ function spotModeCB(hObj,event)
       handles.tPointsMax{i}.Enable = 'on';
     end
   end
-  if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotDetectValues),'Manual'),handles.spotMode))
-    handles.manualFrameSpaceText.Enable = 'on';
-    handles.manualFrameSpace.Enable = 'on';
-  else
-    handles.manualFrameSpaceText.Enable = 'off';
-    handles.manualFrameSpace.Enable = 'off';
-  end
   refineModeCB();
   neighbourOptionsCB();
 end
@@ -794,7 +650,6 @@ function refineModeCB(hObj,event)
     handles.maxMmfTime.Enable = 'on';
     handles.alphaAText.Enable = 'on';
     for iChan=1:3
-        mapStrings(handles.refineMode{iChan}.Value,spotRefineValues)
       if strcmp(mapStrings(handles.refineMode{iChan}.Value,spotRefineValues),'MMF');
         handles.alphaAchText{iChan}.Enable = 'on';
         handles.alphaA{iChan}.Enable = 'on';
@@ -812,41 +667,6 @@ function refineModeCB(hObj,event)
       handles.alphaAchText{iChan}.Enable = 'off';
       handles.alphaA{iChan}.Enable = 'off';
     end
-  end
-end
-
-function autoRadiiCB(hObj,event)
-  if handles.autoRadii.Value
-    handles.autoRadiidtText.Enable = 'on';
-    handles.autoRadiidt.Enable = 'on';
-    handles.autoRadiiAvgDispText.Enable = 'on';
-    handles.autoRadiiAvgDisp.Enable = 'on';
-    handles.minSearchRadiusText.Enable = 'off';
-    handles.minSearchRadius.Enable = 'off';
-    handles.maxSearchRadiusText.Enable = 'off';
-    handles.maxSearchRadius.Enable = 'off';
-    r = computeSearchRadii(str2double(handles.autoRadiidt.String),str2double(handles.autoRadiiAvgDisp.String));
-    handles.minSearchRadius.String = num2str(r(1));
-    handles.maxSearchRadius.String = num2str(r(2));
-  else
-    handles.autoRadiidtText.Enable = 'off';
-    handles.autoRadiidt.Enable = 'off';
-    handles.autoRadiiAvgDispText.Enable = 'off';
-    handles.autoRadiiAvgDisp.Enable = 'off';
-    handles.minSearchRadiusText.Enable = 'on';
-    handles.minSearchRadius.Enable = 'on';
-    handles.maxSearchRadiusText.Enable = 'on';
-    handles.maxSearchRadius.Enable = 'on';
-  end
-end
-
-function useSisterAlignmentCB(hObj,event)
-  if handles.useSisterAlignment.Value
-    handles.maxSisterAlignmentAngleText.Enable = 'on';
-    handles.maxSisterAlignmentAngle.Enable = 'on';
-  else
-    handles.maxSisterAlignmentAngleText.Enable = 'off';  
-    handles.maxSisterAlignmentAngle.Enable = 'off';
   end
 end
 
@@ -1058,9 +878,10 @@ function executeCB(hObj,event)
   updateJobset();
   kitSaveJobset(jobset);
   % Ask which tasks to run.
-  taskStrs = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
-  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'PromptString','Select tasks to execute','Name','Select tasks...');
-  if ok
+%  taskStrs = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
+%  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'PromptString','Select tasks to execute','Name','Select tasks...');
+%  if ok
+tasks = [1,2,4,5];
     % Map to task numbers and add defaults.
     taskMap = [1 2 3 4 9];
     tasks = [taskMap(tasks) 6:8];
@@ -1073,7 +894,7 @@ function executeCB(hObj,event)
     kitRunJobs(jobset,'callback',@trackProgress,'tasks',tasks,'exec',execmode);
     delete(progh);
     uiresume(gcf);
-  end
+%  end
 
   function trackProgress(idx)
     waitbar(idx/length(jobset.ROI),progh,sprintf('Tracking progress (%d/%d)',idx,length(jobset.ROI)));
@@ -1113,34 +934,6 @@ function validateCB(hObj,event)
   handles.validateMetadata.String = 'Re-validate...';
   
 end
-
-% function deconvolveCB(hObj,event)
-%   if handles.deconvolve.Value
-%     handles.psfBtn.Enable = 'on';
-%     handles.psfFile.Enable = 'on';
-%   else
-%     handles.psfBtn.Enable = 'off';
-%     handles.psfFile.Enable = 'off';
-%   end
-% end
-
-% function psfBtnCB(hObj,event)
-%   [file,path] = uigetfile('*.mat','Select PSF file');
-%   if isequal(file,0)
-%     return
-%   end
-%   handles.psfFile.String = file;
-%   file = fullfile(path,file);
-%   data = load(file);
-%   % Assume PSF is only variable.
-%   f = fieldnames(data);
-%   if length(f) > 1
-%     h=msgbox(sprintf('Multiple variables in MAT-file. Using .%s for PSF.',f{1}),'Warning','Warning','modal');
-%     uiwait(h);
-%   end
-%   jobset.psf = data.(f{1});
-%   jobset.psfFile = file;
-% end
 
 function populateMovieBox()
   movieDir = handles.movieDirectory.String;
@@ -1198,26 +991,8 @@ function updateJobset()
     opts.spotMode{i} = spotDetectValuesJS{handles.spotMode{i}.Value};
     opts.coordMode{i} = spotRefineValuesJS{handles.refineMode{i}.Value};
   end
-  if handles.autoRadii.Value
-    opts.autoRadiidt = str2double(handles.autoRadiidt.String);
-    opts.autoRadiiAvgDisp = str2double(handles.autoRadiiAvgDisp.String);
-    r = computeSearchRadii(opts.autoRadiidt,opts.autoRadiiAvgDisp);
-  else
-    opts.autoRadiidt = [];
-    r = zeros(2,1);
-    r(1) = str2double(handles.minSearchRadius.String);
-    r(2) = str2double(handles.maxSearchRadius.String);
-  end
-  r = computeUnalignedLaggingRadii(r);
-  opts.minSearchRadius = r(1,:);
-  opts.maxSearchRadius = r(2,:); % in um
-  opts.useSisterAlignment = handles.useSisterAlignment.Value;
-  opts.maxSisterAlignmentAngle = str2double(handles.maxSisterAlignmentAngle.String);
-  opts.maxSisterSeparation = str2double(handles.maxSisterDist.String);
-  opts.minSisterTrackOverlap = str2double(handles.minSisterTrackOverlap.String);
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpotsPerFrame.String);
-  opts.manualFrameSpace = str2double(handles.manualFrameSpace.String);
   mmf = opts.mmf;
   mmf.addSpots = handles.mmfAddSpots.Value;
   mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
@@ -1260,17 +1035,6 @@ function updateJobset()
   opts.intensity = intensity;
   
   jobset.options = opts;
-end
-
-function r=computeSearchRadii(dt,avgDisp)
-  r = zeros(2,1);
-  r(2) = 6*avgDisp*dt;
-  r(1) = 0.1*avgDisp*dt;
-end
-
-function r=computeUnalignedLaggingRadii(r)
-% Assume unaligned move 3x faster, lagging same speed.
-  r = [r 3*r r];
 end
 
 function errorbox(msg)
