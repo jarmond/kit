@@ -58,7 +58,7 @@ function hs = createControls(jobset)
   y = figpos(4)-logoh-1;
   hs.logo = uicontrol(hs.fig,'Units','characters','Position',[x y w logoh]);
   pos = getpixelposition(hs.logo);
-  set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
+  set(hs.logo,'cdata',imresize(imread('private/kidlogo.png'),pos([4 3])));
 
   h = 2;
   y = y-h;

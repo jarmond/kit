@@ -186,7 +186,7 @@ function hs = createControls()
   % KiT logo
   hs.logo = uicontrol(hs.fig,'Units','characters','Position',[btnx 3 btnw 3.2]);
   pos = getpixelposition(hs.logo);
-  set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
+  set(hs.logo,'cdata',imresize(imread('private/kidlogo.png'),pos([4 3])));
   
   %% List of metadata for validation
   

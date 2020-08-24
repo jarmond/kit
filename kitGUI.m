@@ -14,7 +14,7 @@ end
 
 % Upgrade jobset, if required.
 if ~isfield(jobset,'jobsetVersion') || ...
-    jobset.jobsetVersion < kitVersion(2)
+  jobset.jobsetVersion < kitVersion(2)
   jobset = kitJobset(jobset);
 end
 
@@ -387,6 +387,7 @@ function updateControls(jobset)
   
   hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,maskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
+hs.neighbourMaskRadius.String
   for iChan=1:3
     hs.neighbourOrient{iChan}.String = num2str(opts.neighbourSpots.channelOrientation(iChan));
   end
@@ -396,6 +397,8 @@ function updateControls(jobset)
   end
   hs.intensityMaskShape.Value = mapStrings(opts.intensity.maskShape,maskValuesJS);
   hs.intensityMaskRadius.String = num2str(opts.intensity.maskRadius);
+  hs.minSpotsPerFrame.String = num2str(opts.minSpotsPerFrame);
+  hs.maxSpotsPerFrame.String = num2str(opts.maxSpotsPerFrame);
 
   populateMovieBox();
   populateROIBox();
@@ -834,7 +837,7 @@ function neighbourOptionsCB(hObj,event)
         handles.neighbourOrient{iChan}.Enable = 'on';
       end
   end
-  
+
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift') || ...
           strcmp(mapStrings(handles.coordSys.Value,coordSystemValues),'Centre of mass')
     handles.neighbourMaskShapeText.Enable = 'off';

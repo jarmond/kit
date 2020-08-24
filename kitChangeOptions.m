@@ -92,7 +92,7 @@ function hs = createControls()
   % KiT logo
   hs.logo = uicontrol(hs.fig,'Units','characters','Position',[btnx 4.75 btnw 3.2]);
   pos = getpixelposition(hs.logo);
-  set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
+  set(hs.logo,'cdata',imresize(imread('private/kidlogo.png'),pos([4 3])));
   
   
   %% Chromatic shift options, tab 1
