@@ -120,6 +120,7 @@ else
 end
 
 if ismember(3,tasks)
+error('KiD does not support tracking functionality. Try a later version of KiT');
   % Track spots.
   for c = channels
     kitLog('Tracking particles in channel %d', c);

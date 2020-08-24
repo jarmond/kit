@@ -63,7 +63,7 @@ function hs = createControls()
   w=25; h=8;
   hs.logo = uicontrol(hs.fig,'Units','characters','Position',[figw-w-6 1 w h]);
   pos = getpixelposition(hs.logo);
-  set(hs.logo,'cdata',imresize(imread('private/kitlogo.png'),pos([4 3])));
+  set(hs.logo,'cdata',imresize(imread('private/kidlogo.png'),pos([4 3])));
 
   %% ROI selection
   x = 2.5;
