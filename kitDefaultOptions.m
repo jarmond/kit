@@ -20,7 +20,7 @@ opts.jobProcess = 'zonly';
 opts.spotMode{1} = 'histcut'; % Possible values: histcut, neighbour, none
 opts.spotMode{2} = 'none';
 opts.spotMode{3} = 'none';
-opts.coordMode{1} = 'gaussian'; % Possible values: centroid, gaussian, none
+opts.coordMode{1} = 'gaussian'; % Possible values: gaussian, none
 opts.coordMode{2} = 'none';
 opts.coordMode{3} = 'none';
 opts.coordSystem = 'plate'; % Possible values: plate, image, com
@@ -51,7 +51,7 @@ debug.groupSisters = 0; % 1 - plot 4 frames with sisters assignment
                         % 2 - plot all tracks
 debug.showIntensityMasks = 0;
 debug.showPlaneFit = 0; % 1 to show plane fits, 2 to show each frame
-debug.showCentroidFinal = 0; % visualize centroid final spots.
+%debug.showCentroidFinal = 0; % visualize centroid final spots.
 debug.asserts = 0; % check things that shouldn't go wrong
 debug.disableSave = 0; % don't save job at each step
 opts.debug = debug;

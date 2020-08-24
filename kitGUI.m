@@ -28,8 +28,8 @@ coordSystemValues = {'Metaphase plate','Centre of mass'};
 coordSystemValuesJS = {'plate','com'};
 spotDetectValues = {'Histogram','Neighbour','None'};
 spotDetectValuesJS = {'histcut','neighbour','none'};
-spotRefineValues = {'Centroid','MMF','None'};
-spotRefineValuesJS = {'centroid','gaussian','none'};
+spotRefineValues = {'MMF','None'};
+spotRefineValuesJS = {'gaussian','none'};
 maskValues = {'Circle','Semi-circle','Cone'};
 maskValuesJS = {'circle','semicirc','cone'};
 
@@ -137,7 +137,6 @@ function hs = createControls()
     hs.refineModeText{i} = label(p,'Spot refinement',[1 1 20 1.5]);
     
   end
-
   %% Options - General options, column 1
   x = sum(colwidth(1:2)) + 8;
   w = 35;
@@ -329,7 +328,7 @@ function hs = createControls()
   hs.intensityMaskRadius = editbox(hs.fig,[],[editx y editw h],10);
 
   movegui(hs.fig,'center');
-  
+
 end
 
 % Update control status based on contents of jobset.
@@ -739,7 +738,7 @@ function coordSysChCB(hObj,event)
     chan = str2double(hObj.String);
     handles.coordSysChNum = chan;
     handles.spotMode{chan}.Value = 1;
-    handles.refineMode{chan}.Value = 2;
+    handles.refineMode{chan}.Value = 1;
     for notChan = setdiff(1:3,chan)
       handles.coordSysCh{notChan}.Value = 0;
       handles.spotMode{notChan}.Value = 6;
@@ -754,7 +753,7 @@ function spotModeCB(hObj,event)
   for i=1:3
     if strcmp(mapStrings(handles.spotMode{i}.Value,spotDetectValues),'None')
       handles.refineModeText{i}.Enable = 'off';
-      handles.refineMode{i}.Value = 3;
+      handles.refineMode{i}.Value = 2;
       handles.refineMode{i}.Enable = 'off';
       handles.zSliceText{i}.Enable = 'off';
       handles.zStackMinText{i}.Enable = 'off';
@@ -799,6 +798,7 @@ function refineModeCB(hObj,event)
     handles.maxMmfTime.Enable = 'on';
     handles.alphaAText.Enable = 'on';
     for iChan=1:3
+        mapStrings(handles.refineMode{iChan}.Value,spotRefineValues)
       if strcmp(mapStrings(handles.refineMode{iChan}.Value,spotRefineValues),'MMF');
         handles.alphaAchText{iChan}.Enable = 'on';
         handles.alphaA{iChan}.Enable = 'on';

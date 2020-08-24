@@ -16,7 +16,7 @@ function job=kitFindCoords(job, reader, channel)
 % Modified by: C. A. Smith
 % Copyright (c) 2016 C. A. Smith
 
-% Method of fixing spot locations: centroid or Gaussian MMF, or none.
+% Method of fixing spot locations:  Gaussian MMF, or none.
 method = job.options.coordMode{channel};
 % Handle old jobset versions.
 if ~isfield(job.options,'spotMode')
@@ -123,7 +123,7 @@ kitLog('Average particles per frame: %.1f +/- %.1f',mean(nSpots),std(nSpots));
 % Refine spot candidates.
 switch method
   case 'centroid'
-    job = kitCentroid(job,movie,localMaxima,channel);
+    error('Centroid spot refinement not available. For this method, try later versions of KiT'); 
   case 'gaussian'
     job = kitMixtureModel(job,movie,localMaxima,channel);
   case 'norefine'

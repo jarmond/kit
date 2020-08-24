@@ -342,11 +342,11 @@ function hs = createControls()
       hs.showMmfFinal = popup(hs.debugTab,debugMMFfinalValues,[editx-10 y editw+11 h],[],tinyfont);
       y = y-h;
       hs.showMmfPvals = checkbox(hs.debugTab,'Give p-values',[x y labelw h],[],tinyfont);
-      y = y-lh;
-      hs.debugCentroidText = label(hs.debugTab,'Centroid fitting',[x y w 1.5],smallfont);
-      hs.debugCentroidText.FontWeight = 'bold';
-      y = y-h;
-      hs.showCentroidFinal = checkbox(hs.debugTab,'Show final coordinates',[x y labelw h],[],tinyfont);
+%      y = y-lh;
+%      hs.debugCentroidText = label(hs.debugTab,'Centroid fitting',[x y w 1.5],smallfont);
+%      hs.debugCentroidText.FontWeight = 'bold';
+%      y = y-h;
+%      hs.showCentroidFinal = checkbox(hs.debugTab,'Show final coordinates',[x y labelw h],[],tinyfont);
 
   end
 
@@ -502,8 +502,8 @@ function updateControls(opts)
     hs.groupSisters.Value = opts.debug.groupSisters+1;
     hs.gapClosing.Value = opts.debug.gapClosing;
     hs.showIntensityMasks.Value = opts.debug.showIntensityMasks;
-    % centroid
-    hs.showCentroidFinal.Value = opts.debug.showCentroidFinal;
+%    % centroid
+%    hs.showCentroidFinal.Value = opts.debug.showCentroidFinal;
     % MMF
     hs.mmfVerbose.Value = opts.debug.mmfVerbose;
     hs.showMmfCands.Value = find([0 1 -1]==opts.debug.showMmfCands);
@@ -539,11 +539,11 @@ function updateControls(opts)
       end
     end
   end
-  if ~any(cellfun(@(x) strcmp(x,'centroid'),opts.coordMode))
-    % disable centroid debug option
-    hs.debugCentroidText.Enable = 'off';
-    hs.showCentroidFinal.Enable = 'off';
-  end
+%  if ~any(cellfun(@(x) strcmp(x,'centroid'),opts.coordMode))
+%    % disable centroid debug option
+%    hs.debugCentroidText.Enable = 'off';
+%    hs.showCentroidFinal.Enable = 'off';
+%  end
     % disable all tracking debug options
     hs.gapClosing.Enable = 'off';
     hs.groupSistersText.Enable = 'off';
@@ -1146,8 +1146,8 @@ function updateJobset()
     opts.debug.groupSisters = handles.groupSisters.Value-1;
     opts.debug.gapClosing = handles.gapClosing.Value;
     opts.debug.showIntensityMasks = handles.showIntensityMasks.Value;
-    % centroid
-    opts.debug.showCentroidFinal = handles.showCentroidFinal.Value;
+%    % centroid
+%    opts.debug.showCentroidFinal = handles.showCentroidFinal.Value;
     % MMF
     opts.debug.mmfVerbose = handles.mmfVerbose.Value;
     debugCodes = [0 1 -1];
