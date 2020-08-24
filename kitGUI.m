@@ -227,10 +227,6 @@ function hs = createControls()
   hs.save = button(hs.fig,'Save',[bx y btnw h],@saveCB);
   y = y-h;
   hs.execute = button(hs.fig,'Execute',[bx y btnw h],@executeCB);
-  hs.parallel = checkbox(hs.fig,'Execute in parallel',[x y labelw h],'FontSize',10);
-  if ~license('test','Distrib_Computing_Toolbox') || verLessThan('distcomp','6.5')
-    hs.parallel.Enable = 'off';
-  end
   
   %% Options - Chromatic shift options, column 2
   x = sum(colwidth(1:3)) + 11;
@@ -1072,11 +1068,7 @@ function executeCB(hObj,event)
       tasks = [tasks 5];
     end
     
-    if handles.parallel.Value
-      execmode = 'batch';
-    else
-      execmode = 'serial';
-    end
+    execmode = 'serial'; %parallel option removed
     progh = waitbar(0,sprintf('Tracking progress (%d/%d)',0,length(jobset.ROI)));
     kitRunJobs(jobset,'callback',@trackProgress,'tasks',tasks,'exec',execmode);
     delete(progh);
