@@ -158,8 +158,6 @@ function hs = createControls()
   hs.maxSpotsPerFrame = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
   y = y-h;
-  hs.mmfAddSpots = checkbox(hs.fig,'Resolve sub-resolution spots',[x y w h],'',10);
-  y = y-h;
   hs.maxMmfTimeText = label(hs.fig,'Max MMF time per frame (min)',[x y labelw h],10);
   hs.maxMmfTime = editbox(hs.fig,[],[editx y editw h],10);
   y = y-h;
@@ -320,7 +318,6 @@ function updateControls(jobset)
       hs.tPointsMax{i}.String = num2str(opts.neighbourSpots.timePoints{i}(end));
     end 
   end
-  hs.mmfAddSpots.Value = opts.mmf.addSpots;
   hs.maxMmfTime.String = num2str(opts.mmf.maxMmfTime);
   for iChan=1:3
     hs.alphaA{iChan}.String = num2str(opts.mmf.alphaA(iChan));
@@ -438,13 +435,6 @@ function tf=checkControls()
     return
   elseif diff(v)<=0
     errorbox('Invalid values for spots per frame. Maximum number should be larger than the minimum.')
-    tf = false;
-    return
-  end
-
-  v = str2double(hs.maxMmfTime.String);
-  if (hs.mmfAddSpots.Value == hs.mmfAddSpots.Max) && (~isfinite(v) || v < 0)
-    errorbox('Invalid value for min spots per frame. Should be a positive number or zero.')
     tf = false;
     return
   end
@@ -645,7 +635,6 @@ end
 
 function refineModeCB(hObj,event)
   if any(cellfun(@(x) strcmp(mapStrings(x.Value,spotRefineValues),'MMF'),handles.refineMode))
-    handles.mmfAddSpots.Enable = 'on';
     handles.maxMmfTimeText.Enable = 'on';
     handles.maxMmfTime.Enable = 'on';
     handles.alphaAText.Enable = 'on';
@@ -659,7 +648,6 @@ function refineModeCB(hObj,event)
       end
     end
   else
-    handles.mmfAddSpots.Enable = 'off';
     handles.maxMmfTimeText.Enable = 'off';
     handles.maxMmfTime.Enable = 'off';
     handles.alphaAText.Enable = 'off';
@@ -994,7 +982,6 @@ function updateJobset()
   opts.minSpotsPerFrame = str2double(handles.minSpotsPerFrame.String);
   opts.maxSpotsPerFrame = str2double(handles.maxSpotsPerFrame.String);
   mmf = opts.mmf;
-  mmf.addSpots = handles.mmfAddSpots.Value;
   mmf.maxMmfTime = str2double(handles.maxMmfTime.String);
   for iChan=1:3
     mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
