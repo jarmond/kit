@@ -50,7 +50,7 @@ function hs = createControls()
   set(0,'DefaultFigureWindowStyle','normal');
   hs.fig.DockControls = 'off';
   hs.fig.MenuBar = 'none';
-  hs.fig.Name = ['KiT ' kitVersion(1)];
+  hs.fig.Name = ['KiD ' kitVersion(1)];
   hs.fig.NumberTitle = 'off';
   hs.fig.IntegerHandle = 'off';
   hs.fig.ToolBar = 'none';
