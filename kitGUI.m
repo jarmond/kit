@@ -387,7 +387,6 @@ function updateControls(jobset)
   
   hs.neighbourMaskShape.Value = mapStrings(opts.neighbourSpots.maskShape,maskValuesJS);
   hs.neighbourMaskRadius.String = num2str(opts.neighbourSpots.maskRadius);
-hs.neighbourMaskRadius.String
   for iChan=1:3
     hs.neighbourOrient{iChan}.String = num2str(opts.neighbourSpots.channelOrientation(iChan));
   end
@@ -571,7 +570,7 @@ end
 
 function jobProcessCB(hObj,event)
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift')
-    handles.coordSys.Value = 3;
+    handles.coordSys.Value = 2;
     handles.coordSysText.Enable = 'off';
     handles.coordSys.Enable = 'off';
     handles.chromaticShift.Value = 0;
@@ -593,7 +592,7 @@ function coordSysChCB(hObj,event)
     handles.refineMode{chan}.Value = 1;
     for notChan = setdiff(1:3,chan)
       handles.coordSysCh{notChan}.Value = 0;
-      handles.spotMode{notChan}.Value = 6;
+      handles.spotMode{notChan}.Value = 3;
     end
   end
   spotModeCB();
@@ -837,7 +836,6 @@ function neighbourOptionsCB(hObj,event)
         handles.neighbourOrient{iChan}.Enable = 'on';
       end
   end
-
   if strcmp(mapStrings(handles.jobProc.Value,jobProcessValues),'Chromatic shift') || ...
           strcmp(mapStrings(handles.coordSys.Value,coordSystemValues),'Centre of mass')
     handles.neighbourMaskShapeText.Enable = 'off';
@@ -868,11 +866,11 @@ function executeCB(hObj,event)
   end
   updateJobset();
   kitSaveJobset(jobset);
-  % Ask which tasks to run.
-%  taskStrs = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
-%  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'PromptString','Select tasks to execute','Name','Select tasks...');
-%  if ok
-tasks = [1,2,4,5];
+  % % Ask which tasks to run.
+  %  taskStrs = {'Spot finding','Plane fitting','Tracking','Sister grouping','Intensity measurement'};
+  %  [tasks,ok] = listdlg('ListString',taskStrs,'InitialValue',1:length(taskStrs),'PromptString','Select tasks to execute','Name','Select tasks...');
+  %  if ok
+    tasks = [1,2,4,5];
     % Map to task numbers and add defaults.
     taskMap = [1 2 3 4 9];
     tasks = [taskMap(tasks) 6:8];
@@ -990,7 +988,7 @@ function updateJobset()
     mmf.alphaA(iChan) = str2double(handles.alphaA{iChan}.String);
   end
   opts.mmf = mmf;
-%   opts.deconvolve = handles.deconvolve.Value;
+
   if handles.chromaticShift.Value
     chrShift = opts.chrShift;
     chrShift.minSpots = str2double(handles.minChrShiftSpots.String);
