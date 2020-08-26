@@ -8,6 +8,7 @@ opts.addMore = [];
 opts.channel = 1;
 opts.contrast = [0.1 1];
 opts.dataType = 'spots'; % can also be 'sisters'
+opts.lineProfile = 0; %whether to plot line profiles in x and y across spots
 opts.method = 'deselect'; % can also be 'select'
 opts.startMovie = 1;
 opts.zProject = -1;
@@ -80,7 +81,7 @@ for iExpt = 1:nExpts
           case 'spots'
             % show all spots - defined using tracks
             kitShowAllSpots(jobs{iJob},'channel',c,'contrast',opts.contrast,...
-                'zProject',opts.zProject);
+                'zProject',opts.zProject, 'lineProfile',opts.lineProfile);
             nData = length(dS.trackList);
         end
         
