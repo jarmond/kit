@@ -35,6 +35,9 @@ opts.timePoint = 1;
 opts.zProject = 0;
 opts = processOptions(opts,varargin{:});
 
+if length(job.ROI)>1
+  error('check that the job provided is a single job, rather than a jobset of multiple jobs');
+end
 % suppress warnings
 w = warning;
 warning('off','all');
@@ -52,7 +55,7 @@ if isempty(opts.subset)
 else
   nSpots = length(opts.subset);
 end
-opts.imageSize = job.ROI(job.index).cropSize;
+opts.imageSize = job.ROI.cropSize;
 
 % set up figure
 figure(1); clf
