@@ -91,7 +91,7 @@ if ~isempty(trackList)
     imshow(fullImg)
     title(plotTitle,'FontSize',14)
   end
-  [~,~,buttonPress] = ginput(1);
+  [~,~,buttonPress] = ginputBlue(1);
 
   if buttonPress == 110 %110 corresponds to user pressing n key
     unallocatedIdx = [];
@@ -342,7 +342,7 @@ while ~isempty(unallocatedIdx)
     % USER INPUT AND SISTER-SISTER PAIRING
     
     % uses a crosshair to allow user to provide a pair of coordinates
-    [userX,userY,key] = ginput(1);
+    [userX,userY,key] = ginputBlue(1);
     
     if ismember(key,1:3)
         

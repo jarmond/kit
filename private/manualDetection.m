@@ -62,7 +62,7 @@ for iFrame = timePoints
     while ask
       
       % ask user for input
-      [userY,userX,key] = ginput(1);
+      [userY,userX,key] = ginputBlue(1);
       if isempty(key)
         continue
       end
