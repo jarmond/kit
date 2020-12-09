@@ -62,7 +62,7 @@ for i=1:numWvs
 end
 if warnWv
   warning('Missing metadata: Assuming wavelengths %d, %d, %d nm',...
-          1000*md.wavelength);
+          1000*md.wavelength(1),1000*md.wavelength(2),1000*md.wavelength(3));
 end
 
 % Timepoints per plane
@@ -108,7 +108,7 @@ try
   if numobj == 1
     objID = 0;
   end
-    
+
   md.na = metaTable.getObjectiveLensNA(instrumentID,objID).doubleValue();
 catch
   warning('Missing metadata: Assuming NA = 1.4');
@@ -118,11 +118,16 @@ end
 % Physical pixel size
 md.pixelSize = [
   metaTable.getPixelsPhysicalSizeX(0).value(ome.units.UNITS.MICROM).doubleValue(),...
-  metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue(),...
-  metaTable.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROM).doubleValue()];
+  metaTable.getPixelsPhysicalSizeY(0).value(ome.units.UNITS.MICROM).doubleValue()];
+try
+  md.pixelSize(3) = metaTable.getPixelsPhysicalSizeZ(0).value(ome.units.UNITS.MICROM).doubleValue();
+catch
+  warning('Missing metadata: Assuming Z size is 0.5 um');
+  md.pixelSize(3) = 0.5;
+end
 if any(md.pixelSize < 0.001) || any(md.pixelSize(1:2) > 1) || ...
     md.pixelSize(3) > 5
-  warning('Pixel sizes are strange: %f x %f x %f',md.pixelSize);
+  warning('Pixel sizes are strange: %s', num2str(md.pixelSize));
 end
 
 
@@ -131,6 +136,14 @@ catch e
   clear reader;
   error(['Missing required metadata: ' e.message]);
 end
+
+% HACK fix for 3i
+% warning('Hacking metadata for 3i');
+% n = 150;
+% md.nFrames = n;
+% md.frameTime = md.frameTime(1:n);
+% md.frameSize(3) = md.nPlanes / n;
+% md.is3D = 1;
 
 % Rename output.
 metadata = md;
