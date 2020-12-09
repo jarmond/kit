@@ -27,7 +27,7 @@ function out=fastGauss3D(img,sigma,fSze,correctBorder,filterMask)
 %===============
 %% check input
 %===============
-if nargin < 1 || isempty(img);
+if nargin < 1 || isempty(img)
     error('Please pass nonempty image to fastGauss3D')
 end
 % set default correctBorder
