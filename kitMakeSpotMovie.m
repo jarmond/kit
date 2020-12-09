@@ -111,7 +111,7 @@ opts = processOptions(opts, varargin{:});
 if opts.plotSisters == 1
   opts.plotSpots = 0;
 end
-pdfOut = strcmp(upper(opts.codec),'PDF');
+imgOut = strcmpi(opts.codec,'PDF') || strcmpi(opts.codec,'PNG');
 colors = presetColors();
 
 % Open movie.
@@ -119,7 +119,7 @@ colors = presetColors();
 
 h = figure;
 clf;
-if ~isempty(opts.outfile) && ~pdfOut
+if ~isempty(opts.outfile) && ~imgOut
   vWriter = VideoWriter(opts.outfile, opts.codec);
   vWriter.FrameRate = 5;
   vWriter.Quality = 95;
@@ -135,7 +135,9 @@ else
 end
 initCoord = job.dataStruct{plotChans}.initCoord;
 tracks = job.dataStruct{plotChans}.tracks;
-sisterList = job.dataStruct{plotChans}.sisterList;
+if opts.plotSisters
+  sisterList = job.dataStruct{plotChans}.sisterList;
+end
 trackList = job.dataStruct{plotChans}.trackList;
 if isfield(job.dataStruct{plotChans},'trackInt')
   trackInt = job.dataStruct{plotChans}.trackInt;
@@ -497,19 +499,21 @@ for i=1:md.nFrames
     set(h,'Position',[figpos(1:2) figpos(3:4)*opts.scale]);
   end
 
-  if ~isempty(opts.outfile) && ~pdfOut
+  if ~isempty(opts.outfile) && ~imgOut
     % Save frame.
     writeVideo(vWriter, getframe);
   end
-  if pdfOut
+  if imgOut
     % Save frame to PDF.
     set(gcf,'Color','w');
-    pdfname = sprintf('%s%04d.pdf',opts.outfile,i);
-    if exist('export_fig')
-      export_fig(pdfname);
+    imgname = sprintf('%s%04d.%s',opts.outfile,i,lower(opts.codec));
+
+    if exist('export_fig', 'file')
+      export_fig(imgname);
     else
-      saveas(gcf,pdfname);
+      saveas(gcf,imgname);
     end
+      
   end
 
   if opts.slow > 0
@@ -519,7 +523,7 @@ for i=1:md.nFrames
   end
 end
 
-  if ~isempty(opts.outfile) && ~pdfOut
+  if ~isempty(opts.outfile) && ~imgOut
     close(vWriter);
   end
 end
