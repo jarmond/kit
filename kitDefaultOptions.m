@@ -63,6 +63,8 @@ opts.minSisterTrackOverlap = 10; % percent of movie length to require overlap
 opts.oppositeAnaphaseDir = 1; % Use assumption of opposition direction in
                                  % anaphase.
 opts.force2DPlaneFit = 0; % use only 2D projection to fit X,Y coord plane.
+opts.checkEigenvalueRatio = 0; % look for positive slope in eigenvalue ratio 
+                               % to proceed to planefit.
 
 % Gaussian mixture-model spot finding options.
 opts.clusterSeparation = 5; % in PSF sigmas. If too large will fit whole

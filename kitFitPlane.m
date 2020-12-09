@@ -388,7 +388,7 @@ if nConsecFrames >= minConsecFrames && ~useInputPlane
     %if 2 or more frames satisfy this criterion, fit a straight line in the
     %eigenvalue ratio and proceed with plane fitting in these frames
     %only if the line has a significant positive slope
-    if length(framesLarger) >= 2
+    if length(framesLarger) >= 2 && opts.checkEigenvalueRatio
 
       %fit straight line
       [lineFitParam,S] = polyfit(framesLarger,eigenValRatio(framesLarger),1);
@@ -778,6 +778,9 @@ if opts.debug.showPlaneFit ~= 0
   for i = 1:nTimePoints
     showPlaneFit(job,reader,channel,i,planeFit(i).planeOrigin,...
                  planeFit(i).planeVectors,initCoord(i).allCoordPix);
+    if opts.debug.showPlaneFit >= 2
+      keyboard
+    end
   end
 end
 
