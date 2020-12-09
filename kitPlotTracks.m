@@ -97,7 +97,7 @@ for j=1:length(opts.subset)
       plot(t,x1);
       title(['Track ' num2str(i)]);
       xlim([0 max(t)])
-      xlabel('time, s'); ylabel('x-distance, µm');
+      xlabel('time, s'); ylabel('x-distance, Î¼m');
       set(gca,'FontSize',8)
       nna = find(~isnan(x1),1);
       if opts.labels
@@ -111,9 +111,8 @@ for j=1:length(opts.subset)
               title(axName(h))
           end
           x1=trackList(i).coords(:,h);
-          plot(t,x1);
-          xlabel('time, s'); ylabel('x-distance, µm');
-          ylim([-12 12])
+          plot(ax(h),t,x1);
+          xlabel('time, s'); ylabel('x-distance, Î¼m');
           set(gca,'FontSize',20)
           nna = find(~isnan(x1),1);
           if opts.labels
@@ -141,7 +140,7 @@ if opts.plotPole && ~isempty(poleSub)
         title(['Track ' num2str(i)]);
         pause(1)
         plot(t,x1);
-        xlabel('time, s'); ylabel('x-distance, µm');
+        xlabel('time, s'); ylabel('x-distance, Î¼m');
         set(gca,'FontSize',20)
 
     end
